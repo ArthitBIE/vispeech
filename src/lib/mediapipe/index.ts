@@ -5,7 +5,7 @@ export interface FaceMeshResult {
 }
 
 export interface FaceMeshInstance {
-  start: (videoElement: HTMLVideoElement) => Promise<void>
+  start: () => Promise<void>
   stop: () => void
   isActive: () => boolean
   onResult: (callback: (result: FaceMeshResult) => void) => void
@@ -18,8 +18,6 @@ export async function initFaceMesh(
   try {
     const { FaceMesh } = await import("@mediapipe/face_mesh");
     const { Camera } = await import("@mediapipe/camera_utils");
-    const { drawConnectors } = await import("@mediapipe/drawing_utils");
-    const { FACEMESH_TESSELATION } = await import("@mediapipe/face_mesh");
 
     const faceMesh = new FaceMesh({
       locateFile: (file: string) =>

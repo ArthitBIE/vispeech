@@ -7,7 +7,7 @@ export default function Home() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase!.auth.getSession().then(({ data: { session } }: any) => {
       if (session) {
         window.location.href = "/dashboard";
       } else {
