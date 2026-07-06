@@ -15,20 +15,20 @@ Built with Next.js + TypeScript + Supabase + MediaPipe Face Mesh.
 npm install
 ```
 
-### Environment Variables
+### Supabase setup
 
-Create `.env.local`:
+1. Go to [Supabase dashboard](https://supabase.com) and create a project.
+2. In **Project Settings → API**, find your **Project URL** and **anon public key**.
+3. Create `.env.local` in the project root:
 
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 ```
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
 
-### Database
-
-Run migrations in your Supabase SQL editor:
-1. `supabase/migrations/001_schema.sql` — creates tables and RLS policies
-2. `supabase/seed.sql` — inserts 30 Thai practice words
+4. Restart the dev server after editing `.env.local`.
+5. Open Supabase **SQL Editor** and run `supabase/migrations/001_schema.sql` to create tables and RLS policies.
+6. Then run `supabase/seed.sql` to insert 30 Thai practice words.
 
 ### Run
 
@@ -60,6 +60,7 @@ src/
 ├── app/
 │   ├── auth/page.tsx          # Login/signup (Thai)
 │   ├── dashboard/page.tsx     # Word list + accuracy + history
+│   ├── home/page.tsx          # Redirect to /
 │   ├── practice/[word]/       # Practice page
 │   └── api/score/route.ts     # Scoring API
 ├── lib/

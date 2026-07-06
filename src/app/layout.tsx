@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -15,13 +15,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "vispeech - ฝึกออกเสียงภาษาไทย",
   description: "ฝึกออกเสียงภาษาไทยด้วยการวิเคราะห์รูปปากและเสียงพูด",
-  viewport: "width=device-width, initial-scale=1",
-  themeColor: "#4F46E5",
   openGraph: {
     title: "vispeech - ฝึกออกเสียงภาษาไทย",
     description: "ฝึกออกเสียงภาษาไทยด้วยการวิเคราะห์รูปปากและเสียงพูด",
     locale: "th_TH",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#4F46E5",
 };
 
 export default function RootLayout({

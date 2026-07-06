@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 interface Word {
   id: string;
@@ -43,7 +43,7 @@ export default function DashboardPage() {
 
   async function loadData() {
     try {
-      if (!supabase?.auth) {
+      if (!isSupabaseConfigured || !supabase?.auth) {
         setLoading(false);
         return;
       }
@@ -84,6 +84,24 @@ export default function DashboardPage() {
   async function handleLogout() {
     await supabase?.auth?.signOut();
     router.push("/auth");
+  }
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50 px-4">
+        <h1 className="text-2xl font-bold text-gray-900">ยังไม่ได้ตั้งค่า Supabase</h1>
+        <p className="max-w-md text-center text-gray-600">
+          กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL และ NEXT_PUBLIC_SUPABASE_ANON_KEY
+          ในไฟล์ .env.local แล้วรีสตาร์ทเซิร์ฟเวอร์
+        </p>
+        <a
+          href="/auth"
+          className="rounded-lg bg-indigo-600 px-6 py-2 text-white hover:bg-indigo-700"
+        >
+          ไปหน้าเข้าสู่ระบบ
+        </a>
+      </div>
+    );
   }
 
   const totalPracticed = Object.keys(accuracy).length;

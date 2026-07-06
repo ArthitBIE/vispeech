@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -15,15 +15,18 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!isSupabaseConfigured || !supabase?.auth) {
+      setError(
+        "ยังไม่ได้ตั้งค่า Supabase กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL " +
+          "และ NEXT_PUBLIC_SUPABASE_ANON_KEY ในไฟล์ .env.local",
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
-      if (!supabase?.auth) {
-        setError("กรุณาตั้งค่า Supabase ก่อนใช้งาน");
-        setLoading(false);
-        return;
-      }
-
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -55,6 +58,13 @@ export default function AuthPage() {
         <p className="mb-6 text-center text-sm text-gray-500">
           ฝึกออกเสียงภาษาไทยด้วยการวิเคราะห์รูปปากและเสียงพูด
         </p>
+
+        {!isSupabaseConfigured && (
+          <div className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
+            ยังไม่ได้ตั้งค่า Supabase กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL
+            และ NEXT_PUBLIC_SUPABASE_ANON_KEY ในไฟล์ .env.local
+          </div>
+        )}
 
         <h2 className="mb-6 text-center text-lg font-semibold text-gray-800">
           {isLogin ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
@@ -100,10 +110,16 @@ export default function AuthPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !isSupabaseConfigured}
             className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-white font-medium hover:bg-indigo-700 disabled:opacity-50"
           >
-            {loading ? "กำลังดำเนินการ..." : isLogin ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
+            {loading
+              ? "กำลังดำเนินการ..."
+              : !isSupabaseConfigured
+                ? "กรุณาตั้งค่าระบบก่อน"
+                : isLogin
+                  ? "เข้าสู่ระบบ"
+                  : "สมัครสมาชิก"}
           </button>
         </form>
 

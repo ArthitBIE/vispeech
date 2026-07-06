@@ -1,21 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export default function Home() {
+  const router = useRouter();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    supabase!.auth.getSession().then(({ data: { session } }: any) => {
-      if (session) {
-        window.location.href = "/dashboard";
-      } else {
-        window.location.href = "/auth";
-      }
-    }).catch(() => {
-      setChecking(false);
-    });
+    if (!isSupabaseConfigured) {
+      router.push("/auth");
+      return;
+    }
+
+    supabase!
+      .auth.getSession()
+      .then(({ data: { session } }: any) => {
+        if (session) {
+          window.location.href = "/dashboard";
+        } else {
+          window.location.href = "/auth";
+        }
+      })
+      .catch(() => {
+        setChecking(false);
+      });
   }, []);
 
   if (checking) {
