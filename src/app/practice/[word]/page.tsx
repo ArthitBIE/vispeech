@@ -137,20 +137,6 @@ export default function PracticePage() {
       if (!res.ok) throw new Error("Score API failed");
       const score: ScoreResult = await res.json();
       setResult(score);
-
-      await supabase!.from("practice_logs").insert({
-        user_id: session.user.id,
-        word_id: wordData.id,
-        visual_score: score.visual_score,
-        audio_score: score.audio_score,
-        total_score: score.total_score,
-      });
-
-      await supabase!.rpc("upsert_word_accuracy", {
-        p_user_id: session.user.id,
-        p_word_id: wordData.id,
-        p_score: score.total_score,
-      });
     } catch (err) {
       setError("เกิดข้อผิดพลาดในการบันทึกผล กรุณาลองใหม่");
     } finally {
