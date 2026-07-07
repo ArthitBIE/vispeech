@@ -1,10 +1,11 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-current_phase: 1
-current_phase_name: MVP Core
-status: complete
-last_updated: "2026-07-06T18:50:00.000Z"
+milestone_name: milestone
+current_phase: 2
+current_phase_name: Enhanced Practice & Accuracy
+status: planning
+last_updated: "2026-07-07T14:23:22.598Z"
 progress:
   total_phases: 4
   completed_phases: 1
@@ -16,8 +17,8 @@ progress:
 # vispeech — Project State
 
 **Last updated:** 2025-07-06
-**Phase:** 1 — MVP Core
-**Status:** Complete
+**Phase:** 2 — Enhanced Practice & Accuracy
+**Status:** Ready to plan
 
 ## Project Reference
 
@@ -25,7 +26,7 @@ See: `.planning/PROJECT.md`
 
 **Core value:** Help hearing-impaired Thai speakers improve pronunciation by combining visual mouth-shape analysis with audio-based tone verification.
 
-**Current focus:** Ready for Phase 02 — Practice Enhancement
+**Current focus:** Phase 01 — mvp-core
 
 ## Phase Summary
 
