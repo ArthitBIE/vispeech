@@ -87,6 +87,7 @@ export default function AuthPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              data-testid="login-email"
               className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-indigo-500 focus:outline-none"
               placeholder="you@example.com"
             />
@@ -103,6 +104,7 @@ export default function AuthPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
+              data-testid="login-password"
               className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-indigo-500 focus:outline-none"
               placeholder="อย่างน้อย 6 ตัวอักษร"
             />
@@ -111,6 +113,7 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={loading || !isSupabaseConfigured}
+            data-testid="login-submit"
             className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-white font-medium hover:bg-indigo-700 disabled:opacity-50"
           >
             {loading
