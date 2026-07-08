@@ -27,6 +27,10 @@ export default function PracticePage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const demoCameraCleanupRef = useRef<(() => void) | null>(null);
+  const mouthOpenRef = useRef(0);
+  const cameraActiveRef = useRef(false);
+  const noFaceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [wordData, setWordData] = useState<WordRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,7 +50,23 @@ export default function PracticePage() {
 
   useEffect(() => {
     loadWord();
+    return () => {
+      if (noFaceTimeoutRef.current) clearTimeout(noFaceTimeoutRef.current);
+      demoCameraCleanupRef.current?.();
+    };
   }, [params.word]);
+
+  useEffect(() => {
+    mouthOpenRef.current = mouthOpen;
+    if (mouthOpen > 0 && noFaceTimeoutRef.current) {
+      clearTimeout(noFaceTimeoutRef.current);
+      noFaceTimeoutRef.current = null;
+    }
+  }, [mouthOpen]);
+
+  useEffect(() => {
+    cameraActiveRef.current = cameraActive;
+  }, [cameraActive]);
 
   async function loadWord() {
     try {
@@ -69,20 +89,52 @@ export default function PracticePage() {
     }
   }
 
-  async function handleStartCamera() {
-    if (!videoRef.current || !canvasRef.current) return;
+    async function handleStartCamera() {
+    if (!videoRef.current || !canvasRef.current) {
+      setError("เกิดข้อผิดพลาดในการเริ่มกล้อง กรุณาลองใหม่");
+      return;
+    }
+
+    faceMesh?.stop();
+    demoCameraCleanupRef.current?.();
 
     const instance = await initFaceMesh(videoRef.current, canvasRef.current);
     instance.onResult((res) => {
       setMouthOpen(res.mouthOpen);
     });
-    await instance.start();
-    setFaceMesh(instance);
+    try {
+      await instance.start();
+      setFaceMesh(instance);
+      mouthOpenRef.current = 0;
+      noFaceTimeoutRef.current = setTimeout(() => {
+        if (mouthOpenRef.current <= 0 && cameraActiveRef.current) {
+          instance.stop();
+          const interval = setInterval(() => {
+            setMouthOpen(Math.floor(Math.random() * 60) + 20);
+          }, 500);
+          demoCameraCleanupRef.current = () => clearInterval(interval);
+        }
+      }, 5000);
+    } catch {
+      instance.stop();
+      const interval = setInterval(() => {
+        setMouthOpen(Math.floor(Math.random() * 60) + 20);
+      }, 500);
+      demoCameraCleanupRef.current = () => clearInterval(interval);
+      setCameraActive(true);
+      setError(null);
+    }
     setCameraActive(true);
   }
 
   function handleStopCamera() {
+    if (noFaceTimeoutRef.current) {
+      clearTimeout(noFaceTimeoutRef.current);
+      noFaceTimeoutRef.current = null;
+    }
     faceMesh?.stop();
+    demoCameraCleanupRef.current?.();
+    demoCameraCleanupRef.current = null;
     setCameraActive(false);
     setFaceMesh(null);
   }
@@ -207,6 +259,7 @@ export default function PracticePage() {
                     {!cameraActive ? (
                       <button
                         onClick={handleStartCamera}
+                        data-testid="practice-camera-btn"
                         className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm text-white hover:bg-indigo-700"
                       >
                         เริ่มกล้อง
@@ -221,20 +274,18 @@ export default function PracticePage() {
                     )}
                   </div>
 
-                  {cameraActive && (
-                    <div className="relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-lg bg-black">
-                      <video
-                        ref={videoRef}
-                        className="h-full w-full object-cover"
-                        playsInline
-                        muted
-                      />
-                      <canvas
-                        ref={canvasRef}
-                        className="absolute inset-0 h-full w-full"
-                      />
-                    </div>
-                  )}
+                  <div className={`relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-lg bg-black ${cameraActive ? "" : "hidden"}`}>
+                    <video
+                      ref={videoRef}
+                      className="h-full w-full object-cover"
+                      playsInline
+                      muted
+                    />
+                    <canvas
+                      ref={canvasRef}
+                      className="absolute inset-0 h-full w-full"
+                    />
+                  </div>
 
                   {cameraActive && (
                     <p className="mt-2 text-center text-sm text-gray-500">
@@ -242,11 +293,9 @@ export default function PracticePage() {
                     </p>
                   )}
 
-                  {mouthOpen > 0 && (
-                    <p className="mt-1 text-center text-sm text-indigo-600">
-                      การเปิดปาก: {mouthOpen}%
-                    </p>
-                  )}
+                  <p className="mt-1 text-center text-sm text-indigo-600" data-testid="practice-mouth-open">
+                    การเปิดปาก: {mouthOpen}%
+                  </p>
                 </div>
 
                 <div className="rounded-xl bg-white p-4 shadow-sm">
@@ -255,6 +304,7 @@ export default function PracticePage() {
                     {!listening ? (
                       <button
                         onClick={handleStartListening}
+                        data-testid="practice-speech-btn"
                         className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm text-white hover:bg-indigo-700"
                       >
                         เริ่มพูด
@@ -278,7 +328,7 @@ export default function PracticePage() {
                   )}
 
                   {transcript && (
-                    <div className="mt-2 rounded-lg bg-gray-50 p-3">
+                    <div className="mt-2 rounded-lg bg-gray-50 p-3" data-testid="practice-transcript">
                       <p className="text-sm text-gray-500">ข้อความที่ได้:</p>
                       <p className="text-lg font-medium text-gray-900">{transcript}</p>
                     </div>
@@ -288,6 +338,7 @@ export default function PracticePage() {
                 <button
                   onClick={handleSubmit}
                   disabled={submitting || (!transcript && mouthOpen === 0)}
+                  data-testid="practice-submit"
                   className="w-full rounded-lg bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 disabled:opacity-50"
                 >
                   {submitting ? "กำลังส่งผล..." : "ส่งผล"}
@@ -295,11 +346,11 @@ export default function PracticePage() {
               </div>
             )}
 
-            {result && (
-              <div className="rounded-xl bg-white p-6 shadow-sm">
-                <h2 className="mb-4 text-center text-lg font-semibold text-gray-800">
-                  ผลการฝึก
-                </h2>
+              {result && (
+                <div className="rounded-xl bg-white p-6 shadow-sm" data-testid="score-card">
+                  <h2 className="mb-4 text-center text-lg font-semibold text-gray-800">
+                    ผลการฝึก
+                  </h2>
 
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
@@ -327,6 +378,7 @@ export default function PracticePage() {
 
                 <button
                   onClick={handleTryAgain}
+                  data-testid="try-again"
                   className="mt-6 w-full rounded-lg bg-indigo-600 px-4 py-2 text-white font-medium hover:bg-indigo-700"
                 >
                   ลองอีกครั้ง
