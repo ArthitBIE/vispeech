@@ -56,7 +56,30 @@ export default function DashboardPage() {
       setSession(session);
 
       const [wordsRes, accuracyRes, logsRes] = await Promise.all([
-        supabase.from("words").select("*").order("difficulty"),
+        (async () => {
+          try {
+            const headers: Record<string, string> = {};
+            if (session?.access_token) {
+              headers["Authorization"] = `Bearer ${session.access_token}`;
+            }
+            const res = await fetch("/api/words", { headers });
+            if (res.status === 401) {
+              console.warn("API words: unauthorized, using empty list");
+              return [];
+            }
+            if (!res.ok) throw new Error(`API returned ${res.status}`);
+            const { words } = await res.json();
+            return words.map((w: any) => ({
+              id: w.id,
+              word: w.text,
+              viseme_group: w.visemeGroup,
+              difficulty: w.difficulty,
+            }));
+          } catch (e) {
+            console.warn("Failed to fetch words via API:", e);
+            return null;
+          }
+        })(),
         supabase.from("word_accuracy").select("*").eq("user_id", session.user.id),
         supabase
           .from("practice_logs")
@@ -65,7 +88,7 @@ export default function DashboardPage() {
           .order("created_at", { ascending: false }),
       ]);
 
-      if (wordsRes.data) setWords(wordsRes.data);
+      if (wordsRes) setWords(wordsRes);
 
       const accMap: Record<string, WordAccuracy> = {};
       (accuracyRes.data || []).forEach((a: WordAccuracy) => {
@@ -176,7 +199,7 @@ export default function DashboardPage() {
                   {words.map((w) => {
                     const a = accuracy[w.id];
                     return (
-                      <tr key={w.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <tr key={w.id} data-testid="dashboard-word-card" className="border-b last:border-0 hover:bg-gray-50">
                         <td className="px-4 py-3 font-medium text-gray-900">{w.word}</td>
                         <td className="px-4 py-3 text-gray-600">{w.viseme_group}</td>
                         <td className="px-4 py-3 text-gray-900">
