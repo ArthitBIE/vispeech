@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/.serena/
+/.logs/
+/.idea/
+.playwright-mcp/
+test-results/
+.opencode/node_modules/
+.agents/**/node_modules/
