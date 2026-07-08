@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
-const EMAIL = "test@vispeech.com";
-const PASSWORD = "test123456";
+const EMAIL = process.env.E2E_TEST_EMAIL || "test@vispeech.com";
+const PASSWORD = process.env.E2E_TEST_PASSWORD || "test123456";
 
 async function main() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -14,7 +14,6 @@ async function main() {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-  // Try create — if email exists, that's fine (earlier signup attempt)
   const { data, error } = await supabase.auth.admin.createUser({
     email: EMAIL,
     password: PASSWORD,
@@ -23,20 +22,23 @@ async function main() {
 
   if (error) {
     if (error.message?.includes("already exists") || error.code === "email_exists") {
-      console.log(`User ${EMAIL} already exists (from earlier signup attempt).`);
-    } else {
-      console.error("Create failed:", error.message, error.code);
-      console.dir(error, { depth: null });
+      console.log(`User ${EMAIL} already exists — reusing it.`);
+      console.log(`  Email:    ${EMAIL}`);
+      console.log(`  Password: ${PASSWORD}`);
+      process.exit(0);
     }
-    console.log("\nFallback: created a working user instead:");
-    console.log("  Email:   test-uat-" + Date.now() + "@vispeech.com");
-    console.log("  Password: test123456");
+
+    console.error("Create failed:", error.message, error.code);
+    console.dir(error, { depth: null });
     process.exit(1);
   }
 
   console.log("User created:", data.user.id);
   console.log("Email:", data.user.email);
   console.log("Confirmed:", data.user.email_confirmed_at);
+  console.log("\nSet these in your shell before running e2e tests:");
+  console.log(`  export E2E_TEST_EMAIL=${data.user.email}`);
+  console.log(`  export E2E_TEST_PASSWORD=${PASSWORD}`);
 }
 
 main();
