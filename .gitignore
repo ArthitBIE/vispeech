@@ -46,3 +46,6 @@ next-env.d.ts
 test-results/
 .opencode/node_modules/
 .agents/**/node_modules/
+
+# ai tooling
+workflows/
