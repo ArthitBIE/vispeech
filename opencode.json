@@ -1,0 +1,175 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "openrouter": {
+      "models": {
+        "nvidia/nemotron-3-super-120b-a12b:free": {}
+      },
+      "options": {
+        "websearch_cited": {
+          "model": "nvidia/nemotron-3-super-120b-a12b:free"
+        }
+      }
+    }
+  },
+  "autoupdate": true,
+  "tools": {
+    "webfetch": true
+  },
+  "plugin": [
+    "@dietrichgebert/ponytail@latest",
+    "@nick-vi/opencode-type-inject@latest",
+    "@tarquinen/opencode-dcp@latest",
+    "@franlol/opencode-md-table-formatter@latest",
+    "@zenobius/opencode-skillful@latest",
+    "@opencode-scheduler@latest",
+    "@opencode-pty@latest",
+    "@opencode-goal-plugin@latest",
+    "@plannotator/opencode@latest",
+    "@spoons-and-mirrors/subtask2@latest",
+    "@oh-my-opencode-slim@latest",
+    "@opencode-websearch-cited@latest",
+    "ecc-universal"
+  ],
+  "instructions": [
+    "./.agents/plugins/opencode-shell-strategy/shell_strategy.md"
+  ],
+  "mcp": {
+    "shadcn": {
+      "type": "local",
+      "command": ["npx", "shadcn@latest", "mcp"],
+      "enabled": true
+    },
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "enabled": true,
+      "headers": {
+        "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+      }
+    },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "npx",
+        "@playwright/mcp@latest",
+        "--caps=network,storage,testing,vision,pdf,devtools"
+      ],
+      "enabled": true
+    },
+    "sequential-thinking": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "enabled": true
+    },
+    "github": {
+      "type": "remote",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "enabled": true,
+      "oauth": false,
+      "headers": {
+        "Authorization": "Bearer {env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    }
+  },
+  "watcher": {
+    "ignore": ["node_modules/**", "dist/**", ".git/**"]
+  },
+  "lsp": true,
+  "formatter": true,
+  "permission": {
+    "webfetch": "allow",
+    "bash": {
+      "*": "ask",
+      "git *": "allow",
+      "npm *": "allow",
+      "rm *": "deny",
+      "grep *": "allow"
+    },
+    "external_directory": {
+      "~/Document/*": "allow"
+    }
+  },
+  "command": {
+    "pr": {
+      "description": "Create a GitHub PR from current branch with unpushed commits",
+      "template": "{file:.opencode/commands/pr.md}\n\n$ARGUMENTS"
+    },
+    "review-pr": {
+      "description": "Review PR changes with structured checklist",
+      "template": "{file:.opencode/commands/review-pr.md}\n\n$ARGUMENTS"
+    },
+    "prp-commit": {
+      "description": "Commit using PRP conventions",
+      "template": "{file:.opencode/commands/prp-commit.md}\n\n$ARGUMENTS"
+    },
+    "prp-implement": {
+      "description": "Implement using PRP conventions",
+      "template": "{file:.opencode/commands/prp-implement.md}\n\n$ARGUMENTS"
+    },
+    "prp-plan": {
+      "description": "Plan using PRP conventions",
+      "template": "{file:.opencode/commands/prp-plan.md}\n\n$ARGUMENTS"
+    },
+    "prp-prd": {
+      "description": "Generate PRD using PRP conventions",
+      "template": "{file:.opencode/commands/prp-prd.md}\n\n$ARGUMENTS"
+    },
+    "prp-pr": {
+      "description": "Create PR using PRP conventions",
+      "template": "{file:.opencode/commands/prp-pr.md}\n\n$ARGUMENTS"
+    },
+    "evolve": {
+      "description": "Cluster instincts into skills",
+      "template": "{file:.opencode/commands/evolve.md}\n\n$ARGUMENTS"
+    },
+    "promote": {
+      "description": "Promote project instincts to global scope",
+      "template": "{file:.opencode/commands/promote.md}\n\n$ARGUMENTS"
+    },
+    "instinct-status": {
+      "description": "View learned instincts",
+      "template": "{file:.opencode/commands/instinct-status.md}\n\n$ARGUMENTS"
+    },
+    "instinct-import": {
+      "description": "Import instincts",
+      "template": "{file:.opencode/commands/instinct-import.md}\n\n$ARGUMENTS"
+    },
+    "instinct-export": {
+      "description": "Export instincts",
+      "template": "{file:.opencode/commands/instinct-export.md}\n\n$ARGUMENTS"
+    },
+    "projects": {
+      "description": "List known projects and instinct stats",
+      "template": "{file:.opencode/commands/projects.md}\n\n$ARGUMENTS"
+    },
+    "hookify": {
+      "description": "Create hooks to prevent unwanted behaviors",
+      "template": "{file:.opencode/commands/hookify.md}\n\n$ARGUMENTS"
+    },
+    "hookify-configure": {
+      "description": "Enable or disable hookify rules interactively",
+      "template": "{file:.opencode/commands/hookify-configure.md}\n\n$ARGUMENTS"
+    },
+    "hookify-help": {
+      "description": "Get help with the hookify system",
+      "template": "{file:.opencode/commands/hookify-help.md}\n\n$ARGUMENTS"
+    },
+    "hookify-list": {
+      "description": "List all configured hookify rules",
+      "template": "{file:.opencode/commands/hookify-list.md}\n\n$ARGUMENTS"
+    },
+    "cost-report": {
+      "description": "Generate cost report from metrics log",
+      "template": "{file:.opencode/commands/cost-report.md}\n\n$ARGUMENTS"
+    },
+    "harness-audit": {
+      "description": "Run repository harness audit with prioritized scorecard",
+      "template": "{file:.opencode/commands/harness-audit.md}\n\n$ARGUMENTS"
+    }
+  }
+}
