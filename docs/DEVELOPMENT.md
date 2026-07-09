@@ -42,8 +42,7 @@ npx supabase db push
 ```bash
 export NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 export SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-npm install -D tsx
-npx tsx scripts/create-test-user.ts
+npm run create-test-user
 ```
 
 ## Build Commands
@@ -208,8 +207,7 @@ The `words` table stores practice words with a `viseme_group` column that maps t
 ```bash
 export NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 export SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-npm install -D tsx
-npx tsx scripts/create-test-user.ts
+npm run create-test-user
 ```
 
 Creates a user via the Supabase Admin API with `email_confirm: true`. The email and password default to `test@vispeech.com` / `test123456` if the environment variables `E2E_TEST_EMAIL` and `E2E_TEST_PASSWORD` are not set. Outputs the credentials needed for E2E tests.
