@@ -31,17 +31,17 @@ export default function Home() {
   if (checking) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-lg text-gray-500">กำลังโหลด...</p>
+        <p className="text-muted">กำลังโหลด...</p>
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-      <h1 className="text-3xl font-bold">vispeech</h1>
-      <p className="text-gray-600">ฝึกออกเสียงภาษาไทยด้วยการวิเคราะห์รูปปากและเสียงพูด</p>
+      <h1 className="display text-ink">vispeech</h1>
+      <p className="text-muted">ฝึกออกเสียงภาษาไทยด้วยการวิเคราะห์รูปปากและเสียงพูด</p>
       <div className="flex gap-4 mt-4">
-        <a href="/auth" className="rounded-lg bg-indigo-600 px-6 py-3 text-white hover:bg-indigo-700">เข้าสู่ระบบ</a>
+        <a href="/auth" className="rounded-md bg-primary px-6 py-3 text-surface transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-ambient-high">เข้าสู่ระบบ</a>
       </div>
     </div>
   );
