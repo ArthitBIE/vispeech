@@ -22,6 +22,18 @@ interface ScoreResult {
   feedback_th: string;
 }
 
+function ScoreBarVertical({ score, colorVar, label }: { score: number; colorVar: string; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <p className="text-3xl font-bold tabular-nums" style={{ color: `var(${colorVar})` }}>{score}</p>
+      <div className="h-1.5 w-full max-w-20 overflow-hidden rounded-full bg-neutral-bg">
+        <div className="h-full rounded-full transition-all" style={{ width: `${score}%`, backgroundColor: `var(${colorVar})` }} />
+      </div>
+      <p className="label text-muted">{label}</p>
+    </div>
+  );
+}
+
 export default function PracticePage() {
   const params = useParams<{ word: string }>();
   const router = useRouter();
@@ -205,7 +217,7 @@ export default function PracticePage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">กำลังโหลด...</p>
+        <p className="text-muted">กำลังโหลด...</p>
       </div>
     );
   }
@@ -213,10 +225,10 @@ export default function PracticePage() {
   if (error && !wordData) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-gray-500">{error}</p>
+        <p className="text-muted">{error}</p>
         <button
           onClick={() => router.push("/dashboard")}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-white"
+          className="rounded-md bg-primary px-4 py-2 text-surface transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-ambient-high"
         >
           กลับไปหน้าแดชบอร์ด
         </button>
@@ -225,12 +237,12 @@ export default function PracticePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="border-b bg-white shadow-sm">
+    <div className="min-h-screen bg-neutral-bg">
+      <header className="border-b border-border-subtle bg-surface">
         <div className="mx-auto flex max-w-3xl items-center px-4 py-4">
           <button
             onClick={() => router.push("/dashboard")}
-            className="text-sm text-indigo-600 hover:text-indigo-800"
+            className="text-sm text-primary hover:text-primary-hover"
           >
             ← กลับไปหน้าแดชบอร์ด
           </button>
@@ -241,40 +253,40 @@ export default function PracticePage() {
         {wordData && (
           <>
             <div className="text-center">
-              <h1 className="text-5xl font-bold text-gray-900">{wordData.word}</h1>
-              <span className="mt-2 inline-block rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-700">
+              <h1 className="display text-ink">{wordData.word}</h1>
+              <span className="mt-2 inline-block rounded-full bg-primary-light px-3 py-1 text-sm text-primary">
                 กลุ่มรูปปาก: {wordData.viseme_group}
               </span>
             </div>
 
-            <p className="text-center text-gray-600">
+            <p className="text-center text-muted">
               ลองออกเสียงคำนี้ แล้วระบบจะวิเคราะห์รูปปากและเสียงพูดของคุณ
             </p>
 
             {!result && (
               <div className="space-y-4">
-                <div className="rounded-xl bg-white p-4 shadow-sm">
+                <div className="rounded-lg bg-surface p-4 shadow-ambient-low">
                   <div className="mb-3 flex items-center justify-between">
-                    <h2 className="font-semibold text-gray-800">กล้อง</h2>
+                    <h2 className="font-semibold text-ink">กล้อง</h2>
                     {!cameraActive ? (
                       <button
                         onClick={handleStartCamera}
                         data-testid="practice-camera-btn"
-                        className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm text-white hover:bg-indigo-700"
+                        className="rounded-md bg-primary px-4 py-1.5 text-sm text-surface transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-ambient-high"
                       >
                         เริ่มกล้อง
                       </button>
                     ) : (
                       <button
                         onClick={handleStopCamera}
-                        className="rounded-lg bg-red-600 px-4 py-1.5 text-sm text-white hover:bg-red-700"
+                        className="rounded-md bg-danger px-4 py-1.5 text-sm text-surface hover:opacity-90"
                       >
                         หยุดกล้อง
                       </button>
                     )}
                   </div>
 
-                  <div className={`relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-lg bg-black ${cameraActive ? "" : "hidden"}`}>
+                  <div className={`relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-md bg-black ${cameraActive ? "" : "hidden"}`}>
                     <video
                       ref={videoRef}
                       className="h-full w-full object-cover"
@@ -288,31 +300,31 @@ export default function PracticePage() {
                   </div>
 
                   {cameraActive && (
-                    <p className="mt-2 text-center text-sm text-gray-500">
+                    <p className="mt-2 text-center text-sm text-muted">
                       กล้องกำลังทำงาน
                     </p>
                   )}
 
-                  <p className="mt-1 text-center text-sm text-indigo-600" data-testid="practice-mouth-open">
+                  <p className="mt-1 text-center text-sm text-primary" data-testid="practice-mouth-open">
                     การเปิดปาก: {mouthOpen}%
                   </p>
                 </div>
 
-                <div className="rounded-xl bg-white p-4 shadow-sm">
+                <div className="rounded-lg bg-surface p-4 shadow-ambient-low">
                   <div className="mb-3 flex items-center justify-between">
-                    <h2 className="font-semibold text-gray-800">เสียงพูด</h2>
+                    <h2 className="font-semibold text-ink">เสียงพูด</h2>
                     {!listening ? (
                       <button
                         onClick={handleStartListening}
                         data-testid="practice-speech-btn"
-                        className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm text-white hover:bg-indigo-700"
+                        className="rounded-md bg-primary px-4 py-1.5 text-sm text-surface transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-ambient-high"
                       >
                         เริ่มพูด
                       </button>
                     ) : (
                       <button
                         onClick={handleStopListening}
-                        className="rounded-lg bg-red-600 px-4 py-1.5 text-sm text-white hover:bg-red-700"
+                        className="rounded-md bg-danger px-4 py-1.5 text-sm text-surface hover:opacity-90"
                       >
                         หยุดฟัง
                       </button>
@@ -320,17 +332,17 @@ export default function PracticePage() {
                   </div>
 
                   {listening && (
-                    <p className="text-sm text-green-600">กำลังฟัง...</p>
+                    <p className="text-sm text-accent-green">กำลังฟัง...</p>
                   )}
 
                   {speechError && (
-                    <p className="text-sm text-amber-600">{speechError}</p>
+                    <p className="text-sm text-accent-amber">{speechError}</p>
                   )}
 
                   {transcript && (
-                    <div className="mt-2 rounded-lg bg-gray-50 p-3" data-testid="practice-transcript">
-                      <p className="text-sm text-gray-500">ข้อความที่ได้:</p>
-                      <p className="text-lg font-medium text-gray-900">{transcript}</p>
+                    <div className="mt-2 rounded-md bg-neutral-bg p-3" data-testid="practice-transcript">
+                      <p className="text-sm text-muted">ข้อความที่ได้:</p>
+                      <p className="text-lg font-medium text-ink">{transcript}</p>
                     </div>
                   )}
                 </div>
@@ -339,7 +351,7 @@ export default function PracticePage() {
                   onClick={handleSubmit}
                   disabled={submitting || (!transcript && mouthOpen === 0)}
                   data-testid="practice-submit"
-                  className="w-full rounded-lg bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 disabled:opacity-50"
+                  className="w-full rounded-md bg-accent-green px-4 py-3 text-surface font-semibold hover:opacity-90 disabled:opacity-50"
                 >
                   {submitting ? "กำลังส่งผล..." : "ส่งผล"}
                 </button>
@@ -347,39 +359,27 @@ export default function PracticePage() {
             )}
 
               {result && (
-                <div className="rounded-xl bg-white p-6 shadow-sm" data-testid="score-card">
-                  <h2 className="mb-4 text-center text-lg font-semibold text-gray-800">
+                <div className="rounded-lg bg-surface p-6 shadow-ambient-low" data-testid="score-card">
+                  <h2 className="title mb-4 text-center text-ink">
                     ผลการฝึก
                   </h2>
 
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-sm text-gray-500">คะแนนภาพ</p>
-                    <p className="text-2xl font-bold text-indigo-600">{result.visual_score}</p>
-                    <p className="text-xs text-gray-400">/100</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">คะแนนเสียง</p>
-                    <p className="text-2xl font-bold text-green-600">{result.audio_score}</p>
-                    <p className="text-xs text-gray-400">/100</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">คะแนนรวม</p>
-                    <p className="text-2xl font-bold text-amber-600">{result.total_score}</p>
-                    <p className="text-xs text-gray-400">/100</p>
-                  </div>
-                </div>
-
                 {result.feedback_th && (
-                  <div className="mt-4 rounded-lg bg-indigo-50 p-3 text-center text-sm text-gray-700">
+                  <div className="mb-6 rounded-md bg-primary-light p-4 text-center text-muted">
                     {result.feedback_th}
                   </div>
                 )}
 
+                <div className="grid grid-cols-3 gap-4">
+                  <ScoreBarVertical score={result.visual_score} colorVar="--color-primary" label="ภาพ" />
+                  <ScoreBarVertical score={result.audio_score} colorVar="--color-accent-green" label="เสียง" />
+                  <ScoreBarVertical score={result.total_score} colorVar="--color-accent-amber" label="รวม" />
+                </div>
+
                 <button
                   onClick={handleTryAgain}
                   data-testid="try-again"
-                  className="mt-6 w-full rounded-lg bg-indigo-600 px-4 py-2 text-white font-medium hover:bg-indigo-700"
+                  className="mt-6 w-full rounded-md bg-primary px-4 py-2 text-surface font-medium transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-ambient-high"
                 >
                   ลองอีกครั้ง
                 </button>
