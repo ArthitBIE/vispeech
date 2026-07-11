@@ -120,6 +120,8 @@ export default function DashboardPage() {
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [pageSize, setPageSize] = useState(10);
+  const [showVisemeHelp, setShowVisemeHelp] = useState(false);
+  const [wordsFetchFailed, setWordsFetchFailed] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -173,7 +175,8 @@ export default function DashboardPage() {
           .order("created_at", { ascending: false }),
       ]);
 
-      if (wordsRes) setWords(wordsRes);
+      if (wordsRes) { setWords(wordsRes); setWordsFetchFailed(false); }
+      else if (wordsRes === null) setWordsFetchFailed(true);
 
       const accMap: Record<string, WordAccuracy> = {};
       (accuracyRes.data || []).forEach((a: WordAccuracy) => {
@@ -248,6 +251,10 @@ export default function DashboardPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [activeFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortBy]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -356,6 +363,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={handleLogout}
+            data-testid="dashboard-logout"
             className="rounded-md px-4 py-2 text-sm text-muted transition-colors hover:bg-neutral-bg"
           >
             ออกจากระบบ
@@ -367,13 +375,13 @@ export default function DashboardPage() {
 
         {/* Stats section */}
         {totalPracticed === 0 ? (
-          <section className="mb-6 rounded-lg bg-surface p-4 shadow-ambient-low">
+          <section data-testid="dashboard-stat-compact" className="mb-6 rounded-lg bg-surface p-4 shadow-ambient-low">
             <p className="text-sm text-muted">ยังไม่ได้ฝึกเลย — เลือกคำศัพท์ด้านล่างแล้วคลิก "ฝึก" เพื่อเริ่ม!</p>
           </section>
         ) : (
         <section className="mb-6 grid grid-cols-3 gap-4">
 
-          <div className={cardHover}>
+          <div data-testid="dashboard-stat-practiced" className={cardHover}>
             <p className="label text-muted">คำที่ฝึกแล้ว</p>
             <p className="mt-1 text-3xl font-bold tabular-nums text-primary">{totalPracticed}</p>
             {words.length > 0 && (
@@ -386,7 +394,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className={cardHover}>
+          <div data-testid="dashboard-stat-avg" className={cardHover}>
             <p className="label text-muted">คะแนนเฉลี่ย</p>
             {avgScore !== null ? (
               <div>
@@ -409,7 +417,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className={cardHover}>
+          <div data-testid="dashboard-stat-attempts" className={cardHover}>
             <p className="label text-muted">จำนวนครั้งที่ฝึก</p>
             <p className="mt-1 text-2xl font-semibold tabular-nums text-muted">{totalAttempts}</p>
             {totalAttempts === 0 && (
@@ -420,11 +428,11 @@ export default function DashboardPage() {
         )}
 
         {encouragement && (
-          <p className="mb-6 text-sm text-muted italic">{encouragement}</p>
+          <p data-testid="dashboard-encouragement" className="mb-6 text-sm text-muted italic">{encouragement}</p>
         )}
 
         {totalPracticed === 0 && (
-          <div className="mb-6 rounded-lg border-l-2 border-primary bg-surface p-6 shadow-ambient-low">
+          <div data-testid="dashboard-welcome" className="mb-6 rounded-lg border-l-2 border-primary bg-surface p-6 shadow-ambient-low">
             <h3 className="headline mb-2 text-ink">ยินดีต้อนรับคุณ{displayName}</h3>
             <p className="text-sm text-muted">
               เลือกคำศัพท์ด้านล่างแล้วคลิก "ฝึก" เพื่อเริ่มออกเสียง
@@ -435,7 +443,7 @@ export default function DashboardPage() {
 
         {/* Info callout — shown after first practice to avoid stacking with welcome */}
         {totalPracticed > 0 && !calloutDismissed && (
-        <div className="mb-8 rounded-lg border-l-2 border-primary bg-primary-light p-4">
+        <div data-testid="dashboard-callout" className="mb-8 rounded-lg border-l-2 border-primary bg-primary-light p-4">
           <div className="flex items-start gap-3">
             <svg aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
@@ -446,6 +454,7 @@ export default function DashboardPage() {
                สำหรับวรรณยุกต์ ระบบให้ความสำคัญกับเสียงพูด ส่วนพยัญชนะและรูปปากใช้การวิเคราะห์ภาพเป็นหลัก
             </p>
             <button
+              data-testid="dashboard-callout-close"
               onClick={() => {
                 setCalloutDismissed(true);
                 localStorage.setItem("dashboard_callout_dismissed", "true");
@@ -466,25 +475,38 @@ export default function DashboardPage() {
         <section className="mb-10">
           <div className="mb-4 flex items-center gap-2">
             <h2 className="headline text-ink">ความแม่นยำแยกตามคำ</h2>
-            <div className="group relative">
-              <svg aria-hidden="true" className="h-4 w-4 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4" />
-                <path d="M12 8h.01" />
-              </svg>
-              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 w-64 rounded-lg bg-surface p-2 text-xs text-ink shadow-ambient-high opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none z-10" role="tooltip">
-                คำศัพท์จัดกลุ่มตามลักษณะรูปปากที่ใกล้เคียงกัน ฝึกรวมกันเพื่อเปรียบเทียบรูปปากและเสียงของคุณ
-              </div>
+            <div className="relative">
+              <button
+                onClick={() => setShowVisemeHelp((v) => !v)}
+                onBlur={() => setShowVisemeHelp(false)}
+                onFocus={() => setShowVisemeHelp(true)}
+                className="rounded text-muted hover:text-ink focus:outline-none focus:ring-2 focus:ring-primary/20"
+                aria-label="คำอธิบายกลุ่มรูปปาก"
+                aria-expanded={showVisemeHelp}
+              >
+                <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
+              </button>
+              {showVisemeHelp && (
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 w-64 rounded-lg bg-surface p-2 text-xs text-ink shadow-ambient-high z-10" role="tooltip">
+                  คำศัพท์จัดกลุ่มตามลักษณะรูปปากที่ใกล้เคียงกัน ฝึกรวมกันเพื่อเปรียบเทียบรูปปากและเสียงของคุณ
+                </div>
+              )}
             </div>
           </div>
 
-          {words.length === 0 ? (
+          {wordsFetchFailed ? (
+            <p className="text-muted">ไม่สามารถโหลดคำศัพท์ได้ กรุณาลองอีกครั้ง</p>
+          ) : words.length === 0 ? (
             <p className="text-muted">ยังไม่มีคำศัพท์ในระบบ</p>
           ) : (
             <>
               {/* Filter tabs — by practice status and viseme group */}
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap gap-2" role="tablist" aria-label="กรองตามหมวดหมู่">
+                <div data-testid="dashboard-filters" className="flex flex-wrap gap-2" role="tablist" aria-label="กรองตามหมวดหมู่">
                   {(showAllFilters ? visemeGroups : visemeGroups.slice(0, 6)).map((group, idx) => (
                     <button
                       key={group}
@@ -518,6 +540,7 @@ export default function DashboardPage() {
                   ))}
                   {visemeGroups.length > 6 && (
                     <button
+                      data-testid="dashboard-filter-toggle"
                       onClick={() => setShowAllFilters((v) => !v)}
                       className="rounded-full px-3 py-1 text-sm font-medium text-muted transition-all hover:bg-primary-light hover:text-primary"
                     >
@@ -526,6 +549,7 @@ export default function DashboardPage() {
                   )}
                 </div>
                 <select
+                  data-testid="dashboard-sort"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                   className="rounded-md border border-border-default bg-surface px-3 py-1.5 text-sm text-ink"
@@ -543,6 +567,7 @@ export default function DashboardPage() {
                 <div className="relative flex-1">
                   <input
                     ref={searchInputRef}
+                    data-testid="dashboard-search"
                     type="text"
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
@@ -556,6 +581,7 @@ export default function DashboardPage() {
                   </svg>
                 </div>
                 <select
+                  data-testid="dashboard-page-size"
                   value={pageSize}
                   onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
                   className="rounded-md border border-border-default bg-surface px-3 py-1.5 text-sm text-ink"
@@ -587,6 +613,7 @@ export default function DashboardPage() {
                               </span>
                             </div>
                             <a
+                              data-testid="dashboard-practice-link"
                               href={`/practice/${encodeURIComponent(w.word)}`}
                               className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-xs text-surface transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-ambient-high active:scale-[0.98]"
                             >
@@ -596,8 +623,11 @@ export default function DashboardPage() {
 
                           {a ? (
                             <>
-                              <ScoreBar label="คะแนนรวม" score={a.best_score} color="--color-primary" />
-                              <div className="mt-3 text-xs tabular-nums text-muted">
+                              <ScoreBar label="คะแนนสูงสุด" score={a.best_score} color="--color-primary" />
+                              <div className="mt-1 flex items-center gap-2 text-xs text-muted">
+                                <span>เฉลี่ย {Math.round(a.average_score)}</span>
+                              </div>
+                              <div className="mt-2 text-xs tabular-nums text-muted">
                                 ฝึกแล้ว {a.total_attempts} ครั้ง · ล่าสุด {new Date(a.last_practiced_at).toLocaleDateString("th-TH")}
                               </div>
                             </>
@@ -613,17 +643,32 @@ export default function DashboardPage() {
                   {totalPages > 1 && (
                     <div className="mt-6 flex items-center justify-center gap-4">
                       <button
+                        data-testid="dashboard-prev"
                         onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
                         className="rounded-md px-4 py-2 text-sm text-muted transition-colors hover:bg-neutral-bg disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         ← ก่อนหน้า
                       </button>
-                      <span className="text-sm tabular-nums text-muted">
-                        {currentPage} / {totalPages}
-                      </span>
-                      <span className="hidden text-xs text-muted sm:inline">j/k</span>
+                      <div className="flex items-center gap-1">
+                        <input
+                          data-testid="dashboard-page-input"
+                          type="number"
+                          min={1}
+                          max={totalPages}
+                          value={currentPage}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value, 10);
+                            if (v >= 1 && v <= totalPages) setCurrentPage(v);
+                          }}
+                          className="w-10 rounded border border-border-default bg-surface px-1 py-0.5 text-center text-sm tabular-nums text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          aria-label="ไปหน้าที่"
+                        />
+                        <span className="text-sm text-muted">/ {totalPages}</span>
+                      </div>
+                      <kbd className="hidden text-xs text-muted sm:inline">j/k</kbd>
                       <button
+                        data-testid="dashboard-next"
                         onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
                         className="rounded-md px-4 py-2 text-sm text-muted transition-colors hover:bg-neutral-bg disabled:cursor-not-allowed disabled:opacity-40"
@@ -640,7 +685,7 @@ export default function DashboardPage() {
 
         {/* History section */}
         <section>
-          <h2 className="headline mb-4 text-ink">ประวัติการฝึก</h2>
+          <h2 data-testid="dashboard-history" className="headline mb-4 text-ink">ประวัติการฝึก</h2>
           {logs.length === 0 ? (
             <div className="rounded-lg bg-surface p-6 text-center shadow-ambient-low">
               <p className="text-muted">ยังไม่มีประวัติการฝึก เริ่มฝึกคำแรกของคุณเลย!</p>
@@ -662,6 +707,7 @@ export default function DashboardPage() {
                     {groupLogs.map((log) => (
                       <div
                         key={log.id}
+                        data-testid="dashboard-history-entry"
                         className={cardHover}
                       >
                         <div className="flex items-start justify-between gap-2">

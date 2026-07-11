@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
-import { initFaceMesh } from "@/lib/mediapipe";
+import { initFaceMesh, type LipMetrics, createMockLipMetrics, VISEME_GROUPS } from "@/lib/mediapipe";
 import { createSpeechRecognizer } from "@/lib/viseme";
 import type { FaceMeshInstance } from "@/lib/mediapipe";
 import type { SpeechRecognizer } from "@/lib/viseme";
@@ -51,6 +51,8 @@ export default function PracticePage() {
   const [cameraActive, setCameraActive] = useState(false);
   const [faceMesh, setFaceMesh] = useState<FaceMeshInstance | null>(null);
   const [mouthOpen, setMouthOpen] = useState(0);
+  const [lipMetrics, setLipMetrics] = useState<LipMetrics | null>(null);
+  const [visemeGroup, setVisemeGroup] = useState<string | null>(null);
 
   const [recognizer, setRecognizer] = useState<SpeechRecognizer | null>(null);
   const [listening, setListening] = useState(false);
@@ -111,8 +113,25 @@ export default function PracticePage() {
     demoCameraCleanupRef.current?.();
 
     const instance = await initFaceMesh(videoRef.current, canvasRef.current);
+    const { drawConnectors } = await import("@mediapipe/drawing_utils");
+    const faceMeshModule = await import("@mediapipe/face_mesh");
+    const FACEMESH_LIPS = (faceMeshModule as any).FACEMESH_LIPS;
     instance.onResult((res) => {
       setMouthOpen(res.mouthOpen);
+      if (res.lipMetrics) setLipMetrics(res.lipMetrics);
+      if (res.visemeGroup) setVisemeGroup(res.visemeGroup);
+
+      // Draw lip landmarks on canvas
+      if (canvasRef.current && res.landmarks?.[0]) {
+        const ctx = canvasRef.current.getContext("2d");
+        if (ctx) {
+          ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+          drawConnectors(ctx, res.landmarks[0], FACEMESH_LIPS, {
+            color: "#00FFFF",
+            lineWidth: 1.5,
+          });
+        }
+      }
     });
     try {
       await instance.start();
@@ -129,8 +148,11 @@ export default function PracticePage() {
       }, 5000);
     } catch {
       instance.stop();
+      const mockLipMetrics = createMockLipMetrics();
       const interval = setInterval(() => {
         setMouthOpen(Math.floor(Math.random() * 60) + 20);
+        setLipMetrics(mockLipMetrics);
+        setVisemeGroup(VISEME_GROUPS[Math.floor(Math.random() * VISEME_GROUPS.length)]);
       }, 500);
       demoCameraCleanupRef.current = () => clearInterval(interval);
       setCameraActive(true);
@@ -308,6 +330,41 @@ export default function PracticePage() {
                   <p className="mt-1 text-center text-sm text-primary" data-testid="practice-mouth-open">
                     การเปิดปาก: {mouthOpen}%
                   </p>
+
+                  {lipMetrics && (
+                    <div className="mt-4 rounded-md bg-neutral-bg p-3" data-testid="practice-lip-metrics">
+                      <h3 className="mb-2 text-sm font-semibold text-ink">ตัวชี้วัดรูปปาก (Normalized)</h3>
+                      <div className="grid grid-cols-4 gap-2 text-xs">
+                        <div className="text-center">
+                          <p className="text-muted">ความกว้าง</p>
+                          <p className="font-mono text-primary" data-testid="practice-lip-width">{lipMetrics.normWidth.toFixed(3)}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-muted">ความสูง</p>
+                          <p className="font-mono text-primary" data-testid="practice-lip-height">{lipMetrics.normHeight.toFixed(3)}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-muted">ความโค้ง</p>
+                          <p className="font-mono text-primary" data-testid="practice-lip-curvature">{lipMetrics.curvature.toFixed(3)}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-muted">ความสมมาตร</p>
+                          <p className="font-mono text-primary" data-testid="practice-lip-symmetry">{(1 - lipMetrics.asymmetry).toFixed(3)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {visemeGroup && (
+                    <div className="mt-3 rounded-md bg-primary-light p-3" data-testid="practice-viseme">
+                      <p className="text-sm text-primary">
+                        รูปปากที่ตรวจพบ: <span className="font-bold" data-testid="practice-viseme-detected">{visemeGroup}</span>
+                      </p>
+                      <p className="text-xs text-muted mt-1">
+                        เป้าหมาย: {wordData?.viseme_group || "—"}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-lg bg-surface p-4 shadow-ambient-low">
