@@ -1,37 +1,22 @@
----
-description: Comprehensive PR review using specialized agents
----
+# Review Pull Request
 
-Run a comprehensive multi-perspective review of a pull request.
+Review PR changes with a structured checklist.
 
-## Usage
+## Arguments
+$ARGUMENTS
 
-`/review-pr [PR-number-or-URL] [--focus=comments|tests|errors|types|code|simplify]`
+## Checklist
+- [ ] Code follows project conventions (lint, typecheck pass)
+- [ ] Tests pass (unit, integration, E2E)
+- [ ] No security issues (secrets, injection, auth bypass)
+- [ ] Changes match the PR description / linked issue
+- [ ] No unnecessary complexity (ponytail: YAGNI, stdlib first)
+- [ ] Documentation updated if needed
+- [ ] Breaking changes noted
 
-If no PR is specified, review the current branch's PR. If no focus is specified, run the full review stack.
-
-## Steps
-
-1. Identify the PR:
-   - use `gh pr view` to get PR details, changed files, and diff
-2. Find project guidance:
-   - look for `CLAUDE.md`, lint config, TypeScript config, repo conventions
-3. Run specialized review agents:
-   - `code-reviewer`
-   - `comment-analyzer`
-   - `pr-test-analyzer`
-   - `silent-failure-hunter`
-   - `type-design-analyzer`
-   - `code-simplifier`
-4. Aggregate results:
-   - dedupe overlapping findings
-   - rank by severity
-5. Report findings grouped by severity
-
-## Confidence Rule
-
-Only report issues with confidence >= 80:
-
-- Critical: bugs, security, data loss
-- Important: missing tests, quality problems, style violations
-- Advisory: suggestions only when explicitly requested
+## Process
+1. Run `rtk lint` and `rtk tsc` (or project equivalents)
+2. Run test suite
+3. Review diff for each file
+4. Comment on any issues found
+5. Approve or request changes
