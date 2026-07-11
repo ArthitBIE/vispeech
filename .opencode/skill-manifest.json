@@ -1,0 +1,14 @@
+{
+  "skills": [
+    "agent-sort",
+    "configure-ecc",
+    "customize-opencode",
+    "find-skills",
+    "skill-creator",
+    "skill-scout",
+    "skill-stocktake",
+    "writing-great-skills"
+  ],
+  "description": "Core opencode configuration and skill management skills. All other skills are available in .agents/skills/ and can be added via find-skills or skill-scout.",
+  "autoLoad": false
+}

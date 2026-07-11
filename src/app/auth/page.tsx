@@ -50,35 +50,35 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm rounded-xl bg-white p-8 shadow-lg">
-        <h1 className="mb-2 text-center text-2xl font-bold text-gray-900">
+    <div className="flex min-h-screen items-center justify-center bg-neutral-bg px-4">
+      <div className="w-full max-w-sm rounded-xl bg-surface p-8 shadow-ambient-mid">
+        <h1 className="headline mb-2 text-center text-ink">
           vispeech
         </h1>
-        <p className="mb-6 text-center text-sm text-gray-500">
+        <p className="mb-6 text-center text-sm text-muted">
           ฝึกออกเสียงภาษาไทยด้วยการวิเคราะห์รูปปากและเสียงพูด
         </p>
 
         {!isSupabaseConfigured && (
-          <div className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
+          <div className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-700">
             ยังไม่ได้ตั้งค่า Supabase กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL
             และ NEXT_PUBLIC_SUPABASE_ANON_KEY ในไฟล์ .env.local
           </div>
         )}
 
-        <h2 className="mb-6 text-center text-lg font-semibold text-gray-800">
+        <h2 className="title mb-6 text-center text-ink">
           {isLogin ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
         </h2>
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+          <div className="mb-4 rounded-md bg-danger-light p-3 text-sm text-danger">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="label mb-1 block text-muted">
               อีเมล
             </label>
             <input
@@ -88,13 +88,13 @@ export default function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               data-testid="login-email"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-md border border-border-default bg-surface px-4 py-2 text-ink placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="label mb-1 block text-muted">
               รหัสผ่าน
             </label>
             <input
@@ -104,8 +104,9 @@ export default function AuthPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
+              autoComplete={isLogin ? "current-password" : "new-password"}
               data-testid="login-password"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-md border border-border-default bg-surface px-4 py-2 text-ink placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
               placeholder="อย่างน้อย 6 ตัวอักษร"
             />
           </div>
@@ -114,7 +115,7 @@ export default function AuthPage() {
             type="submit"
             disabled={loading || !isSupabaseConfigured}
             data-testid="login-submit"
-            className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-white font-medium hover:bg-indigo-700 disabled:opacity-50"
+            className="w-full rounded-md bg-primary px-4 py-2 text-surface font-medium transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-ambient-high disabled:opacity-50"
           >
             {loading
               ? "กำลังดำเนินการ..."
@@ -129,7 +130,7 @@ export default function AuthPage() {
         <div className="mt-4 text-center">
           <button
             onClick={() => { setIsLogin(!isLogin); setError(null); }}
-            className="text-sm text-indigo-600 hover:text-indigo-800"
+            className="text-sm text-primary hover:text-primary-hover"
           >
             {isLogin ? "ยังไม่มีบัญชี? สมัครสมาชิก" : "มีบัญชีแล้ว? เข้าสู่ระบบ"}
           </button>
