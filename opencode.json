@@ -1,35 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "provider": {
-    "openrouter": {
-      "models": {
-        "nvidia/nemotron-3-super-120b-a12b:free": {}
-      },
-      "options": {
-        "websearch_cited": {
-          "model": "nvidia/nemotron-3-super-120b-a12b:free"
-        }
-      }
-    }
-  },
   "autoupdate": true,
-  "tools": {
-    "webfetch": true
-  },
   "plugin": [
     "@dietrichgebert/ponytail@latest",
-    "@nick-vi/opencode-type-inject@latest",
     "@tarquinen/opencode-dcp@latest",
-    "@franlol/opencode-md-table-formatter@latest",
     "@zenobius/opencode-skillful@latest",
-    "@opencode-scheduler@latest",
-    "@opencode-pty@latest",
     "@opencode-goal-plugin@latest",
-    "@plannotator/opencode@latest",
-    "@spoons-and-mirrors/subtask2@latest",
-    "@oh-my-opencode-slim@latest",
-    "@opencode-websearch-cited@latest",
-    "ecc-universal"
+    "@plannotator/opencode@latest"
   ],
   "instructions": [
     "./.agents/plugins/opencode-shell-strategy/shell_strategy.md"
