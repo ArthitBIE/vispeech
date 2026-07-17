@@ -14,7 +14,7 @@
   "mcp": {
     "shadcn": {
       "type": "local",
-      "command": ["npx", "shadcn@latest", "mcp"],
+      "command": ["bunx", "shadcn@latest", "mcp"],
       "enabled": true
     },
     "context7": {
@@ -28,7 +28,7 @@
     "playwright": {
       "type": "local",
       "command": [
-        "npx",
+        "bunx",
         "@playwright/mcp@latest",
         "--caps=network,storage,testing,vision,pdf,devtools"
       ],
@@ -37,7 +37,7 @@
     "sequential-thinking": {
       "type": "local",
       "command": [
-        "npx",
+        "bunx",
         "-y",
         "@modelcontextprotocol/server-sequential-thinking"
       ],
@@ -51,6 +51,14 @@
       "headers": {
         "Authorization": "Bearer {env:GITHUB_PERSONAL_ACCESS_TOKEN}"
       }
+    },
+    "figma": {
+      "type": "local",
+      "command": ["bunx", "-y", "figma-developer-mcp", "--stdio"],
+      "environment": {
+        "FIGMA_API_KEY": "figd_nJmRSf3ToutYjOVSbubV0TJCtZRqPN6LzT5b_9KW"
+      },
+      "enabled": true
     }
   },
   "watcher": {
@@ -67,6 +75,12 @@
       "rm *": "deny",
       "grep *": "allow"
     },
+    "question": "allow",
+    "websearch": "allow",
+    "edit": "allow",
+    "todowrite": "allow",
+    "skill": "allow",
+    "read": "allow",
     "external_directory": {
       "~/Document/*": "allow"
     }
