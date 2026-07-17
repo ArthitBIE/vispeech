@@ -56,3 +56,5 @@ workflows/
 /.agents/
 /.planning/
 .claude/
+/.kilo/
+/.impeccable/
