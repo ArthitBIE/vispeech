@@ -1,12 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { initFaceMesh } from "@/lib/mediapipe";
 import { createSpeechRecognizer } from "@/lib/viseme";
 import type { FaceMeshInstance } from "@/lib/mediapipe";
 import type { SpeechRecognizer } from "@/lib/viseme";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 
 interface WordRow {
   id: string
@@ -286,23 +291,24 @@ export default function SessionPage() {
   if (phase === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-slate-400">กำลังเตรียมเซสชัน...</p>
+        <p className="text-muted-foreground">กำลังเตรียมเซสชัน...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <button
+    <div className="min-h-screen bg-muted/40">
+      <header className="border-b border-border bg-card">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <Button
+            variant="outline"
+            className="text-destructive"
             onClick={() => router.push("/dashboard")}
-            className="text-sm font-medium text-indigo-500 hover:text-indigo-700 transition-colors"
           >
-            ← ออกจากเซสชัน
-          </button>
+            ← ยกเลิกการฝึก
+          </Button>
           {phase !== "summary" && (
-            <div className="flex gap-5 text-sm text-slate-400">
+            <div className="flex gap-5 text-sm text-muted-foreground">
               <span>พยายาม: {attempts.length}/{MAX_ATTEMPTS}</span>
               <span>ผ่าน: {passedCount}</span>
               <span>คำรอ: {activeWords.length}</span>
@@ -311,54 +317,52 @@ export default function SessionPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl space-y-6 px-6 py-10">
+      <main className="mx-auto max-w-5xl px-6 py-8">
         {phase === "summary" ? (
           <div className="space-y-6">
-            <div className="rounded-xl border border-slate-100 bg-white p-10 text-center shadow-sm">
-              <h1 className="text-2xl font-bold text-slate-800">จบเซสชัน!</h1>
-              <p className="mt-2 text-slate-400">สรุปผลการฝึกของคุณ</p>
-            </div>
+            <Card className="p-10 text-center">
+              <h1 className="text-2xl font-bold">จบเซสชัน!</h1>
+              <p className="mt-2 text-muted-foreground">สรุปผลการฝึกของคุณ</p>
+            </Card>
 
             <div className="grid grid-cols-3 gap-5">
-              <div className="rounded-xl border border-slate-100 bg-white p-5 text-center shadow-sm">
-                <p className="text-sm text-slate-400">พยายามทั้งหมด</p>
-                <p className="mt-1 text-2xl font-bold tabular-nums text-indigo-500">
-                  {attempts.length}
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-white p-5 text-center shadow-sm">
-                <p className="text-sm text-slate-400">คำที่ผ่าน</p>
+              <Card className="p-5 text-center">
+                <p className="text-sm text-muted-foreground">พยายามทั้งหมด</p>
+                <p className="mt-1 text-2xl font-bold tabular-nums">{attempts.length}</p>
+              </Card>
+              <Card className="p-5 text-center">
+                <p className="text-sm text-muted-foreground">คำที่ผ่าน</p>
                 <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-500">
                   {passedCount}
                 </p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-white p-5 text-center shadow-sm">
-                <p className="text-sm text-slate-400">คะแนนสูงสุด</p>
-                <p className="mt-1 text-2xl font-bold tabular-nums text-indigo-500">
-                  {bestScore}
-                </p>
-              </div>
+              </Card>
+              <Card className="p-5 text-center">
+                <p className="text-sm text-muted-foreground">คะแนนสูงสุด</p>
+                <p className="mt-1 text-2xl font-bold tabular-nums">{bestScore}</p>
+              </Card>
             </div>
 
-            <div className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-              <h2 className="mb-4 font-semibold text-slate-700">รายละเอียด</h2>
+            <Card className="p-6">
+              <h2 className="mb-4 font-semibold">รายละเอียด</h2>
               <div className="space-y-3">
                 {attempts.map((a, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between rounded-lg border border-slate-100 bg-white p-4"
+                    className="flex items-center justify-between rounded-lg border border-border bg-background p-4"
                   >
                     <div className="flex items-center gap-3">
                       <span
                         className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-                          a.passed ? "bg-emerald-50 text-emerald-500" : "bg-red-50 text-red-400"
+                          a.passed
+                            ? "bg-emerald-50 text-emerald-500"
+                            : "bg-red-50 text-red-400"
                         }`}
                       >
                         {a.passed ? "✓" : "✗"}
                       </span>
                       <div>
-                        <p className="font-medium text-slate-800">{a.word.word}</p>
-                        <p className="text-xs text-slate-400">
+                        <p className="font-medium">{a.word.word}</p>
+                        <p className="text-xs text-muted-foreground">
                           ภาพ {a.score.visual_score} | เสียง {a.score.audio_score}
                         </p>
                       </div>
@@ -373,18 +377,15 @@ export default function SessionPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
 
-            <button
-              onClick={() => router.push("/dashboard")}
-              className="w-full rounded-lg bg-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-600 transition-colors"
-            >
+            <Button className="w-full" onClick={() => router.push("/dashboard")}>
               กลับไปแดชบอร์ด
-            </button>
+            </Button>
           </div>
         ) : lastResult && phase === "scored" ? (
           <div className="space-y-4">
-            <div className="rounded-xl border border-slate-100 bg-white p-8 text-center shadow-sm">
+            <Card className="p-8 text-center">
               <p
                 className={`text-lg font-semibold ${
                   lastPassed ? "text-emerald-500" : "text-amber-500"
@@ -393,55 +394,52 @@ export default function SessionPage() {
                 {lastPassed ? "✅ ผ่าน!" : "🔄 ลองใหม่"}
               </p>
               <div className="mt-6 grid grid-cols-3 gap-5">
-                <div className="rounded-lg bg-slate-50 p-4">
-                  <p className="text-xs font-medium text-slate-400">ภาพ</p>
-                  <p className="mt-1 text-xl font-bold tabular-nums text-indigo-500">
+                <div className="rounded-lg bg-muted p-4">
+                  <p className="text-xs font-medium text-muted-foreground">ภาพ</p>
+                  <p className="mt-1 text-xl font-bold tabular-nums">
                     {lastResult.visual_score}
                   </p>
                 </div>
-                <div className="rounded-lg bg-slate-50 p-4">
-                  <p className="text-xs font-medium text-slate-400">เสียง</p>
+                <div className="rounded-lg bg-muted p-4">
+                  <p className="text-xs font-medium text-muted-foreground">เสียง</p>
                   <p className="mt-1 text-xl font-bold tabular-nums text-emerald-500">
                     {lastResult.audio_score}
                   </p>
                 </div>
-                <div className="rounded-lg bg-slate-50 p-4">
-                  <p className="text-xs font-medium text-slate-400">รวม</p>
-                  <p className="mt-1 text-xl font-bold tabular-nums text-indigo-500">
+                <div className="rounded-lg bg-muted p-4">
+                  <p className="text-xs font-medium text-muted-foreground">รวม</p>
+                  <p className="mt-1 text-xl font-bold tabular-nums">
                     {lastResult.total_score}
                   </p>
                 </div>
               </div>
               {lastResult.feedback_th && (
-                <p className="mt-5 rounded-lg border border-indigo-100 bg-indigo-50/50 p-3 text-sm text-slate-600">
+                <p className="mt-5 rounded-lg border border-border bg-muted/50 p-3 text-sm">
                   {lastResult.feedback_th}
                 </p>
               )}
-            </div>
-            <button
-              onClick={handleNextWord}
-              className="w-full rounded-lg bg-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-600 transition-colors"
-            >
+            </Card>
+            <Button className="w-full" onClick={handleNextWord}>
               คำถัดไป
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
               onClick={handleFinish}
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
             >
               จบเซสชัน
-            </button>
+            </Button>
           </div>
         ) : phase === "face-warning" ? (
           <div className="space-y-4">
-            <div className="rounded-xl border border-slate-100 bg-white p-10 text-center shadow-sm">
+            <Card className="p-10 text-center">
               <p className="mb-4 text-4xl">😶</p>
-              <h2 className="text-lg font-semibold text-slate-700">
-                ไม่พบใบหน้าของคุณ
-              </h2>
-              <p className="mt-2 text-slate-400">
+              <h2 className="text-lg font-semibold">ไม่พบใบหน้าของคุณ</h2>
+              <p className="mt-2 text-muted-foreground">
                 กรุณาให้กล้องเห็นใบหน้าของคุณ แล้วกดตรวจสอบอีกครั้ง
               </p>
-              <button
+              <Button
+                className="mt-6"
                 onClick={() => {
                   if (hasFaceRef.current) {
                     setPhase("practicing")
@@ -451,123 +449,206 @@ export default function SessionPage() {
                     }, 2000)
                   }
                 }}
-                className="mt-6 rounded-lg bg-indigo-500 px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-600 transition-colors"
               >
                 ตรวจสอบอีกครั้ง
-              </button>
-            </div>
+              </Button>
+            </Card>
           </div>
         ) : (
-          <div className="space-y-6">
-            {currentWord && (
-              <div className="text-center">
-                <div className="inline-block rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-500">
+          <div className="grid grid-cols-[240px_1fr_245px] gap-6">
+            {/* Left: lesson panel */}
+            <Card className="h-fit p-5">
+              <h2 className="text-sm font-semibold">บทฝึก</h2>
+              {currentWord && (
+                <Badge variant="secondary" className="mt-3">
                   {currentWord.viseme_group}
-                </div>
-                <h1 className="mt-3 text-5xl font-bold tracking-tight text-slate-800">
-                  {currentWord.word}
-                </h1>
-                {phase === "ready" && (
-                  <p className="mt-3 text-slate-400">
-                    เตรียมตัวออกเสียงคำนี้
-                  </p>
-                )}
+                </Badge>
+              )}
+              <div className="mt-4 grid grid-cols-3 gap-1.5">
+                {activeWords.map((w) => {
+                  const idx = activeWords.indexOf(w)
+                  const done = passedIds.has(w.id)
+                  return (
+                    <div
+                      key={w.id}
+                      className={`h-2 rounded-full ${
+                        done
+                          ? "bg-emerald-500"
+                          : w.id === currentWord?.id
+                            ? "bg-primary"
+                            : "bg-muted"
+                      }`}
+                    />
+                  )
+                })}
               </div>
-            )}
-
-            {phase === "ready" && (
-              <button
-                onClick={handleStartPractice}
-                className="w-full rounded-lg bg-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-600 transition-colors"
-              >
-                เริ่มฝึกคำนี้
-              </button>
-            )}
-
-            {/* Always rendered so videoRef exists for handleStartPractice */}
-            <div className={`${phase !== "practicing" ? "hidden" : ""}`}>
-              <div className="relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-lg bg-black">
-                <video
-                  ref={videoRef}
-                  className="h-full w-full object-cover"
-                  playsInline
-                  muted
-                />
-                <canvas
-                  ref={canvasRef}
-                  className="absolute inset-0 h-full w-full"
-                />
-              </div>
-            </div>
-
-            {phase === "practicing" && (
-              <div className="space-y-5">
-                <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-sm font-semibold text-slate-700">กล้อง</h2>
-                    <button
-                      onClick={() => { faceMesh?.stop(); setCameraActive(false); setPhase("ready") }}
-                      className="rounded-lg bg-red-50 px-4 py-1.5 text-xs font-medium text-red-400 hover:bg-red-100 transition-colors"
-                    >
-                      หยุดกล้อง
-                    </button>
+              <p className="mt-4 text-sm text-muted-foreground">
+                คำที่ {currentWord ? activeWords.indexOf(currentWord) + 1 : 0}/
+                {activeWords.length}
+              </p>
+              <div className="mt-4 space-y-1">
+                {activeWords.map((w) => (
+                  <div
+                    key={w.id}
+                    className={`rounded-md px-3 py-2 text-sm ${
+                      w.id === currentWord?.id
+                        ? "bg-muted font-semibold"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {w.word}
+                    <span className="ml-2 text-xs text-amber-500">
+                      {"★".repeat(w.difficulty)}
+                    </span>
                   </div>
+                ))}
+              </div>
+            </Card>
 
-                  {!hasFace && (
-                    <p className="mt-3 text-center text-sm text-amber-500">
-                      กรุณาให้ใบหน้าอยู่ในกรอบกล้อง
+            {/* Center: word player + camera */}
+            <div className="space-y-6">
+              {currentWord && (
+                <div className="text-center">
+                  <div className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                    {currentWord.viseme_group}
+                  </div>
+                  <h1 className="mt-3 text-5xl font-bold tracking-tight">
+                    {currentWord.word}
+                  </h1>
+                  {phase === "ready" && (
+                    <p className="mt-3 text-muted-foreground">
+                      เตรียมตัวออกเสียงคำนี้
                     </p>
                   )}
-                  <p className="mt-2 text-center text-sm tabular-nums text-indigo-500">
-                    การเปิดปาก: {mouthOpen}%
+                </div>
+              )}
+
+              {phase === "ready" && (
+                <Button className="w-full" onClick={handleStartPractice}>
+                  เริ่มการฝึกออกเสียง
+                </Button>
+              )}
+
+              {/* Always rendered so videoRef exists for handleStartPractice */}
+              <div className={`${phase !== "practicing" ? "hidden" : ""}`}>
+                <div className="relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-lg bg-primary">
+                  <video
+                    ref={videoRef}
+                    className="h-full w-full object-cover"
+                    playsInline
+                    muted
+                  />
+                  <canvas
+                    ref={canvasRef}
+                    className="absolute inset-0 h-full w-full"
+                  />
+                </div>
+              </div>
+
+              {phase === "practicing" && (
+                <div className="space-y-5">
+                  <Card className="p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-sm font-semibold">กล้อง</h2>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-destructive"
+                        onClick={() => {
+                          faceMesh?.stop()
+                          setCameraActive(false)
+                          setPhase("ready")
+                        }}
+                      >
+                        หยุดกล้อง
+                      </Button>
+                    </div>
+
+                    {!hasFace && (
+                      <p className="mt-3 text-center text-sm text-amber-500">
+                        กรุณาให้ใบหน้าอยู่ในกรอบกล้อง
+                      </p>
+                    )}
+                    <p className="mt-2 text-center text-sm tabular-nums">
+                      การเปิดปาก: {mouthOpen}%
+                    </p>
+                  </Card>
+
+                  <Card className="p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-sm font-semibold">เสียงพูด</h2>
+                      {!listening ? (
+                        <Button size="sm" onClick={handleStartListening}>
+                          เริ่มพูด
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive"
+                          onClick={handleStopListening}
+                        >
+                          หยุดฟัง
+                        </Button>
+                      )}
+                    </div>
+
+                    {listening && (
+                      <p className="text-sm text-emerald-500">กำลังฟัง...</p>
+                    )}
+                    {speechError && (
+                      <p className="text-sm text-amber-500">{speechError}</p>
+                    )}
+                    {transcript && (
+                      <div className="mt-3 rounded-lg bg-muted p-4">
+                        <p className="text-xs text-muted-foreground">ข้อความที่ได้:</p>
+                        <p className="mt-1 text-lg font-medium">{transcript}</p>
+                      </div>
+                    )}
+                  </Card>
+
+                  {phase === "practicing" && (
+                    <Button
+                      className="w-full"
+                      onClick={handleSubmit}
+                      disabled={submitting || (!transcript && mouthOpen === 0)}
+                    >
+                      {submitting ? "กำลังส่ง..." : "ส่งผล"}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Right: Tips from Pakky */}
+            <Card className="h-fit p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-primary/10 text-primary">🦊</AvatarFallback>
+                </Avatar>
+                <p className="text-sm font-semibold">เทคนิคจาก Pakky</p>
+              </div>
+
+              {phase === "practicing" ? (
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <p>ระดับเสียง: {transcript ? "กำลังตรวจสอบ..." : "รอเสียงพูด"}</p>
+                  <p>ระดับปาก: {mouthOpen}%</p>
+                  <p className="text-xs">รอการประเมิน...</p>
+                </div>
+              ) : phase === "scored" && lastResult ? (
+                <div className="space-y-3 text-sm">
+                  <p>ภาพ: {lastResult.visual_score}</p>
+                  <p>เสียง: {lastResult.audio_score}</p>
+                  <p className={lastPassed ? "text-emerald-500" : "text-amber-500"}>
+                    {lastPassed ? "เก่งมาก! ผ่านแล้ว" : "ลองอีกครั้งนะ"}
                   </p>
                 </div>
-
-                <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-sm font-semibold text-slate-700">เสียงพูด</h2>
-                    {!listening ? (
-                      <button
-                        onClick={handleStartListening}
-                        className="rounded-lg bg-indigo-500 px-4 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-600 transition-colors"
-                      >
-                        เริ่มพูด
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleStopListening}
-                        className="rounded-lg bg-red-50 px-4 py-1.5 text-xs font-medium text-red-400 hover:bg-red-100 transition-colors"
-                      >
-                        หยุดฟัง
-                      </button>
-                    )}
-                  </div>
-
-                  {listening && (
-                    <p className="text-sm text-emerald-500">กำลังฟัง...</p>
-                  )}
-                  {speechError && (
-                    <p className="text-sm text-amber-500">{speechError}</p>
-                  )}
-                  {transcript && (
-                    <div className="mt-3 rounded-lg bg-slate-50 p-4">
-                      <p className="text-xs text-slate-400">ข้อความที่ได้:</p>
-                      <p className="mt-1 text-lg font-medium text-slate-800">
-                        {transcript}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting || (!transcript && mouthOpen === 0)}
-                  className="w-full rounded-lg bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submitting ? "กำลังส่ง..." : "ส่งผล"}
-                </button>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  กดเริ่มการฝึกออกเสียง แล้ว Pakky จะคอยบอกเทคนิคให้ค่ะ~
+                </p>
+              )}
+            </Card>
           </div>
         )}
       </main>
