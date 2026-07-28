@@ -1,0 +1,45 @@
+- generic [active] [ref=f6e1]:
+  - generic [ref=f6e3]:
+    - banner [ref=f6e4]:
+      - button "เปิดเมนู" [ref=f6e5]
+      - generic [ref=f6e6]:
+        - generic [ref=f6e7]: V
+        - generic [ref=f6e8]: vispeech
+      - button "ก" [ref=f6e10]
+    - main [ref=f6e13]:
+      - generic [ref=f6e14]:
+        - heading "System Settings" [level=1] [ref=f6e15]
+        - generic [ref=f6e16]: Settings
+        - generic [ref=f6e17]:
+          - generic [ref=f6e18]:
+            - generic [ref=f6e19]:
+              - heading "Enable Microphone Input" [level=2] [ref=f6e20]
+              - paragraph [ref=f6e21]: Allow the app to access your microphone for speech practice sessions.
+            - switch [checked] [ref=f6e22]
+          - generic [ref=f6e23]:
+            - generic [ref=f6e24]:
+              - generic [ref=f6e25]:
+                - heading "Input device" [level=3] [ref=f6e26]
+                - paragraph [ref=f6e27]: Select the microphone you want to use for practice.
+              - generic [ref=f6e28]:
+                - heading "Choose your input device" [level=3] [ref=f6e29]
+                - combobox [disabled] [ref=f6e30]:
+                  - generic: เลือกไมโครโฟน
+            - generic [ref=f6e32]:
+              - generic [ref=f6e33]:
+                - heading "Microphone sensitivity" [level=3] [ref=f6e34]
+                - paragraph [ref=f6e35]: Adjust how sensitive the mic is during practice.
+              - generic [ref=f6e36]:
+                - heading "Adjust sensitivity level" [level=3] [ref=f6e37]
+                - generic [ref=f6e38]:
+                  - slider [ref=f6e62]
+                  - generic [ref=f6e42]: 60%
+                - generic [ref=f6e43]:
+                  - heading "Test microphone" [level=3] [ref=f6e44]
+                  - paragraph [ref=f6e45]: Make sure your selected device is working properly.
+                  - generic [ref=f6e46]:
+                    - button "Start Test" [ref=f6e47]
+                    - progressbar [ref=f6e49]
+                    - generic [ref=f6e51]: "Level : -"
+  - button "Open Next.js Dev Tools" [ref=f6e57] [cursor=pointer]
+  - alert [ref=f6e63]
