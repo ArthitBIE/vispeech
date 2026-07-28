@@ -1,275 +1,325 @@
-import React from "react";
+import React from "react"
 import {
   Home,
-  BarChart2,
+  BarChart3,
   Settings,
   Search,
-  Play,
+  Flame,
   Sparkles,
-  Headphones,
-  User,
-} from "lucide-react";
+  Play,
+  Volume2,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 const lessons = [
   {
     title: "คำศัพท์ง่าย",
     chapter: "บทที่ 1",
-    desc: "ฝึกออกเสียงคำที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด",
-    label: "คำศัพท์",
-    value: "5",
+    typeLabel: "คำศัพท์",
+    count: "5",
   },
   {
     title: "เสียงสระ",
     chapter: "บทที่ 1",
-    desc: "ฝึกออกเสียงคำที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด",
-    label: "เสียง",
-    value: "32",
+    typeLabel: "เสียง",
+    count: "32",
   },
   {
     title: "บทสนทนา",
     chapter: "บทที่ 1",
-    desc: "ฝึกออกเสียงคำที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด",
-    label: "บทสนทนา",
-    value: "5",
+    typeLabel: "บทสนทนา",
+    count: "5",
   },
-];
+]
 
-const MiniMascot = ({ className = "" }: { className?: string }) => (
-  <div
-    className={`flex items-center justify-center rounded-full bg-[#eeeeee] text-[#bdbdbd] ${className}`}
-  >
-    <User className="h-7 w-7" />
-  </div>
-);
-
-export default function VispeechHome() {
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#f8f8f8] text-black">
-      {/* Top bar */}
-      <header className="fixed left-0 right-0 top-0 z-30 flex h-[52px] items-center justify-between border-b border-[#e6e6e6] bg-white px-5">
-        <div className="flex items-center gap-3">
-          <div className="relative h-7 w-7">
-            <div className="absolute left-1 top-1 h-6 w-3 rotate-[-32deg] bg-black" />
-            <div className="absolute right-1 top-1 h-6 w-3 rotate-[32deg] bg-black" />
-            <div className="absolute left-[11px] top-2 h-4 w-2 rotate-[-32deg] bg-[#cfcfcf]" />
-          </div>
-          <span className="text-[14px] font-medium">Vispeech</span>
-        </div>
+    <main className="min-h-screen bg-white text-black font-sans">
+      <header className="fixed left-0 right-0 top-0 z-40 h-14 border-b border-neutral-200 bg-white">
+        <div className="flex h-full items-center justify-between px-5">
+          <a href="#" className="flex items-center gap-3" aria-label="Vispeech home">
+            {/* LOGO PLACEHOLDER: replace this block with the real Vispeech logo */}
+            <div className="relative flex h-8 w-8 items-center justify-center">
+              <div className="absolute h-7 w-7 rotate-45 bg-black" />
+              <div className="absolute top-1 h-6 w-3 bg-white" />
+              <div className="relative text-xs font-bold tracking-tight text-white">
+                V
+              </div>
+            </div>
 
-        <div className="h-8 w-8 overflow-hidden rounded-full bg-[#d9d9d9]">
-          <div className="flex h-full w-full items-center justify-center text-[9px] text-[#777]">
-            IMG
-          </div>
+            <div className="h-6 w-px bg-neutral-300" />
+
+            <span className="text-sm font-medium text-neutral-900">
+              Vispeech
+            </span>
+          </a>
+
+          {/* PROFILE IMAGE PLACEHOLDER: replace with user avatar image */}
+          <button
+            type="button"
+            aria-label="Open profile menu"
+            className="h-8 w-8 overflow-hidden rounded-full bg-neutral-300 ring-1 ring-neutral-200"
+          >
+            <div className="flex h-full w-full items-center justify-center bg-neutral-300 text-xs font-semibold text-neutral-600">
+              U
+            </div>
+          </button>
         </div>
       </header>
 
-      <div className="flex pt-[52px]">
-        {/* Sidebar */}
-        <aside className="fixed bottom-0 left-0 top-[52px] w-[266px] border-r border-[#e6e6e6] bg-white">
-          <div className="flex h-full flex-col justify-between px-5 py-6">
-            <div>
-              <nav className="space-y-3">
-                <button className="flex h-10 items-center gap-3 rounded-lg bg-[#f1f1f1] px-3 text-[14px] font-semibold">
-                  <Home className="h-4 w-4" />
-                  หน้าหลัก
-                </button>
+      <div className="flex min-h-screen pt-14">
+        <aside className="fixed bottom-0 left-0 top-14 hidden w-60 border-r border-neutral-200 bg-white px-6 py-6 lg:block">
+          <nav className="space-y-3">
+            <a
+              href="#"
+              className="flex h-11 items-center gap-3 rounded-lg bg-neutral-100 px-3 text-sm font-semibold text-black"
+            >
+              <Home className="h-5 w-5" />
+              หน้าหลัก
+            </a>
 
-                <button className="flex h-10 items-center gap-3 rounded-lg px-3 text-[14px] font-medium text-black">
-                  <BarChart2 className="h-4 w-4" />
-                  ความก้าวหน้า
-                </button>
+            <a
+              href="#"
+              className="flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-black hover:bg-neutral-50"
+            >
+              <BarChart3 className="h-5 w-5" />
+              ความก้าวหน้า
+            </a>
 
-                <button className="flex h-10 items-center gap-3 rounded-lg px-3 text-[14px] font-medium text-black">
-                  <Settings className="h-4 w-4" />
-                  การตั้งค่า
-                </button>
-              </nav>
+            <a
+              href="#"
+              className="flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-black hover:bg-neutral-50"
+            >
+              <Settings className="h-5 w-5" />
+              การตั้งค่า
+            </a>
+          </nav>
 
-              <div className="my-8 h-px bg-[#dddddd]" />
+          <div className="mt-8 border-t border-neutral-200 pt-6">
+            <Card className="rounded-md border-orange-300 shadow-none">
+              <CardContent className="p-3">
+                <div className="flex items-start gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-50 text-orange-500">
+                    <Flame className="h-5 w-5 fill-orange-500" />
+                  </div>
 
-              {/* Mini streak card */}
-              <div className="relative rounded-md border border-[#ff9a3d] bg-white p-3">
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="text-xl">🔥</span>
                   <div>
-                    <p className="text-[10px] font-bold">ต่อเนื่อง 2 วันแล้ว!</p>
-                    <p className="text-[6px] text-[#b5b5b5]">
+                    <p className="text-xs font-bold text-black">
+                      ต่อเนื่อง 2 วันแล้ว!
+                    </p>
+                    <p className="mt-1 text-[10px] text-neutral-400">
                       เริ่มตั้งแต่ อาทิตย์ที่ 5 ก.ค. 2569
                     </p>
                   </div>
                 </div>
 
-                <div className="mb-3 grid grid-cols-5 gap-1">
-                  {["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัส"].map((d, i) => (
-                    <div
-                      key={d}
-                      className="h-[36px] rounded border border-[#ededed] bg-white text-center text-[6px]"
-                    >
-                      <div className={i > 1 ? "text-[#d5d5d5]" : "text-black"}>
-                        {d}
+                <div className="mt-4 grid grid-cols-5 gap-1">
+                  {["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัส"].map(
+                    (day, index) => (
+                      <div
+                        key={day}
+                        className="rounded border border-neutral-200 bg-white p-1 text-center"
+                      >
+                        <p className="text-[8px] text-neutral-500">{day}</p>
+                        <div className="mt-1 flex justify-center">
+                          <Flame
+                            className={
+                              index < 2
+                                ? "h-3 w-3 fill-orange-500 text-orange-500"
+                                : "h-3 w-3 text-neutral-200"
+                            }
+                          />
+                        </div>
                       </div>
-                      <div className="mt-1 text-[10px]">{i < 2 ? "🔥" : "-"}</div>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
 
-                <p className="text-[8px] font-bold">เป้าหมาย 10 วัน</p>
-                <div className="mt-1 h-1.5 w-[105px] overflow-hidden rounded-full bg-[#d9d9d9]">
-                  <div className="h-full w-[20%] rounded-full bg-gradient-to-r from-[#ffb44b] to-[#ff7a1a]" />
+                <div className="mt-4">
+                  <div className="mb-1 flex justify-between text-[10px] font-semibold">
+                    <span>เป้าหมาย 10 วัน</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-neutral-200">
+                    <div className="h-2 w-1/5 rounded-full bg-orange-400" />
+                  </div>
+                  <p className="mt-2 text-[10px] font-medium text-neutral-500">
+                    อีกแค่ 8 วัน ก็ครบ 10 วันแล้วนะ!
+                  </p>
                 </div>
-                <p className="mt-1 text-[7px] text-[#777]">
-                  อีกแค่ 8 วัน ก็ครบ 10 วันแล้วนะ!
-                </p>
 
-                <MiniMascot className="absolute bottom-2 right-2 h-10 w-10" />
-              </div>
+                {/* CHARACTER IMAGE PLACEHOLDER: replace with mascot/illustration */}
+                <div className="mt-2 ml-auto h-14 w-14 rounded-md bg-neutral-200" />
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="absolute bottom-8 left-6 right-6 border-t border-neutral-200 pt-8">
+            <div className="rounded-md border border-neutral-300 px-4 py-3 text-center text-sm font-semibold">
+              แพ็คที่รออยู่นะ~ ฝึกกันเถอะ!
             </div>
 
-            <div>
-              <div className="mb-8 h-px bg-[#dddddd]" />
-              <div className="rounded-md border border-[#d5d5d5] px-3 py-4 text-center text-[11px] font-semibold">
-                แพ็คที่รออยู่นะ~ ฝึกกันเถอะ!
-              </div>
-              <MiniMascot className="mx-auto mt-5 h-[116px] w-[116px]" />
+            {/* CHARACTER IMAGE PLACEHOLDER: replace with large mascot image */}
+            <div className="mx-auto mt-6 flex h-32 w-32 items-center justify-center rounded-full bg-neutral-100">
+              <div className="h-24 w-24 rounded-full bg-neutral-300" />
             </div>
           </div>
         </aside>
 
-        {/* Main */}
-        <main className="ml-[266px] flex min-h-[calc(100vh-52px)] flex-1 justify-center px-10 py-4">
-          <section className="w-full max-w-[1095px] rounded-xl border border-[#d9d9d9] bg-white px-8 py-7">
-            {/* Page title */}
+        <section className="w-full px-4 py-4 lg:ml-60 lg:px-9">
+          <div className="mx-auto max-w-6xl rounded-xl border border-neutral-200 bg-white p-6">
             <div className="mb-6">
               <div className="flex items-center gap-2">
                 <Home className="h-5 w-5" />
-                <h1 className="text-[16px] font-bold">หน้าหลัก</h1>
+                <h1 className="text-lg font-bold">หน้าหลัก</h1>
               </div>
-              <p className="mt-1 text-[14px] text-[#b6b6b6]">
+              <p className="mt-1 text-sm text-neutral-400">
                 เลือกบทเรียนที่อยากฝึกวันนี้เลย
               </p>
             </div>
 
-            {/* Hero card */}
-            <div className="relative mb-8 flex h-[214px] w-[715px] overflow-hidden rounded-xl border border-[#ff9a3d] bg-white px-7 py-7">
-              <div className="z-10 flex-1">
-                <div className="flex items-center gap-4">
-                  <span className="text-[42px]">🔥</span>
-                  <div>
-                    <h2 className="text-[24px] font-bold">ต่อเนื่อง 2 วันแล้ว!</h2>
-                    <p className="text-[9px] text-[#b6b6b6]">
-                      เริ่มตั้งแต่ อาทิตย์ที่ 5 ก.ค. 2569
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-7 flex items-center gap-4">
-                  <div className="flex h-[24px] w-[350px] overflow-hidden rounded-full bg-[#d9d9d9]">
-                    {Array.from({ length: 10 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`h-full flex-1 border-r border-[#c8c8c8] last:border-r-0 ${
-                          i < 2
-                            ? "bg-gradient-to-r from-[#ffbd52] to-[#ff7d1b]"
-                            : "bg-[#d9d9d9]"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-[18px] font-medium">2/10</span>
-                </div>
-
-                <div className="mt-7 flex items-center gap-3">
-                  <Sparkles className="h-5 w-5 text-[#ff8a1d]" />
-                  <p className="text-[16px] font-semibold">
-                    แนะนำการฝึกวันนี้
-                    <span className="mx-3 text-[#777]">·</span>
-                    คำศัพท์ง่าย บทที่ 1
-                  </p>
-                  <button className="flex h-8 items-center gap-1 rounded bg-black px-4 text-[11px] font-bold text-white">
-                    <Play className="h-3 w-3 fill-white" />
-                    เริ่มการฝึก
-                  </button>
-                </div>
-              </div>
-
-              <MiniMascot className="absolute bottom-0 right-10 h-[180px] w-[180px] opacity-70" />
-            </div>
-
-            {/* Filters/search */}
-            <div className="mb-5 flex items-center justify-between">
-              <div className="flex gap-3">
-                {["ทั้งหมด (3)", "กำลังเรียน (1)", "เสร็จแล้ว (0)", "ยังไม่เริ่ม (3)"].map(
-                  (tab, i) => (
-                    <button
-                      key={tab}
-                      className={`h-9 rounded-full px-4 text-[12px] ${
-                        i === 0
-                          ? "bg-black font-bold text-white"
-                          : "bg-[#f3f3f3] text-[#b5b5b5]"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  )
-                )}
-              </div>
-
-              <div className="relative h-8 w-[260px]">
-                <input
-                  className="h-full w-full rounded border border-[#eeeeee] px-3 pr-8 text-[11px] outline-none"
-                  placeholder="ค้นหาบทเรียน"
-                />
-                <Search className="absolute right-3 top-2 h-4 w-4 text-[#cfcfcf]" />
-              </div>
-            </div>
-
-            <div className="mb-6 h-px bg-[#dddddd]" />
-
-            {/* Lessons */}
-            <div className="mb-6 flex items-center gap-2">
-              <Headphones className="h-5 w-5" />
-              <h3 className="text-[17px] font-bold">บทเรียนทั้งหมด</h3>
-            </div>
-
-            <div className="grid grid-cols-3 gap-6">
-              {lessons.map((lesson) => (
-                <article
-                  key={lesson.title}
-                  className="rounded-3xl border border-[#d9d9d9] bg-white p-4"
-                >
-                  <div className="relative mb-4 h-[135px] overflow-hidden rounded-lg bg-[#eeeeee]">
-                    <MiniMascot className="absolute bottom-2 right-4 h-16 w-16" />
-                  </div>
-
-                  <h4 className="text-[17px] font-bold">{lesson.title}</h4>
-                  <p className="text-[12px] font-medium text-[#777]">{lesson.chapter}</p>
-
-                  <p className="mt-3 min-h-[44px] text-[12px] leading-snug text-[#777]">
-                    {lesson.desc}
-                  </p>
-
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    <div className="rounded-lg bg-[#f7f7f7] py-3 text-center">
-                      <p className="text-[10px] text-[#777]">{lesson.label}</p>
-                      <p className="text-[22px] font-bold">{lesson.value}</p>
+            <section className="mb-7 max-w-3xl rounded-xl border border-orange-300 bg-white p-6">
+              <div className="grid gap-6 md:grid-cols-3">
+                <div className="md:col-span-2">
+                  <div className="flex items-start gap-4">
+                    <div className="text-orange-500">
+                      <Flame className="h-9 w-9 fill-orange-500" />
                     </div>
 
-                    <div className="rounded-lg bg-[#f7f7f7] py-3 text-center">
-                      <p className="text-[10px] text-[#777]">การฝึก</p>
-                      <p className="text-[22px] font-bold">-</p>
+                    <div>
+                      <h2 className="text-2xl font-bold">
+                        ต่อเนื่อง 2 วันแล้ว!
+                      </h2>
+                      <p className="mt-1 text-xs text-neutral-400">
+                        เริ่มตั้งแต่ อาทิตย์ที่ 5 ก.ค. 2569
+                      </p>
                     </div>
                   </div>
 
-                  <button className="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-black text-[12px] font-bold text-white">
-                    <Play className="h-3.5 w-3.5 fill-white" />
-                    เริ่มการฝึก
-                  </button>
-                </article>
-              ))}
-            </div>
-          </section>
-        </main>
+                  <div className="mt-7 flex items-center gap-4">
+                    <div className="h-5 flex-1 overflow-hidden rounded-full bg-neutral-300">
+                      <div className="h-full w-1/5 rounded-full bg-orange-400" />
+                    </div>
+                    <p className="text-base font-medium">2/10</p>
+                  </div>
+
+                  <div className="mt-7 flex flex-wrap items-center gap-3">
+                    <Sparkles className="h-5 w-5 text-orange-500" />
+                    <span className="font-semibold">แนะนำการฝึกวันนี้</span>
+                    <span className="text-neutral-500">·</span>
+                    <span className="font-semibold">คำศัพท์ง่าย บทที่ 1</span>
+                    <Button className="h-8 rounded-md bg-black px-4 text-xs font-bold text-white hover:bg-neutral-800">
+                      <Play className="mr-2 h-3 w-3 fill-white" />
+                      เริ่มการฝึก
+                    </Button>
+                  </div>
+                </div>
+
+                {/* HERO CHARACTER IMAGE PLACEHOLDER: replace with large mascot image */}
+                <div className="hidden items-center justify-center md:flex">
+                  <div className="h-40 w-40 rounded-xl bg-neutral-200" />
+                </div>
+              </div>
+            </section>
+
+            <section className="mb-6">
+              <div className="flex flex-col gap-4 border-b border-neutral-200 pb-5 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-wrap gap-3">
+                  <Badge className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white hover:bg-black">
+                    ทั้งหมด (3)
+                  </Badge>
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-400 hover:bg-neutral-100"
+                  >
+                    กำลังเรียน (1)
+                  </Badge>
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-400 hover:bg-neutral-100"
+                  >
+                    เสร็จแล้ว (0)
+                  </Badge>
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-400 hover:bg-neutral-100"
+                  >
+                    ยังไม่เริ่ม (3)
+                  </Badge>
+                </div>
+
+                <div className="relative w-full md:w-72">
+                  <Input
+                    type="search"
+                    placeholder="ค้นหาบทเรียน"
+                    className="h-9 rounded-md border-neutral-200 pr-9 text-sm placeholder:text-neutral-500"
+                  />
+                  <Search className="absolute right-3 top-2.5 h-4 w-4 text-neutral-300" />
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <div className="mb-6 flex items-center gap-2">
+                <Volume2 className="h-5 w-5" />
+                <h2 className="text-lg font-bold">บทเรียนทั้งหมด</h2>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {lessons.map((lesson) => (
+                  <Card
+                    key={lesson.title}
+                    className="rounded-2xl border border-neutral-200 shadow-none"
+                  >
+                    <CardContent className="p-4">
+                      {/* LESSON IMAGE PLACEHOLDER: replace this gray box with lesson thumbnail */}
+                      <div className="relative mb-4 h-32 overflow-hidden rounded-lg bg-neutral-200">
+                        {/* SMALL CHARACTER IMAGE PLACEHOLDER: replace with mascot overlay */}
+                        <div className="absolute bottom-2 right-4 h-16 w-16 rounded-full bg-neutral-300" />
+                      </div>
+
+                      <h3 className="text-lg font-bold leading-tight">
+                        {lesson.title}
+                      </h3>
+                      <p className="text-sm font-medium text-neutral-500">
+                        {lesson.chapter}
+                      </p>
+
+                      <p className="mt-4 min-h-10 text-sm leading-5 text-neutral-500">
+                        ฝึกออกเสียงคำที่ใช้บ่อยในชีวิตประจำวัน
+                        พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด
+                      </p>
+
+                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        <div className="rounded-lg bg-neutral-100 px-4 py-3 text-center">
+                          <p className="text-xs text-neutral-500">
+                            {lesson.typeLabel}
+                          </p>
+                          <p className="mt-1 text-xl font-bold">
+                            {lesson.count}
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg bg-neutral-100 px-4 py-3 text-center">
+                          <p className="text-xs text-neutral-500">การฝึก</p>
+                          <p className="mt-1 text-xl font-bold">-</p>
+                        </div>
+                      </div>
+
+                      <Button className="mt-5 h-10 w-full rounded-lg bg-black text-sm font-bold text-white hover:bg-neutral-800">
+                        <Play className="mr-2 h-4 w-4 fill-white" />
+                        เริ่มการฝึก
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          </div>
+        </section>
       </div>
-    </div>
-  );
+    </main>
+  )
 }

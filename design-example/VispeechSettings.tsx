@@ -1,202 +1,273 @@
-import React from "react";
+import React from "react"
 import {
   Home,
-  BarChart2,
+  BarChart3,
   Settings,
-  User,
+  Flame,
   Mic,
   ChevronDown,
-} from "lucide-react";
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Switch } from "@/components/ui/switch"
+import { Slider } from "@/components/ui/slider"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-const MiniMascot = ({ className = "" }: { className?: string }) => (
-  <div
-    className={`flex items-center justify-center rounded-full bg-[#eeeeee] text-[#bdbdbd] ${className}`}
-  >
-    <User className="h-7 w-7" />
-  </div>
-);
-
-export default function VispeechSettings() {
+export default function SettingsPage() {
   return (
-    <div className="min-h-screen bg-[#f8f8f8] text-black">
-      {/* Top bar */}
-      <header className="fixed left-0 right-0 top-0 z-30 flex h-[52px] items-center justify-between border-b border-[#e6e6e6] bg-white px-5">
-        <div className="flex items-center gap-3">
-          <div className="relative h-7 w-7">
-            <div className="absolute left-1 top-1 h-6 w-3 rotate-[-32deg] bg-black" />
-            <div className="absolute right-1 top-1 h-6 w-3 rotate-[32deg] bg-black" />
-            <div className="absolute left-[11px] top-2 h-4 w-2 rotate-[-32deg] bg-[#cfcfcf]" />
-          </div>
-          <span className="text-[14px] font-medium">Vispeech</span>
-        </div>
+    <main className="min-h-screen bg-white text-black font-sans">
+      <header className="fixed left-0 right-0 top-0 z-40 h-14 border-b border-neutral-200 bg-white">
+        <div className="flex h-full items-center justify-between px-5">
+          <a href="#" className="flex items-center gap-3" aria-label="Vispeech home">
+            {/* LOGO PLACEHOLDER: replace this block with the real Vispeech logo */}
+            <div className="relative flex h-8 w-8 items-center justify-center">
+              <div className="absolute h-7 w-7 rotate-45 bg-black" />
+              <div className="absolute top-1 h-6 w-3 bg-white" />
+              <div className="relative text-xs font-bold tracking-tight text-white">
+                V
+              </div>
+            </div>
 
-        <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#d9d9d9] text-[9px] text-[#777]">
-          IMG
+            <div className="h-6 w-px bg-neutral-300" />
+
+            <span className="text-sm font-medium text-neutral-900">
+              Vispeech
+            </span>
+          </a>
+
+          {/* PROFILE IMAGE PLACEHOLDER: replace with user avatar image */}
+          <button
+            type="button"
+            aria-label="Open profile menu"
+            className="h-8 w-8 overflow-hidden rounded-full bg-neutral-300 ring-1 ring-neutral-200"
+          >
+            <div className="flex h-full w-full items-center justify-center bg-neutral-300 text-xs font-semibold text-neutral-600">
+              U
+            </div>
+          </button>
         </div>
       </header>
 
-      <div className="flex pt-[52px]">
-        {/* Sidebar */}
-        <aside className="fixed bottom-0 left-0 top-[52px] w-[266px] border-r border-[#e6e6e6] bg-white">
-          <div className="flex h-full flex-col justify-between px-5 py-6">
-            <div>
-              <nav className="space-y-3">
-                <button className="flex h-10 items-center gap-3 rounded-lg px-3 text-[14px] font-medium text-black">
-                  <Home className="h-4 w-4" />
-                  หน้าหลัก
-                </button>
+      <div className="flex min-h-screen pt-14">
+        <aside className="fixed bottom-0 left-0 top-14 hidden w-60 border-r border-neutral-200 bg-white px-6 py-6 lg:block">
+          <nav className="space-y-3">
+            <a
+              href="#"
+              className="flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-black hover:bg-neutral-50"
+            >
+              <Home className="h-5 w-5" />
+              หน้าหลัก
+            </a>
 
-                <button className="flex h-10 items-center gap-3 rounded-lg px-3 text-[14px] font-medium text-black">
-                  <BarChart2 className="h-4 w-4" />
-                  ความก้าวหน้า
-                </button>
+            <a
+              href="#"
+              className="flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-black hover:bg-neutral-50"
+            >
+              <BarChart3 className="h-5 w-5" />
+              ความก้าวหน้า
+            </a>
 
-                <button className="flex h-10 items-center gap-3 rounded-lg bg-[#f1f1f1] px-3 text-[14px] font-semibold">
-                  <Settings className="h-4 w-4" />
-                  การตั้งค่า
-                </button>
-              </nav>
+            <a
+              href="#"
+              className="flex h-11 items-center gap-3 rounded-lg bg-neutral-100 px-3 text-sm font-semibold text-black"
+            >
+              <Settings className="h-5 w-5" />
+              การตั้งค่า
+            </a>
+          </nav>
 
-              <div className="my-8 h-px bg-[#dddddd]" />
+          <div className="mt-8 border-t border-neutral-200 pt-6">
+            <Card className="rounded-md border-orange-300 shadow-none">
+              <CardContent className="p-3">
+                <div className="flex items-start gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-50 text-orange-500">
+                    <Flame className="h-5 w-5 fill-orange-500" />
+                  </div>
 
-              {/* Mini streak card */}
-              <div className="relative rounded-md border border-[#ff9a3d] bg-white p-3">
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="text-xl">🔥</span>
                   <div>
-                    <p className="text-[10px] font-bold">ต่อเนื่อง 2 วันแล้ว!</p>
-                    <p className="text-[6px] text-[#b5b5b5]">
+                    <p className="text-xs font-bold text-black">
+                      ต่อเนื่อง 2 วันแล้ว!
+                    </p>
+                    <p className="mt-1 text-[10px] text-neutral-400">
                       เริ่มตั้งแต่ อาทิตย์ที่ 5 ก.ค. 2569
                     </p>
                   </div>
                 </div>
 
-                <div className="mb-3 grid grid-cols-5 gap-1">
-                  {["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัส"].map((d, i) => (
-                    <div
-                      key={d}
-                      className="h-[36px] rounded border border-[#ededed] bg-white text-center text-[6px]"
-                    >
-                      <div className={i > 1 ? "text-[#d5d5d5]" : "text-black"}>
-                        {d}
+                <div className="mt-4 grid grid-cols-5 gap-1">
+                  {["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัส"].map(
+                    (day, index) => (
+                      <div
+                        key={day}
+                        className="rounded border border-neutral-200 bg-white p-1 text-center"
+                      >
+                        <p className="text-[8px] text-neutral-500">{day}</p>
+                        <div className="mt-1 flex justify-center">
+                          <Flame
+                            className={
+                              index < 2
+                                ? "h-3 w-3 fill-orange-500 text-orange-500"
+                                : "h-3 w-3 text-neutral-200"
+                            }
+                          />
+                        </div>
                       </div>
-                      <div className="mt-1 text-[10px]">{i < 2 ? "🔥" : "-"}</div>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
 
-                <p className="text-[8px] font-bold">เป้าหมาย 10 วัน</p>
-                <div className="mt-1 h-1.5 w-[105px] overflow-hidden rounded-full bg-[#d9d9d9]">
-                  <div className="h-full w-[20%] rounded-full bg-gradient-to-r from-[#ffbd52] to-[#ff7d1b]" />
+                <div className="mt-4">
+                  <div className="mb-1 flex justify-between text-[10px] font-semibold">
+                    <span>เป้าหมาย 10 วัน</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-neutral-200">
+                    <div className="h-2 w-1/5 rounded-full bg-orange-400" />
+                  </div>
+                  <p className="mt-2 text-[10px] font-medium text-neutral-500">
+                    อีกแค่ 8 วัน ก็ครบ 10 วันแล้วนะ!
+                  </p>
                 </div>
-                <p className="mt-1 text-[7px] text-[#777]">
-                  อีกแค่ 8 วัน ก็ครบ 10 วันแล้วนะ!
-                </p>
 
-                <MiniMascot className="absolute bottom-2 right-2 h-10 w-10" />
-              </div>
+                {/* SIDEBAR SMALL CHARACTER PLACEHOLDER: replace with mascot image */}
+                <div className="mt-2 ml-auto h-14 w-14 rounded-md bg-neutral-200" />
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="absolute bottom-8 left-6 right-6 border-t border-neutral-200 pt-8">
+            <div className="rounded-md border border-neutral-300 px-4 py-3 text-center text-sm font-semibold">
+              แพ็คที่รออยู่นะ~ ฝึกกันเถอะ!
             </div>
 
-            <div>
-              <div className="mb-8 h-px bg-[#dddddd]" />
-              <div className="rounded-md border border-[#d5d5d5] px-3 py-4 text-center text-[11px] font-semibold">
-                แพ็คที่รออยู่นะ~ ฝึกกันเถอะ!
-              </div>
-              <MiniMascot className="mx-auto mt-5 h-[116px] w-[116px]" />
+            {/* SIDEBAR LARGE CHARACTER PLACEHOLDER: replace with large mascot image */}
+            <div className="mx-auto mt-6 flex h-32 w-32 items-center justify-center rounded-full bg-neutral-100">
+              <div className="h-24 w-24 rounded-full bg-neutral-300" />
             </div>
           </div>
         </aside>
 
-        {/* Main */}
-        <main className="ml-[266px] min-h-[calc(100vh-52px)] flex-1 px-[54px] py-[42px]">
-          <section className="mx-auto w-full max-w-[1075px]">
-            <h1 className="text-[24px] font-bold tracking-[-0.02em]">
-              System Settings
-            </h1>
+        <section className="w-full bg-neutral-50 px-4 py-10 lg:ml-60 lg:px-12">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold tracking-tight">
+                System Settings
+              </h1>
 
-            <div className="mt-7 inline-block border-b border-black pb-2 text-[14px] font-medium">
-              Settings
+              <div className="mt-8 inline-flex border-b border-black pb-2 text-sm font-medium">
+                Settings
+              </div>
             </div>
 
-            {/* Settings panel */}
-            <div className="mt-7 overflow-hidden rounded-xl border border-[#e5e5e5] bg-white shadow-sm">
-              {/* Enable row */}
-              <div className="flex h-[95px] items-start justify-between bg-[#f0f0f0] px-8 py-5">
+            <div className="rounded-xl bg-neutral-100 p-4">
+              <div className="mb-8 flex items-start justify-between gap-6 px-4 pt-2">
                 <div>
-                  <h2 className="text-[14px] font-bold">Enable Microphone Input</h2>
-                  <p className="mt-2 text-[13px] text-[#aaaaaa]">
+                  <h2 className="text-base font-bold">
+                    Enable Microphone Input
+                  </h2>
+                  <p className="mt-2 text-sm text-neutral-400">
                     Allow the app to access your microphone for speech practice sessions.
                   </p>
                 </div>
 
-                <button className="relative mt-1 h-[19px] w-[34px] rounded-full bg-black">
-                  <span className="absolute right-[3px] top-[3px] h-[13px] w-[13px] rounded-full bg-white" />
-                </button>
+                <Switch defaultChecked className="data-[state=checked]:bg-black" />
               </div>
 
-              {/* Card body */}
-              <div className="min-h-[575px] rounded-t-2xl border-t border-[#d7d7d7] bg-white">
-                {/* Input device row */}
-                <div className="grid grid-cols-2 border-b border-[#d7d7d7] px-8 py-7">
-                  <div>
-                    <h3 className="text-[14px] font-bold">Input device</h3>
-                    <p className="mt-3 text-[13px] text-[#aaaaaa]">
-                      Select the microphone you want to use for practice.
-                    </p>
-                  </div>
-
-                  <div>
-                    <h3 className="text-[14px] font-bold">Choose your input device</h3>
-                    <button className="mt-3 flex h-10 w-[215px] items-center justify-between rounded-md border border-[#d9d9d9] bg-white px-4 text-[12px] font-medium">
-                      <span className="truncate">MacBook Pro2019 Inter...</span>
-                      <ChevronDown className="h-4 w-4 text-[#777]" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Sensitivity row */}
-                <div className="grid grid-cols-2 px-8 py-7">
-                  <div>
-                    <h3 className="text-[14px] font-bold">Microphone sensitivity</h3>
-                    <p className="mt-3 text-[13px] text-[#aaaaaa]">
-                      Adjust how sensitive the mic is during practice.
-                    </p>
-                  </div>
-
-                  <div>
-                    <h3 className="text-[14px] font-bold">Adjust sensitivity level</h3>
-
-                    <div className="mt-5 flex items-center gap-3">
-                      <div className="relative h-1.5 w-[215px] rounded-full bg-[#d9d9d9]">
-                        <div className="h-full w-[60%] rounded-full bg-black" />
-                        <div className="absolute left-[60%] top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#bbbbbb] bg-white" />
-                      </div>
-                      <span className="text-[12px] text-[#b0b0b0]">60%</span>
-                    </div>
-
-                    <div className="mt-7">
-                      <h3 className="text-[14px] font-bold">Test microphone</h3>
-                      <p className="mt-1 text-[13px] text-[#aaaaaa]">
-                        Make sure your selected device is working properly.
+              <Card className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-none">
+                <CardContent className="p-0">
+                  <div className="grid border-b border-neutral-200 md:grid-cols-2">
+                    <div className="p-6">
+                      <h3 className="text-base font-bold">Input device</h3>
+                      <p className="mt-3 text-sm text-neutral-400">
+                        Select the microphone you want to use for practice.
                       </p>
+                    </div>
 
-                      <div className="mt-4 flex items-center gap-4">
-                        <button className="flex h-8 items-center gap-2 rounded-md bg-black px-4 text-[12px] font-bold text-white">
-                          <Mic className="h-3.5 w-3.5" />
-                          Start Test
-                        </button>
+                    <div className="p-6">
+                      <h3 className="text-base font-bold">
+                        Choose your input device
+                      </h3>
 
-                        <div className="h-1 w-[165px] rounded-full bg-[#e7e7e7]" />
-                        <span className="text-[12px] text-[#b0b0b0]">Level : -</span>
+                      <div className="mt-3 w-full max-w-xs">
+                        <Select defaultValue="macbook">
+                          <SelectTrigger className="h-11 rounded-md border-neutral-300 text-sm">
+                            <SelectValue placeholder="Choose device" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="macbook">
+                              MacBook Pro2019 Inter...
+                            </SelectItem>
+                            <SelectItem value="external">
+                              External Microphone
+                            </SelectItem>
+                            <SelectItem value="airpods">
+                              AirPods Microphone
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
+
+                  <div className="grid md:grid-cols-2">
+                    <div className="p-6">
+                      <h3 className="text-base font-bold">
+                        Microphone sensitivity
+                      </h3>
+                      <p className="mt-3 text-sm text-neutral-400">
+                        Adjust how sensitive the mic is during practice.
+                      </p>
+                    </div>
+
+                    <div className="p-6">
+                      <h3 className="text-base font-bold">
+                        Adjust sensitivity level
+                      </h3>
+
+                      <div className="mt-4 flex max-w-sm items-center gap-4">
+                        <Slider
+                          defaultValue={[60]}
+                          max={100}
+                          step={1}
+                          className="w-full"
+                        />
+                        <span className="text-sm font-medium text-neutral-400">
+                          60%
+                        </span>
+                      </div>
+
+                      <div className="mt-8">
+                        <h3 className="text-base font-bold">Test microphone</h3>
+                        <p className="mt-2 text-sm text-neutral-400">
+                          Make sure your selected device is working properly.
+                        </p>
+
+                        <div className="mt-4 flex flex-wrap items-center gap-4">
+                          <Button className="h-9 rounded-md bg-black px-4 text-sm font-bold text-white hover:bg-neutral-800">
+                            <Mic className="mr-2 h-4 w-4" />
+                            Start Test
+                          </Button>
+
+                          <div className="h-1 w-36 rounded-full bg-neutral-200" />
+
+                          <span className="text-sm font-medium text-neutral-400">
+                            Level : -
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </section>
-        </main>
+          </div>
+        </section>
       </div>
-    </div>
-  );
+    </main>
+  )
 }

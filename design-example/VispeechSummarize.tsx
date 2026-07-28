@@ -1,202 +1,219 @@
-import React from "react";
+import React from "react"
 import {
   Home,
   ChevronRight,
+  ChevronDown,
   RotateCcw,
+  Star,
   CheckCircle2,
   AlertTriangle,
-  ChevronDown,
-  User,
+  Smile,
   Volume2,
-  AudioLines,
   Sparkles,
-  Star,
-} from "lucide-react";
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 
-const LogoPlaceholder = () => (
-  <div className="flex h-7 w-7 items-center justify-center rounded bg-[#eeeeee] text-[8px] font-bold text-[#999]">
-    LOGO
-  </div>
-);
-
-const AvatarPlaceholder = () => (
-  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#d9d9d9] text-[8px] font-bold text-[#777]">
-    IMG
-  </div>
-);
-
-const MascotPlaceholder = ({ className = "" }: { className?: string }) => (
-  <div
-    className={`flex items-center justify-center rounded-full bg-[#eeeeee] text-[#bdbdbd] ${className}`}
-  >
-    <User className="h-12 w-12" />
-  </div>
-);
-
-const words = [
+const results = [
   {
-    status: "success",
     word: "ยา",
     phonetic: "/ja:/",
     score: "100%",
-    open: false,
+    status: "success",
+    expanded: false,
   },
   {
-    status: "warning",
     word: "ฝา",
     phonetic: "/fa:/",
     score: "72%",
-    open: true,
+    status: "warning",
+    expanded: true,
   },
   {
-    status: "success",
     word: "ดี",
     phonetic: "/dee:/",
     score: "88%",
-    open: false,
+    status: "success",
+    expanded: false,
   },
   {
-    status: "warning",
     word: "มี",
     phonetic: "/me:/",
     score: "65%",
-    open: false,
+    status: "warning",
+    expanded: false,
   },
   {
-    status: "success",
     word: "ดู",
     phonetic: "/du:/",
     score: "98%",
-    open: false,
+    status: "success",
+    expanded: false,
   },
-];
+]
 
-export default function VispeechSummarize() {
+export default function SummarizePage() {
   return (
-    <div className="min-h-screen bg-[#f8f8f8] text-black">
-      {/* Top bar */}
-      <header className="fixed left-0 right-0 top-0 z-30 flex h-[73px] items-center justify-between border-b border-[#e6e6e6] bg-white px-[135px]">
-        <div className="flex items-center gap-4">
-          <LogoPlaceholder />
-          <div className="h-7 w-px rotate-[24deg] bg-[#d9d9d9]" />
-          <span className="text-[13px] font-semibold">Vispeech</span>
-        </div>
-
-        <AvatarPlaceholder />
-      </header>
-
-      <main className="px-[118px] pb-12 pt-[133px]">
-        {/* Breadcrumb/action row */}
-        <div className="mx-auto mb-4 flex w-full max-w-[1195px] items-center justify-between">
-          <div className="flex items-center gap-3 text-[14px]">
-            <Home className="h-5 w-5 text-[#8c8c8c]" />
-            <span className="text-[#777]">Dashboard</span>
-            <span className="text-[#bcbcbc]">/</span>
-            <span className="text-[#777]">Lesson</span>
-            <span className="text-[#bcbcbc]">/</span>
-            <span className="text-[#777]">Practice</span>
-            <span className="text-[#bcbcbc]">/</span>
-            <span className="font-bold text-black">Summarize</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button className="flex items-center gap-1 text-[12px] font-medium text-[#b8b8b8]">
-              <RotateCcw className="h-3.5 w-3.5" />
-              เริ่มการฝึกซ้ำ
-            </button>
-
-            <button className="flex h-8 items-center gap-1 rounded-lg bg-black px-4 text-[12px] font-bold text-white">
-              กลับหน้าหลัก
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Main card */}
-        <section className="mx-auto min-h-[920px] w-full max-w-[1195px] rounded-2xl border border-[#d9d9d9] bg-white">
-          {/* Summary hero */}
-          <div className="flex flex-col items-center pt-10 text-center">
-            <MascotPlaceholder className="h-[210px] w-[210px]" />
-
-            <h1 className="mt-8 text-[18px] font-semibold leading-snug">
-              เยี่ยมมากเลย!
-              <br />
-              ฝึกครบทุกคำแล้ววันนี้เก่งมาก!
-            </h1>
-
-            <p className="mt-6 text-[16px] font-semibold">Lesson คำศัพท์ง่าย</p>
-
-            <div className="mt-4 flex items-center gap-2">
-              {[0, 1, 2, 3].map((i) => (
-                <Star key={i} className="h-6 w-6 fill-[#ffb000] text-[#ffb000]" />
-              ))}
-              <Star className="h-6 w-6 text-[#d9d9d9]" />
-            </div>
-          </div>
-
-          {/* Result panel */}
-          <div className="mx-auto mt-12 w-[1085px] overflow-hidden rounded-xl bg-[#f4f4f4]">
-            <div className="border-b border-[#dddddd] px-6 py-5">
-              <h2 className="text-[18px] font-bold">ผลการฝึกแต่ละคำ</h2>
-            </div>
-
-            <div className="px-6 py-6">
-              <div className="space-y-5">
-                {words.map((item) => (
-                  <div key={item.word}>
-                    <div className="flex h-9 items-center justify-between bg-white px-4">
-                      <div className="flex items-center gap-3">
-                        {item.status === "success" ? (
-                          <CheckCircle2 className="h-4 w-4 text-[#00a982]" />
-                        ) : (
-                          <AlertTriangle className="h-4 w-4 fill-[#ff8a00] text-[#ff8a00]" />
-                        )}
-
-                        <span className="text-[14px] font-semibold">{item.word}</span>
-                        <span className="text-[13px]">{item.phonetic}</span>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <span className="text-[13px] font-medium">{item.score}</span>
-                        <ChevronDown className="h-4 w-4 text-[#777]" />
-                      </div>
-                    </div>
-
-                    {item.open && (
-                      <div className="rounded-b-lg bg-white px-5 pb-6 pt-4">
-                        <div className="space-y-5 text-[14px]">
-                          <div className="flex items-center gap-3">
-                            <Volume2 className="h-5 w-5 text-black" />
-                            <span className="font-bold">ริมฝีปาก</span>
-                            <span>:</span>
-                            <span className="font-medium text-[#ff7a00]">
-                              ปากกว้างไม่พอ
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <AudioLines className="h-5 w-5 text-black" />
-                            <span className="font-bold">ระดับเสียง</span>
-                            <span>:</span>
-                            <span className="font-medium text-[#00a982]">ถูกต้อง</span>
-                          </div>
-
-                          <div className="flex items-center gap-3 text-[#ff7a00]">
-                            <Sparkles className="h-5 w-5" />
-                            <span className="font-medium">
-                              ลองอ้าปากกว้างขึ้นให้เห็นฟันบนเล็กน้อย
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+    <main className="min-h-screen bg-neutral-50 text-black font-sans">
+      <header className="h-16 border-b border-neutral-200 bg-white">
+        <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
+          <a href="#" className="flex items-center gap-3" aria-label="Vispeech home">
+            {/* LOGO PLACEHOLDER: replace this block with the real Vispeech logo */}
+            <div className="relative flex h-8 w-8 items-center justify-center">
+              <div className="absolute h-7 w-7 rotate-45 bg-black" />
+              <div className="absolute top-1 h-6 w-3 bg-white" />
+              <div className="relative text-xs font-bold tracking-tight text-white">
+                V
               </div>
             </div>
+
+            <div className="h-6 w-px bg-neutral-300" />
+
+            <span className="text-sm font-medium text-neutral-900">
+              Vispeech
+            </span>
+          </a>
+
+          {/* PROFILE IMAGE PLACEHOLDER: replace with user avatar image */}
+          <button
+            type="button"
+            aria-label="Open profile menu"
+            className="h-8 w-8 overflow-hidden rounded-full bg-neutral-300 ring-1 ring-neutral-200"
+          >
+            <div className="flex h-full w-full items-center justify-center bg-neutral-300 text-xs font-semibold text-neutral-600">
+              U
+            </div>
+          </button>
+        </div>
+      </header>
+
+      <section className="mx-auto max-w-6xl px-4 py-12">
+        <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <nav className="flex items-center gap-2 text-sm font-semibold text-neutral-500">
+            <Home className="h-5 w-5 text-neutral-400" />
+            <span>Dashboard</span>
+            <span>/</span>
+            <span>Lesson</span>
+            <span>/</span>
+            <span>Practice</span>
+            <span>/</span>
+            <span className="text-black">Summarize</span>
+          </nav>
+
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              className="h-9 px-0 text-sm font-medium text-neutral-400 hover:bg-transparent hover:text-neutral-600"
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              เริ่มการฝึกซ้ำ
+            </Button>
+
+            <Button className="h-9 rounded-md bg-black px-4 text-sm font-bold text-white hover:bg-neutral-800">
+              กลับหน้าหลัก
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
           </div>
-        </section>
-      </main>
-    </div>
-  );
+        </div>
+
+        <Card className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-none">
+          <CardContent className="p-0">
+            <section className="flex flex-col items-center px-6 pt-10 pb-9 text-center">
+              {/* SUMMARY MASCOT PLACEHOLDER: replace with congratulation mascot image */}
+              <div className="mb-8 flex h-44 w-44 items-center justify-center rounded-full bg-neutral-100">
+                <div className="h-32 w-32 rounded-full bg-neutral-300" />
+              </div>
+
+              <h1 className="text-lg font-bold leading-6">
+                เยี่ยมมากเลย!
+                <br />
+                ฝึกครบทุกคำแล้ววันนี้เก่งมาก!
+              </h1>
+
+              <p className="mt-6 text-base font-medium">
+                Lesson คำศัพท์ง่าย
+              </p>
+
+              <div className="mt-3 flex items-center gap-1">
+                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                <Star className="h-5 w-5 text-neutral-300" />
+              </div>
+            </section>
+
+            <section className="mx-auto mb-10 max-w-5xl px-6">
+              <div className="overflow-hidden rounded-t-xl bg-neutral-100">
+                <div className="border-b border-neutral-200 px-6 py-5">
+                  <h2 className="text-lg font-bold">ผลการฝึกแต่ละคำ</h2>
+                </div>
+
+                <div className="space-y-5 px-5 py-6">
+                  {results.map((item) => (
+                    <div key={item.word}>
+                      <div className="flex h-9 items-center justify-between bg-white px-4">
+                        <div className="flex items-center gap-3">
+                          {item.status === "success" ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                          ) : (
+                            <AlertTriangle className="h-4 w-4 fill-orange-500 text-orange-500" />
+                          )}
+
+                          <span className="text-sm font-semibold">
+                            {item.word}
+                          </span>
+                          <span className="text-sm font-medium text-black">
+                            {item.phonetic}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm font-medium">
+                            {item.score}
+                          </span>
+                          <ChevronDown className="h-4 w-4 text-neutral-600" />
+                        </div>
+                      </div>
+
+                      {item.expanded ? (
+                        <div className="rounded-b-lg bg-white px-4 pb-5 pt-3">
+                          <div className="space-y-4">
+                            <div className="flex flex-wrap items-center gap-3 text-sm">
+                              <Smile className="h-5 w-5 text-black" />
+                              <span className="font-bold">ริมฝีปาก</span>
+                              <span>:</span>
+                              <span className="font-medium text-orange-500">
+                                ปากกว้างไม่พอ
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3 text-sm">
+                              <Volume2 className="h-5 w-5 text-black" />
+                              <span className="font-bold">ระดับเสียง</span>
+                              <span>:</span>
+                              <span className="font-medium text-emerald-500">
+                                ถูกต้อง
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-orange-500">
+                              <Sparkles className="h-5 w-5" />
+                              <span className="font-medium">
+                                ลองอ้าปากกว้างขึ้นให้เห็นฟันบนเล็กน้อย
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </CardContent>
+        </Card>
+      </section>
+    </main>
+  )
 }
