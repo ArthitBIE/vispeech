@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import TitleLogo from "@/components/layout/TitleLogo";
 
 const results = [
   {
@@ -60,20 +61,8 @@ export default function SummarizePage() {
     <main className="min-h-screen bg-neutral-50 text-black font-sans">
       <header className="h-16 border-b border-neutral-200 bg-white">
         <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
-          <Link href="#" className="flex items-center gap-3" aria-label="Vispeech home">
-            <div className="relative flex h-8 w-8 items-center justify-center">
-              <div className="absolute h-7 w-7 rotate-45 bg-black" />
-              <div className="absolute top-1 h-6 w-3 bg-white" />
-              <div className="relative text-xs font-bold tracking-tight text-white">
-                V
-              </div>
-            </div>
-
-            <div className="h-6 w-px bg-neutral-300" />
-
-            <span className="text-sm font-medium text-neutral-900">
-              Vispeech
-            </span>
+          <Link href="/" aria-label="Vispeech home">
+            <TitleLogo />
           </Link>
 
           <button

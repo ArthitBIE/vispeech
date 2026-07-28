@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import TitleLogo from "@/components/layout/TitleLogo";
 
 const lessons = [
   {
@@ -42,20 +43,8 @@ export default function HomePage() {
     <main className="min-h-screen bg-white text-black font-sans">
       <header className="fixed left-0 right-0 top-0 z-40 h-14 border-b border-neutral-200 bg-white">
         <div className="flex h-full items-center justify-between px-5">
-          <Link href="#" className="flex items-center gap-3" aria-label="Vispeech home">
-            <div className="relative flex h-8 w-8 items-center justify-center">
-              <div className="absolute h-7 w-7 rotate-45 bg-black" />
-              <div className="absolute top-1 h-6 w-3 bg-white" />
-              <div className="relative text-xs font-bold tracking-tight text-white">
-                V
-              </div>
-            </div>
-
-            <div className="h-6 w-px bg-neutral-300" />
-
-            <span className="text-sm font-medium text-neutral-900">
-              Vispeech
-            </span>
+          <Link href="/" aria-label="Vispeech home">
+            <TitleLogo />
           </Link>
 
           <button
