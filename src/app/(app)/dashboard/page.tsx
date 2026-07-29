@@ -1,28 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
-import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  BarChart3,
+  Play,
+  RotateCcw,
+  Star,
+  AlertTriangle,
+} from "lucide-react";
+
+// ── Types ──────────────────────────────────────────────
 
 interface Word {
   id: string;
   word: string;
   viseme_group: string;
   difficulty: number;
-}
-
-interface PracticeLog {
-  id: string;
-  word_id: string;
-  visual_score: number;
-  audio_score: number;
-  total_score: number;
-  created_at: string;
-  words: { word: string } | null;
 }
 
 interface WordAccuracy {
@@ -33,25 +31,265 @@ interface WordAccuracy {
   last_practiced_at: string;
 }
 
-interface PracticeSession {
+// ── Lesson definitions ─────────────────────────────────
+
+interface LessonDef {
   id: string;
-  total_attempts: number;
-  passed_count: number;
-  best_score: number;
-  created_at: string;
+  title: string;
+  chapter: string;
+  description: string;
+  filter: (w: Word) => boolean;
 }
+
+const LESSON_DEFS: LessonDef[] = [
+  {
+    id: "easy-vocab",
+    title: "คำศัพท์ง่าย",
+    chapter: "บทที่ 1",
+    description:
+      "ฝึกออกเสียงคำที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด",
+    filter: (w) => w.difficulty <= 1,
+  },
+  {
+    id: "vowels",
+    title: "เสียงสระ",
+    chapter: "บทที่ 1",
+    description:
+      "ฝึกออกเสียงสระในภาษาไทย พร้อมรูปปากและ Feedback ทันที",
+    filter: (w) => w.difficulty === 2,
+  },
+  {
+    id: "conversation",
+    title: "บทสนทนา",
+    chapter: "บทที่ 1",
+    description:
+      "ฝึกออกเสียงบทสนทนาที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด",
+    filter: (w) => w.difficulty >= 3,
+  },
+];
+
+// ── LessonItem (what each card renders) ────────────────
+
+interface LessonItem {
+  title: string;
+  chapter: string;
+  description: string;
+  progressText: string;
+  progressWidth: string;
+  completed: boolean;
+  highlighted: boolean;
+  accuracy?: string;
+  warning?: string;
+}
+
+const MOCK_LESSONS: LessonItem[] = [
+  {
+    title: "คำศัพท์ง่าย",
+    chapter: "บทที่ 1",
+    description:
+      "ฝึกออกเสียงคำที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด",
+    progressText: "5 / 5 คำ",
+    progressWidth: "100%",
+    completed: true,
+    highlighted: true,
+    accuracy: "84.6%",
+    warning: "มี 2 คำที่ควรฝึกเพิ่ม",
+  },
+  {
+    title: "เสียงสระ",
+    chapter: "บทที่ 1",
+    description:
+      "ฝึกออกเสียงสระในภาษาไทย พร้อมรูปปากและ Feedback ทันที",
+    progressText: "0 / 31 เสียง",
+    progressWidth: "0%",
+    completed: false,
+    highlighted: false,
+  },
+  {
+    title: "บทสนทนา",
+    chapter: "บทที่ 1",
+    description:
+      "ฝึกออกเสียงบทสนทนาที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด",
+    progressText: "0 / 5 บทสนทนา",
+    progressWidth: "0%",
+    completed: false,
+    highlighted: false,
+  },
+];
+
+// ── Skeleton ───────────────────────────────────────────
+
+function DashboardSkeleton() {
+  return (
+    <div className="mx-auto max-w-6xl space-y-10">
+      <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+      <div className="grid gap-4 xl:grid-cols-2">
+        {[1, 2].map((i) => (
+          <div
+            key={i}
+            className="relative min-h-48 animate-pulse rounded-2xl border border-border bg-card p-6"
+          >
+            <div className="mb-3 h-5 w-32 rounded bg-muted" />
+            <div className="mb-6 h-4 w-64 rounded bg-muted" />
+            <div className="mb-2 h-4 w-20 rounded bg-muted" />
+            <div className="h-5 w-full rounded-full bg-muted" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── LessonCard ─────────────────────────────────────────
+
+function LessonCard({ item }: { item: LessonItem }) {
+  const router = useRouter();
+
+  return (
+    <Card
+      padded={false}
+      className={
+        item.highlighted
+          ? "relative overflow-visible rounded-2xl border border-foreground shadow-none"
+          : "relative overflow-hidden rounded-2xl border border-border shadow-none"
+      }
+    >
+      {item.highlighted && (
+        <div className="absolute -right-1 -top-3 text-orange-500">
+          <AlertTriangle className="h-5 w-5 fill-orange-500 text-orange-500" />
+        </div>
+      )}
+
+      <CardContent className="relative min-h-48 p-6">
+        <div className="relative z-10 max-w-md">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2
+              className={
+                item.highlighted
+                  ? "text-lg font-bold text-foreground"
+                  : "text-lg font-bold text-muted-foreground"
+              }
+            >
+              {item.title}
+            </h2>
+            <span className="font-bold text-muted-foreground">·</span>
+            <p
+              className={
+                item.highlighted
+                  ? "text-lg font-bold text-foreground"
+                  : "text-lg font-bold text-muted-foreground"
+              }
+            >
+              {item.chapter}
+            </p>
+          </div>
+
+          <p className="mt-2 max-w-sm text-sm leading-5 text-muted-foreground">
+            {item.description}
+          </p>
+
+          <p
+            className={
+              item.highlighted
+                ? "mt-4 text-sm font-bold text-foreground"
+                : "mt-4 text-sm font-bold text-muted-foreground"
+            }
+          >
+            {item.progressText}
+          </p>
+
+          <div className="mt-3 h-5 max-w-sm overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-foreground"
+              style={{ width: item.progressWidth }}
+            />
+          </div>
+
+          {item.completed ? (
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              {item.accuracy && (
+                <Badge
+                  variant="secondary"
+                  className="rounded-md bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700 hover:bg-yellow-100"
+                >
+                  <Star className="mr-1 h-3 w-3 fill-yellow-500 text-yellow-500" />
+                  {item.accuracy}
+                </Badge>
+              )}
+
+              {item.warning && (
+                <Badge
+                  variant="secondary"
+                  className="rounded-md bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700 hover:bg-orange-100"
+                >
+                  <AlertTriangle className="mr-1 h-3 w-3 fill-orange-500 text-orange-500" />
+                  {item.warning}
+                </Badge>
+              )}
+            </div>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap items-center gap-4">
+            {item.completed ? (
+              <>
+                <Button
+                  className="h-8 rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90"
+                  onClick={() => router.push("/summary")}
+                >
+                  <BarChart3 className="mr-2 h-3 w-3" />
+                  สรุปผล
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="h-8 px-0 text-xs font-semibold text-muted-foreground hover:bg-transparent hover:text-foreground"
+                  onClick={() => router.push("/practice/session")}
+                >
+                  <RotateCcw className="mr-2 h-3 w-3" />
+                  เริ่มการฝึกซ้ำ
+                </Button>
+              </>
+            ) : (
+              <Button
+                className="h-8 rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90"
+                onClick={() => router.push("/practice/session")}
+              >
+                <Play className="mr-2 h-3 w-3 fill-primary-foreground" />
+                เริ่มการฝึก
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Decorative illustration circle */}
+        <div
+          className={
+            item.highlighted
+              ? "absolute bottom-4 right-8 h-28 w-28 rounded-full bg-muted"
+              : "absolute bottom-4 right-8 h-28 w-28 rounded-full bg-muted opacity-60"
+          }
+        />
+
+        {item.highlighted && (
+          <div className="absolute bottom-8 right-14 h-24 w-32 rounded-xl border border-dashed border-muted-foreground/30 opacity-60" />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────
 
 export default function DashboardPage() {
   const router = useRouter();
   const [session, setSession] = useState<any>(null);
   const [words, setWords] = useState<Word[]>([]);
-  const [logs, setLogs] = useState<PracticeLog[]>([]);
   const [accuracy, setAccuracy] = useState<Record<string, WordAccuracy>>({});
-  const [sessions, setSessions] = useState<PracticeSession[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadData() {
@@ -61,61 +299,64 @@ export default function DashboardPage() {
         return;
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
-        router.push("/auth");
+        router.push("/auth/signin");
         return;
       }
       setSession(session);
 
-      const [wordsRes, accuracyRes, logsRes, sessionsRes] = await Promise.all([
-        (async () => {
-          try {
-            const headers: Record<string, string> = {};
-            if (session?.access_token) {
-              headers["Authorization"] = `Bearer ${session.access_token}`;
-            }
-            const res = await fetch("/api/words", { headers });
-            if (res.status === 401) {
-              console.warn("API words: unauthorized, using empty list");
-              return [];
-            }
-            if (!res.ok) throw new Error(`API returned ${res.status}`);
-            const { words } = await res.json();
-            return words.map((w: any) => ({
-              id: w.id,
-              word: w.text,
-              viseme_group: w.visemeGroup,
-              difficulty: w.difficulty,
-            }));
-          } catch (e) {
-            console.warn("Failed to fetch words via API:", e);
-            return null;
-          }
-        })(),
-        supabase.from("word_accuracy").select("*").eq("user_id", session.user.id),
-        supabase
-          .from("practice_logs")
-          .select("*, words(word)")
-          .eq("user_id", session.user.id)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("practice_sessions")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .order("created_at", { ascending: false }),
-      ]);
+      // Fetch words via API, fallback to direct supabase query
+      let fetchedWords: Word[] = [];
+      try {
+        const headers: Record<string, string> = {};
+        if (session?.access_token) {
+          headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+        const res = await fetch("/api/words", { headers });
+        if (res.ok) {
+          const { words: apiWords } = await res.json();
+          fetchedWords = (apiWords || []).map((w: any) => ({
+            id: w.id,
+            word: w.text,
+            viseme_group: w.visemeGroup,
+            difficulty: w.difficulty ?? 0,
+          }));
+        }
+      } catch (e) {
+        console.warn("API words failed, querying supabase directly:", e);
+        const { data } = await supabase
+          .from("words")
+          .select("id, word, viseme_group, difficulty");
+        fetchedWords = (data || []).map((w: any) => ({
+          id: w.id,
+          word: w.word,
+          viseme_group: w.viseme_group,
+          difficulty: w.difficulty ?? 0,
+        }));
+      }
 
-      if (wordsRes) setWords(wordsRes);
+      setWords(fetchedWords);
+
+      // Fetch word accuracy
+      const { data: accData } = await supabase
+        .from("word_accuracy")
+        .select("*")
+        .eq("user_id", session.user.id);
 
       const accMap: Record<string, WordAccuracy> = {};
-      (accuracyRes.data || []).forEach((a: WordAccuracy) => {
-        accMap[a.word_id] = a;
+      (accData || []).forEach((a: any) => {
+        accMap[a.word_id] = {
+          word_id: a.word_id,
+          best_score: a.best_score,
+          average_score: a.average_score,
+          total_attempts: a.total_attempts,
+          last_practiced_at: a.last_practiced_at,
+        };
       });
       setAccuracy(accMap);
-
-      if (logsRes.data) setLogs(logsRes.data as PracticeLog[]);
-      if (sessionsRes.data) setSessions(sessionsRes.data as PracticeSession[]);
     } catch (err) {
       console.error("Dashboard load error:", err);
     } finally {
@@ -123,191 +364,101 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleLogout() {
-    await supabase?.auth?.signOut();
-    router.push("/auth");
-  }
+  // Build lesson items from real Supabase data
+  const realLessonItems = useMemo((): LessonItem[] | null => {
+    if (words.length === 0) return null;
+
+    const items = LESSON_DEFS.map((def) => {
+      const lessonWords = words.filter(def.filter);
+      const totalWords = lessonWords.length;
+      if (totalWords === 0) return null;
+
+      const completedWords = lessonWords.filter(
+        (w) => accuracy[w.id],
+      ).length;
+      const completed = completedWords > 0;
+      const progressWidth =
+        totalWords > 0
+          ? `${Math.round((completedWords / totalWords) * 100)}%`
+          : "0%";
+
+      // Average accuracy for this lesson type
+      const accValues = lessonWords
+        .map((w) => accuracy[w.id])
+        .filter((a): a is WordAccuracy => !!a);
+      const avgAccuracy =
+        accValues.length > 0
+          ? Math.round(
+              accValues.reduce((s, a) => s + a.average_score, 0) /
+                accValues.length,
+            )
+          : 0;
+
+      // Words needing improvement (score < 70)
+      const needingPractice = lessonWords.filter((w) => {
+        const a = accuracy[w.id];
+        return a && a.average_score < 70;
+      });
+      const highlighted = needingPractice.length > 0;
+
+      const progressText = completedWords
+        ? `${completedWords} / ${totalWords} คำ`
+        : `0 / ${totalWords} คำ`;
+
+      return {
+        title: def.title,
+        chapter: def.chapter,
+        description: def.description,
+        progressText,
+        progressWidth,
+        completed,
+        highlighted,
+        accuracy: avgAccuracy > 0 ? `${avgAccuracy}%` : undefined,
+        warning:
+          needingPractice.length > 0
+            ? `มี ${needingPractice.length} คำที่ควรฝึกเพิ่ม`
+            : undefined,
+      };
+    }).filter(Boolean) as LessonItem[];
+
+    return items.length > 0 ? items : null;
+  }, [words, accuracy]);
+
+  const displayItems = realLessonItems ?? MOCK_LESSONS;
+
+  // ── Render ──────────────────────────────────────
 
   if (!isSupabaseConfigured) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-muted px-4 text-center">
-        <h1 className="text-2xl font-bold">ยังไม่ได้ตั้งค่า Supabase</h1>
+      <div className="flex flex-col items-center justify-center gap-4 px-4 py-20 text-center">
+        <h1 className="text-2xl font-bold text-foreground">ยังไม่ได้ตั้งค่า Supabase</h1>
         <p className="max-w-md text-muted-foreground">
           กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL และ NEXT_PUBLIC_SUPABASE_ANON_KEY
           ในไฟล์ .env.local แล้วรีสตาร์ทเซิร์ฟเวอร์
         </p>
         <Button asChild>
-          <a href="/auth">ไปหน้าเข้าสู่ระบบ</a>
+          <a href="/auth/signin">ไปหน้าเข้าสู่ระบบ</a>
         </Button>
       </div>
     );
   }
 
-  const totalPracticed = Object.keys(accuracy).length;
-  const avgScore = totalPracticed > 0
-    ? Math.round(Object.values(accuracy).reduce((s, a) => s + a.average_score, 0) / totalPracticed)
-    : null;
-  const totalAttempts = Object.values(accuracy).reduce((s, a) => s + a.total_attempts, 0);
-
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">กำลังโหลด...</p>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-10">
-      <p className="max-w-2xl leading-relaxed text-muted-foreground">
-        ระบบนี้ช่วยให้ผู้ใช้เห็นคะแนนความแม่นยำของแต่ละคำ และติดตามพัฒนาการย้อนหลังได้
-      </p>
+    <div className="mx-auto max-w-6xl space-y-10">
+      <div className="flex items-center gap-3">
+        <BarChart3 className="h-5 w-5 text-foreground" />
+        <h1 className="text-lg font-bold text-foreground">ความก้าวหน้าทั้งหมด</h1>
+      </div>
 
-      <section className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <Card>
-          <div className="p-6">
-            <p className="text-sm font-medium text-muted-foreground">คำที่ฝึกแล้ว</p>
-            <p className="mt-2 text-3xl font-bold tabular-nums">{totalPracticed}</p>
-          </div>
-        </Card>
-        <Card>
-          <div className="p-6">
-            <p className="text-sm font-medium text-muted-foreground">คะแนนเฉลี่ย</p>
-            <p className="mt-2 text-3xl font-bold tabular-nums">
-              {avgScore !== null ? `${avgScore}` : "-"}
-            </p>
-          </div>
-        </Card>
-        <Card>
-          <div className="p-6">
-            <p className="text-sm font-medium text-muted-foreground">จำนวนครั้งที่ฝึก</p>
-            <p className="mt-2 text-3xl font-bold tabular-nums">{totalAttempts}</p>
-          </div>
-        </Card>
-      </section>
-
-      <section>
-        <h2 className="mb-5 text-lg font-semibold">ความแม่นยำแยกตามคำ</h2>
-        {words.length === 0 ? (
-          <p className="text-muted-foreground">ยังไม่มีคำศัพท์ในระบบ</p>
-        ) : (
-          <Card className="overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>คำ</TableHead>
-                  <TableHead>กลุ่มรูปปาก</TableHead>
-                  <TableHead>คะแนนดีที่สุด</TableHead>
-                  <TableHead>คะแนนเฉลี่ย</TableHead>
-                  <TableHead>จำนวนครั้ง</TableHead>
-                  <TableHead>ฝึกล่าสุด</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {words.map((w) => {
-                  const a = accuracy[w.id];
-                  return (
-                    <TableRow key={w.id} data-testid="dashboard-word-card">
-                      <TableCell className="font-medium">{w.word}</TableCell>
-                      <TableCell className="text-muted-foreground">{w.viseme_group}</TableCell>
-                      <TableCell className="tabular-nums">{a ? `${a.best_score}` : "-"}</TableCell>
-                      <TableCell className="tabular-nums">{a ? `${Math.round(a.average_score)}` : "-"}</TableCell>
-                      <TableCell className="tabular-nums">{a ? `${a.total_attempts}` : "-"}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {a ? new Date(a.last_practiced_at).toLocaleDateString("th-TH") : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Button asChild variant="secondary" size="sm">
-                          <a href={`/practice/${encodeURIComponent(w.word)}`}>ฝึก</a>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </Card>
-        )}
-      </section>
-
-      <section>
-        <h2 className="mb-5 text-lg font-semibold">ประวัติเซสชัน</h2>
-        {sessions.length === 0 ? (
-          <Card>
-            <div className="p-10 text-center text-muted-foreground">
-              ยังไม่มีประวัติเซสชัน
-            </div>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {sessions.slice(0, 10).map((s) => (
-              <Card key={s.id}>
-                <div className="flex items-center justify-between p-5">
-                  <div>
-                    <p className="font-medium">
-                      {new Date(s.created_at).toLocaleDateString("th-TH")} —{" "}
-                      {new Date(s.created_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      ผ่าน {s.passed_count}/{s.total_attempts} คำ
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold tabular-nums">{s.best_score}</p>
-                    <p className="text-xs text-muted-foreground">คะแนนสูงสุด</p>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h2 className="mb-5 text-lg font-semibold">ประวัติการฝึก</h2>
-        {logs.length === 0 ? (
-          <Card>
-            <div className="flex flex-col items-center gap-4 p-10 text-center">
-              <p className="text-muted-foreground">ยังไม่มีประวัติการฝึก เริ่มฝึกคำแรกของคุณเลย!</p>
-              {words.length > 0 && (
-                <Button asChild>
-                  <a href={`/practice/${encodeURIComponent(words[0].word)}`}>เริ่มฝึก</a>
-                </Button>
-              )}
-            </div>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {logs.map((log) => (
-              <Card key={log.id}>
-                <div className="flex items-center justify-between p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-sm font-medium text-primary">
-                      {log.words?.word?.charAt(0) || "?"}
-                    </div>
-                    <div>
-                      <p className="font-medium">{log.words?.word || "ไม่พบคำ"}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(log.created_at).toLocaleString("th-TH")}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-5 text-sm">
-                    <span className="text-muted-foreground">ภาพ <strong className="tabular-nums">{log.visual_score}</strong></span>
-                    <span className="text-muted-foreground">เสียง <strong className="tabular-nums">{log.audio_score}</strong></span>
-                    <Badge variant="secondary" className="font-semibold">รวม {log.total_score}</Badge>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <p className="rounded-lg border border-border bg-muted p-4 text-sm leading-relaxed text-muted-foreground">
-        สำหรับวรรณยุกต์ ระบบให้ความสำคัญกับเสียงพูด ส่วนพยัญชนะและรูปปากใช้การวิเคราะห์ภาพเป็นหลัก
-      </p>
+      <div className="grid gap-4 xl:grid-cols-2">
+        {displayItems.map((item) => (
+          <LessonCard key={item.title} item={item} />
+        ))}
+      </div>
     </div>
   );
 }

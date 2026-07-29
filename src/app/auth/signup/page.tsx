@@ -11,8 +11,8 @@ import TitleLogo from "@/components/layout/TitleLogo";
 export default function SignUpPage() {
   return (
     <main className="min-h-screen bg-white text-black flex flex-col font-sans">
-      <header className="h-16 border-b border-neutral-200 bg-white">
-        <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
+      <header className="h-14 border-b border-neutral-200 bg-white">
+        <div className="flex h-full items-center justify-between px-5">
           <Link href="/" aria-label="Vispeech home">
             <TitleLogo />
           </Link>

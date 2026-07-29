@@ -89,7 +89,7 @@ export default function PracticePage() {
     }
   }
 
-    async function handleStartCamera() {
+  async function handleStartCamera() {
     if (!videoRef.current || !canvasRef.current) {
       setError("เกิดข้อผิดพลาดในการเริ่มกล้อง กรุณาลองใหม่");
       return;
@@ -205,7 +205,7 @@ export default function PracticePage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">กำลังโหลด...</p>
+        <p className="text-muted-foreground">กำลังโหลด...</p>
       </div>
     );
   }
@@ -213,10 +213,10 @@ export default function PracticePage() {
   if (error && !wordData) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-gray-500">{error}</p>
+        <p className="text-muted-foreground">{error}</p>
         <button
           onClick={() => router.push("/dashboard")}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-white"
+          className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
         >
           กลับไปหน้าแดชบอร์ด
         </button>
@@ -225,49 +225,38 @@ export default function PracticePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="border-b bg-white shadow-sm">
-        <div className="mx-auto flex max-w-3xl items-center px-4 py-4">
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="text-sm text-indigo-600 hover:text-indigo-800"
-          >
-            ← กลับไปหน้าแดชบอร์ด
-          </button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
+    <div className="min-h-screen bg-background">
+      <main className="mx-auto max-w-3xl space-y-10 px-4 py-8">
         {wordData && (
           <>
             <div className="text-center">
-              <h1 className="text-5xl font-bold text-gray-900">{wordData.word}</h1>
-              <span className="mt-2 inline-block rounded-full bg-indigo-100 px-3 py-1 text-sm text-indigo-700">
+              <h1 className="text-5xl font-bold text-foreground">{wordData.word}</h1>
+              <span className="mt-2 inline-block rounded-full bg-primary/10 px-3 py-1 text-sm text-primary">
                 กลุ่มรูปปาก: {wordData.viseme_group}
               </span>
             </div>
 
-            <p className="text-center text-gray-600">
+            <p className="text-center text-muted-foreground">
               ลองออกเสียงคำนี้ แล้วระบบจะวิเคราะห์รูปปากและเสียงพูดของคุณ
             </p>
 
             {!result && (
-              <div className="space-y-4">
-                <div className="rounded-xl bg-white p-4 shadow-sm">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h2 className="font-semibold text-gray-800">กล้อง</h2>
+              <div className="space-y-8">
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="font-semibold text-foreground">กล้อง</h2>
                     {!cameraActive ? (
                       <button
                         onClick={handleStartCamera}
                         data-testid="practice-camera-btn"
-                        className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm text-white hover:bg-indigo-700"
+                        className="rounded-md bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
                       >
                         เริ่มกล้อง
                       </button>
                     ) : (
                       <button
                         onClick={handleStopCamera}
-                        className="rounded-lg bg-red-600 px-4 py-1.5 text-sm text-white hover:bg-red-700"
+                        className="rounded-md bg-destructive px-4 py-1.5 text-sm text-destructive-foreground hover:bg-destructive/90"
                       >
                         หยุดกล้อง
                       </button>
@@ -288,31 +277,31 @@ export default function PracticePage() {
                   </div>
 
                   {cameraActive && (
-                    <p className="mt-2 text-center text-sm text-gray-500">
+                    <p className="mt-2 text-center text-sm text-muted-foreground">
                       กล้องกำลังทำงาน
                     </p>
                   )}
 
-                  <p className="mt-1 text-center text-sm text-indigo-600" data-testid="practice-mouth-open">
+                  <p className="mt-1 text-center text-sm text-primary" data-testid="practice-mouth-open">
                     การเปิดปาก: {mouthOpen}%
                   </p>
                 </div>
 
-                <div className="rounded-xl bg-white p-4 shadow-sm">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h2 className="font-semibold text-gray-800">เสียงพูด</h2>
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="font-semibold text-foreground">เสียงพูด</h2>
                     {!listening ? (
                       <button
                         onClick={handleStartListening}
                         data-testid="practice-speech-btn"
-                        className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm text-white hover:bg-indigo-700"
+                        className="rounded-md bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
                       >
                         เริ่มพูด
                       </button>
                     ) : (
                       <button
                         onClick={handleStopListening}
-                        className="rounded-lg bg-red-600 px-4 py-1.5 text-sm text-white hover:bg-red-700"
+                        className="rounded-md bg-destructive px-4 py-1.5 text-sm text-destructive-foreground hover:bg-destructive/90"
                       >
                         หยุดฟัง
                       </button>
@@ -328,9 +317,9 @@ export default function PracticePage() {
                   )}
 
                   {transcript && (
-                    <div className="mt-2 rounded-lg bg-gray-50 p-3" data-testid="practice-transcript">
-                      <p className="text-sm text-gray-500">ข้อความที่ได้:</p>
-                      <p className="text-lg font-medium text-gray-900">{transcript}</p>
+                    <div className="mt-2 rounded-lg bg-muted p-3" data-testid="practice-transcript">
+                      <p className="text-sm text-muted-foreground">ข้อความที่ได้:</p>
+                      <p className="text-lg font-medium text-foreground">{transcript}</p>
                     </div>
                   )}
                 </div>
@@ -339,39 +328,39 @@ export default function PracticePage() {
                   onClick={handleSubmit}
                   disabled={submitting || (!transcript && mouthOpen === 0)}
                   data-testid="practice-submit"
-                  className="w-full rounded-lg bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 disabled:opacity-50"
+                  className="w-full rounded-md bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 disabled:opacity-50"
                 >
                   {submitting ? "กำลังส่งผล..." : "ส่งผล"}
                 </button>
               </div>
             )}
 
-              {result && (
-                <div className="rounded-xl bg-white p-6 shadow-sm" data-testid="score-card">
-                  <h2 className="mb-4 text-center text-lg font-semibold text-gray-800">
-                    ผลการฝึก
-                  </h2>
+            {result && (
+              <div className="rounded-xl border border-border bg-card p-6" data-testid="score-card">
+                <h2 className="mb-4 text-center text-lg font-semibold text-foreground">
+                  ผลการฝึก
+                </h2>
 
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-sm text-gray-500">คะแนนภาพ</p>
-                    <p className="text-2xl font-bold text-indigo-600">{result.visual_score}</p>
-                    <p className="text-xs text-gray-400">/100</p>
+                    <p className="text-sm text-muted-foreground">คะแนนภาพ</p>
+                    <p className="text-2xl font-bold text-primary">{result.visual_score}</p>
+                    <p className="text-xs text-muted-foreground">/100</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">คะแนนเสียง</p>
+                    <p className="text-sm text-muted-foreground">คะแนนเสียง</p>
                     <p className="text-2xl font-bold text-green-600">{result.audio_score}</p>
-                    <p className="text-xs text-gray-400">/100</p>
+                    <p className="text-xs text-muted-foreground">/100</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">คะแนนรวม</p>
+                    <p className="text-sm text-muted-foreground">คะแนนรวม</p>
                     <p className="text-2xl font-bold text-amber-600">{result.total_score}</p>
-                    <p className="text-xs text-gray-400">/100</p>
+                    <p className="text-xs text-muted-foreground">/100</p>
                   </div>
                 </div>
 
                 {result.feedback_th && (
-                  <div className="mt-4 rounded-lg bg-indigo-50 p-3 text-center text-sm text-gray-700">
+                  <div className="mt-4 rounded-lg bg-primary/10 p-3 text-center text-sm text-muted-foreground">
                     {result.feedback_th}
                   </div>
                 )}
@@ -379,7 +368,7 @@ export default function PracticePage() {
                 <button
                   onClick={handleTryAgain}
                   data-testid="try-again"
-                  className="mt-6 w-full rounded-lg bg-indigo-600 px-4 py-2 text-white font-medium hover:bg-indigo-700"
+                  className="mt-6 w-full rounded-md bg-primary px-4 py-2 text-primary-foreground font-medium hover:bg-primary/90"
                 >
                   ลองอีกครั้ง
                 </button>

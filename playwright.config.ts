@@ -18,12 +18,20 @@ export default defineConfig({
     },
     {
       name: "unauthenticated",
-      testMatch: "auth.spec.ts",
+      testMatch: ["auth.spec.ts", "auth-signin.spec.ts"],
       dependencies: [],
     },
     {
       name: "authenticated",
-      testMatch: ["dashboard.spec.ts", "practice.spec.ts"],
+      testMatch: [
+        "dashboard.spec.ts",
+        "practice.spec.ts",
+        "navigation.spec.ts",
+        "dashboard-progress.spec.ts",
+        "practice-session.spec.ts",
+        "summary.spec.ts",
+        "settings.spec.ts",
+      ],
       dependencies: ["setup"],
       use: {
         storageState: "e2e/.auth/user.json",
