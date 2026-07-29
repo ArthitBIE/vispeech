@@ -9,12 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 const GoogleIcon = () => (
   <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
@@ -77,104 +71,122 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted px-4">
-      <Card className="w-full max-w-md space-y-5 rounded-2xl border-border">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-base font-bold">Login to your account</h1>
-            <p className="mt-3 w-[245px] text-sm leading-snug text-muted-foreground">
-              Enter your email below to login to your account
-            </p>
-          </div>
-          <Button asChild variant="link" className="h-auto p-0 font-bold">
-            <Link href="/auth/signup">Sign Up</Link>
-          </Button>
-        </div>
-
-        <div className="space-y-5">
-          {!isSupabaseConfigured && (
-            <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
-              ยังไม่ได้ตั้งค่า Supabase กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL
-              และ NEXT_PUBLIC_SUPABASE_ANON_KEY ในไฟล์ .env.local
-            </div>
-          )}
-
-          {error && (
-            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-bold">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                data-testid="login-email"
-                placeholder="email@example.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-bold">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  data-testid="login-password"
-                  className="pr-9"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-2 text-muted-foreground"
-                  aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
-                >
-                  {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading || !isSupabaseConfigured}
-              data-testid="login-submit"
-              className="h-9 w-full bg-primary text-sm font-bold"
-            >
-              {loading ? "กำลังดำเนินการ..." : !isSupabaseConfigured ? "กรุณาตั้งค่าระบบก่อน" : "Login"}
-            </Button>
-          </form>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled
-                  className="flex h-8 w-full items-center justify-center gap-3 text-sm font-bold"
-                >
-                  <GoogleIcon />
-                  Login with Google
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Google เข้าสู่ระบบยังไม่เปิดให้บริการ</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <p className="text-center text-[10px] font-medium text-muted-foreground">
-            Don&apos;t have an account?
+    <div className="flex min-h-screen bg-background noise-bg">
+      {/* Brand Panel */}
+      <div className="hidden w-1/2 items-center justify-center bg-muted/30 p-8 lg:flex">
+        <div className="max-w-sm text-center">
+          <img
+            src="/title-top-left.svg"
+            alt="Vispeech Logo"
+            className="mx-auto mb-6 h-auto w-32"
+          />
+          <h2 className="text-balance text-2xl font-semibold text-foreground">
+            ฝึกออรักษ์ พูดภาษาไทยเป็นภาษาต้นฉบับ
+          </h2>
+          <p className="mt-3 text-muted-foreground">
+            เรียนรู้การออรักษ์อย่างถูกต้อง ด้วยการฝึกฝนและรับคำติชมจากระบบ
           </p>
         </div>
-      </Card>
+      </div>
+
+      {/* Form Side */}
+      <div className="flex w-full items-center justify-center px-4 py-12 lg:w-1/2">
+        <Card variant="elevated" className="w-full max-w-sm space-y-6 p-8">
+          <div className="space-y-2">
+            <h1 className="text-balance text-2xl font-semibold text-foreground">
+              เข้าสู่ระบบ
+            </h1>
+            <p className="text-muted-foreground">
+              ป้อนอีเมลและรหัสผ่านเพื่อเข้าสู่ระบบบัญชีของคุณ
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            {!isSupabaseConfigured && (
+              <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
+                ยังไม่ได้ตั้งค่า Supabase กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL
+                และ NEXT_PUBLIC_SUPABASE_ANON_KEY ในไฟล์ .env.local
+              </div>
+            )}
+
+            {error && (
+              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium">
+                  อีเมล
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  data-testid="login-email"
+                  placeholder="email@example.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium">
+                  รหัสผ่าน
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    data-testid="login-password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 rounded"
+                    aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                    tabIndex={0}
+                  >
+                    {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading || !isSupabaseConfigured}
+                data-testid="login-submit"
+                className="h-10 w-full bg-brand text-sm font-medium text-brand-foreground hover:opacity-90"
+              >
+                {loading ? "กำลังดำเนินการ..." : !isSupabaseConfigured ? "กรุณาตั้งค่าระบบก่อน" : "เข้าสู่ระบบ"}
+              </Button>
+            </form>
+
+            <Button
+              type="button"
+              variant="outline"
+              disabled
+              className="flex h-10 w-full items-center justify-center gap-3 text-sm font-medium"
+            >
+              <GoogleIcon />
+              เข้าสู่ระบบด้วย Google
+            </Button>
+
+            <p className="text-center text-sm text-muted-foreground">
+              ยังไม่มีบัญชี?{" "}
+              <Link href="/auth/signup" className="font-medium text-brand hover:underline">
+                สมัครสมาชิก
+              </Link>
+            </p>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

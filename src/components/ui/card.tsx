@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "surface" | "bordered" | "elevated";
+  variant?: "surface" | "bordered" | "elevated" | "ghost";
   padded?: boolean | string;
   interactive?: boolean;
 }
@@ -14,12 +14,18 @@ export function Card({
   ...props
 }: CardProps) {
   const variants = {
-    surface: "bg-card border border-border shadow-sm",
-    bordered: "bg-card border border-border shadow-sm",
-    elevated: "bg-card shadow-md",
+    surface:
+      "bg-card border border-border/60 shadow-xs",
+    bordered:
+      "bg-card border-2 border-border",
+    elevated:
+      "bg-card shadow-md shadow-black/5",
+    ghost:
+      "bg-transparent",
   } as const;
 
-  const padClass = padded === true ? "p-6" : typeof padded === "string" ? padded : "";
+  const padClass =
+    padded === true ? "p-6" : typeof padded === "string" ? padded : "";
 
   return (
     <div
@@ -27,7 +33,8 @@ export function Card({
         variants[variant],
         padClass,
         interactive &&
-          "transition-ui hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]",
+          "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand/5 active:scale-[0.98]",
+        "rounded-xl",
         className,
       )}
       {...props}

@@ -1,5 +1,14 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "openrouter": {
+      "options": {
+        "websearch_cited": {
+          "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+        }
+      }
+    }
+  },
   "autoupdate": true,
   "plugin": [
     "@dietrichgebert/ponytail@latest",
@@ -14,7 +23,11 @@
   "mcp": {
     "shadcn": {
       "type": "local",
-      "command": ["bunx", "shadcn@latest", "mcp"],
+      "command": [
+        "bunx",
+        "shadcn@latest",
+        "mcp"
+      ],
       "enabled": true
     },
     "context7": {
@@ -54,7 +67,12 @@
     },
     "figma": {
       "type": "local",
-      "command": ["bunx", "-y", "figma-developer-mcp", "--stdio"],
+      "command": [
+        "bunx",
+        "-y",
+        "figma-developer-mcp",
+        "--stdio"
+      ],
       "environment": {
         "FIGMA_API_KEY": "figd_nJmRSf3ToutYjOVSbubV0TJCtZRqPN6LzT5b_9KW"
       },
@@ -62,7 +80,11 @@
     }
   },
   "watcher": {
-    "ignore": ["node_modules/**", "dist/**", ".git/**"]
+    "ignore": [
+      "node_modules/**",
+      "dist/**",
+      ".git/**"
+    ]
   },
   "lsp": true,
   "formatter": true,

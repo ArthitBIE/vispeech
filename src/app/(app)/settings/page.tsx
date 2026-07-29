@@ -6,9 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 
 interface DeviceOption {
   deviceId: string;
@@ -95,106 +94,113 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1075px]">
-      <h1 className="text-2xl font-bold tracking-[-0.02em]">System Settings</h1>
-
-      <div className="mt-7 inline-block border-b border-primary pb-2 text-sm font-medium">
-        Settings
+    <div className="mx-auto w-full max-w-5xl space-y-8">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold tracking-[-0.02em] text-foreground">การตั้งค่าระบบ</h1>
+        <p className="text-sm text-muted-foreground">ตั้งค่าเสียงและไมโครโฟนเพื่อการฝึกออกเสียงที่ดีที่สุด</p>
       </div>
 
-      <Card className="mt-7 overflow-hidden">
-        {/* Enable row */}
-        <div className="flex h-[95px] items-start justify-between bg-muted px-8 py-5">
-          <div>
-            <h2 className="text-sm font-bold">Enable Microphone Input</h2>
-            <p className="mt-2 text-[13px] text-muted-foreground">
-              Allow the app to access your microphone for speech practice sessions.
-            </p>
+      <Card variant="elevated" padded={false} className="overflow-hidden">
+        <div className="border-b border-border bg-muted/50 px-8 py-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-foreground">เปิดใช้งานไมโครโฟน</h2>
+              <p className="mt-2 text-[13px] text-muted-foreground">
+                อนุญาตให้แอปเข้าถึงไมโครโฟนเพื่อฝึกออกเสียง
+              </p>
+            </div>
+            <Switch
+              checked={micEnabled}
+              onCheckedChange={(v) => {
+                setMicEnabled(v);
+                if (v) loadDevices();
+              }}
+              className="mt-1"
+            />
           </div>
-          <Switch
-            checked={micEnabled}
-            onCheckedChange={(v) => {
-              setMicEnabled(v);
-              if (v) loadDevices();
-            }}
-            className="mt-1"
-          />
         </div>
 
-        <div className="rounded-t-2xl border-t border-border bg-card">
-          {/* Input device row */}
-          <div className="grid grid-cols-2 border-b border-border px-8 py-7">
-            <div>
-              <h3 className="text-sm font-bold">Input device</h3>
-              <p className="mt-3 text-[13px] text-muted-foreground">
-                Select the microphone you want to use for practice.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-bold">Choose your input device</h3>
-              <Select
-                value={deviceId}
-                onValueChange={setDeviceId}
-                disabled={!micEnabled || !devices.length}
-              >
-                <SelectTrigger className="mt-3 h-10 w-[215px] text-xs">
-                  <SelectValue placeholder="เลือกไมโครโฟน" />
-                </SelectTrigger>
-                <SelectContent>
-                  {devices.map((d) => (
-                    <SelectItem key={d.deviceId} value={d.deviceId} className="text-xs">
-                      {d.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Sensitivity + test row */}
-          <div className="grid grid-cols-2 px-8 py-7">
-            <div>
-              <h3 className="text-sm font-bold">Microphone sensitivity</h3>
-              <p className="mt-3 text-[13px] text-muted-foreground">
-                Adjust how sensitive the mic is during practice.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-bold">Adjust sensitivity level</h3>
-              <div className="mt-5 flex items-center gap-3">
-                <Slider
-                  value={[sensitivity]}
-                  onValueChange={(v) => setSensitivity(v[0])}
-                  disabled={!micEnabled}
-                  className="w-[215px]"
-                />
-                <span className="text-xs text-muted-foreground">{sensitivity}%</span>
+        <div className="p-8">
+          <div className="grid gap-8 md:grid-cols-2">
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-bold text-foreground">อุปกรณ์รับเสียง</h3>
+                <p className="mt-2 text-[13px] text-muted-foreground">
+                  เลือกไมโครโฟนที่ต้องการใช้ฝึก
+                </p>
+                <div className="mt-4">
+                  <Select
+                    value={deviceId}
+                    onValueChange={setDeviceId}
+                    disabled={!micEnabled || !devices.length}
+                  >
+                    <SelectTrigger className="h-10 w-full text-xs">
+                      <SelectValue placeholder="เลือกไมโครโฟน" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {devices.map((d) => (
+                        <SelectItem key={d.deviceId} value={d.deviceId} className="text-xs">
+                          {d.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="mt-7">
-                <h3 className="text-sm font-bold">Test microphone</h3>
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  Make sure your selected device is working properly.
+              <div>
+                <h3 className="text-sm font-bold text-foreground">ความไวไมโครโฟน</h3>
+                <p className="mt-2 text-[13px] text-muted-foreground">
+                  ปรับความไวของไมโครโฟนระหว่างฝึก
                 </p>
                 <div className="mt-4 flex items-center gap-4">
-                  <Button
-                    size="sm"
-                    onClick={handleTest}
-                    disabled={!micEnabled || testing}
-                    className="gap-2"
-                  >
-                    <Mic className="h-3.5 w-3.5" />
-                    {testing ? "กำลังทดสอบ..." : "Start Test"}
-                  </Button>
-                  <div className="flex-1 max-w-[165px]">
-                    <Progress value={level} />
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    Level : {level > 0 ? `${level}%` : "-"}
-                  </span>
+                  <Slider
+                    value={[sensitivity]}
+                    onValueChange={(v) => setSensitivity(v[0])}
+                    disabled={!micEnabled}
+                    className="flex-1"
+                  />
+                  <Badge variant="secondary" className="min-w-[44px] justify-center">
+                    {sensitivity}%
+                  </Badge>
                 </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-foreground">ทดสอบไมโครโฟน</h3>
+              <p className="text-[13px] text-muted-foreground">
+                ตรวจสอบอุปกรณ์ที่เลือกทำงานได้ดีหรือไม่
+              </p>
+              
+              <div className="space-y-4">
+                <Button
+                  size="sm"
+                  onClick={handleTest}
+                  disabled={!micEnabled || testing}
+                  className="gap-2"
+                >
+                  <Mic className="h-4 w-4" />
+                  {testing ? "กำลังทดสอบ..." : "เริ่มทดสอบ"}
+                </Button>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">ระดับเสียง</span>
+                    <span className="text-xs font-medium text-foreground">
+                      {level > 0 ? `${level}%` : "-"}
+                    </span>
+                  </div>
+                  <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div 
+                      className="absolute left-0 top-0 h-full bg-brand transition-all duration-150"
+                      style={{ width: `${level}%` }}
+                    />
+                  </div>
+                </div>
+                
                 {error && (
-                  <p className="mt-3 text-xs text-destructive">{error}</p>
+                  <p className="text-xs text-destructive">{error}</p>
                 )}
               </div>
             </div>
