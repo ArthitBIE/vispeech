@@ -47,10 +47,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               href={href}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                "relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150",
                 active
-                  ? "bg-muted font-semibold text-foreground"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  ? "bg-accent font-semibold text-foreground before:absolute before:left-0 before:top-1/2 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-brand"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
               )}
             >
               <Icon className="h-4 w-4" />
@@ -65,11 +65,12 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <div className="flex items-center gap-2 text-sm font-medium">
             <Flame className="h-4 w-4 text-brand" />
             ติดต่อกัน
-            <Badge variant="secondary" className="ml-auto">
+            <span className="ml-auto text-xs font-bold tabular-nums text-brand">
               {STREAK} วัน
-            </Badge>
+            </span>
           </div>
           <Progress value={STREAK} className="mt-2" />
+          <p className="text-xs text-muted-foreground">เป้าหมาย 10 วัน</p>
         </div>
 
         <div className="flex items-center gap-3 rounded-lg bg-muted p-3">

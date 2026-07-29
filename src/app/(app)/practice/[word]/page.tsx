@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
-import { initFaceMesh, type LipMetrics, createMockLipMetrics, VISEME_GROUPS } from "@/lib/mediapipe";
+import { initFaceMesh } from "@/lib/mediapipe";
 import { createSpeechRecognizer } from "@/lib/viseme";
 import type { FaceMeshInstance } from "@/lib/mediapipe";
 import type { SpeechRecognizer } from "@/lib/viseme";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface WordRow {
   id: string;
@@ -20,18 +23,6 @@ interface ScoreResult {
   audio_score: number;
   total_score: number;
   feedback_th: string;
-}
-
-function ScoreBarVertical({ score, colorVar, label }: { score: number; colorVar: string; label: string }) {
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <p className="text-3xl font-bold tabular-nums" style={{ color: `var(${colorVar})` }}>{score}</p>
-      <div className="h-1.5 w-full max-w-20 overflow-hidden rounded-full bg-neutral-bg">
-        <div className="h-full rounded-full transition-all" style={{ width: `${score}%`, backgroundColor: `var(${colorVar})` }} />
-      </div>
-      <p className="label text-muted">{label}</p>
-    </div>
-  );
 }
 
 export default function PracticePage() {
@@ -51,8 +42,6 @@ export default function PracticePage() {
   const [cameraActive, setCameraActive] = useState(false);
   const [faceMesh, setFaceMesh] = useState<FaceMeshInstance | null>(null);
   const [mouthOpen, setMouthOpen] = useState(0);
-  const [lipMetrics, setLipMetrics] = useState<LipMetrics | null>(null);
-  const [visemeGroup, setVisemeGroup] = useState<string | null>(null);
 
   const [recognizer, setRecognizer] = useState<SpeechRecognizer | null>(null);
   const [listening, setListening] = useState(false);
@@ -113,25 +102,8 @@ export default function PracticePage() {
     demoCameraCleanupRef.current?.();
 
     const instance = await initFaceMesh(videoRef.current, canvasRef.current);
-    const { drawConnectors } = await import("@mediapipe/drawing_utils");
-    const faceMeshModule = await import("@mediapipe/face_mesh");
-    const FACEMESH_LIPS = (faceMeshModule as any).FACEMESH_LIPS;
     instance.onResult((res) => {
       setMouthOpen(res.mouthOpen);
-      if (res.lipMetrics) setLipMetrics(res.lipMetrics);
-      if (res.visemeGroup) setVisemeGroup(res.visemeGroup);
-
-      // Draw lip landmarks on canvas
-      if (canvasRef.current && res.landmarks?.[0]) {
-        const ctx = canvasRef.current.getContext("2d");
-        if (ctx) {
-          ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-          drawConnectors(ctx, res.landmarks[0], FACEMESH_LIPS, {
-            color: "#00FFFF",
-            lineWidth: 1.5,
-          });
-        }
-      }
     });
     try {
       await instance.start();
@@ -148,11 +120,8 @@ export default function PracticePage() {
       }, 5000);
     } catch {
       instance.stop();
-      const mockLipMetrics = createMockLipMetrics();
       const interval = setInterval(() => {
         setMouthOpen(Math.floor(Math.random() * 60) + 20);
-        setLipMetrics(mockLipMetrics);
-        setVisemeGroup(VISEME_GROUPS[Math.floor(Math.random() * VISEME_GROUPS.length)]);
       }, 500);
       demoCameraCleanupRef.current = () => clearInterval(interval);
       setCameraActive(true);
@@ -238,36 +207,43 @@ export default function PracticePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted">กำลังโหลด...</p>
+      <div className="flex min-h-screen items-center justify-center bg-muted/40 noise-bg">
+        <div className="space-y-4 text-center">
+          <div className="mx-auto h-12 w-12 rounded-full border-2 border-brand border-t-transparent animate-spin" />
+          <p className="text-sm text-muted-foreground">กำลังโหลด...</p>
+        </div>
       </div>
     );
   }
 
   if (error && !wordData) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-muted">{error}</p>
-        <button
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-muted/40 noise-bg">
+        <p className="text-muted-foreground">{error}</p>
+        <Button
           onClick={() => router.push("/dashboard")}
-          className="rounded-md bg-primary px-4 py-2 text-surface transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-ambient-high"
+          variant="outline"
         >
-          กลับไปหน้าแดชบอร์ด
-        </button>
+          ← กลับไปหน้าแดชบอร์ด
+        </Button>
       </div>
     );
   }
 
+  const PASS_THRESHOLD = 70;
+
   return (
-    <div className="min-h-screen bg-neutral-bg">
-      <header className="border-b border-border-subtle bg-surface">
+    <div className="min-h-screen bg-muted/40 noise-bg">
+      <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-3xl items-center px-4 py-4">
-          <button
+          <Button
             onClick={() => router.push("/dashboard")}
-            className="text-sm text-primary hover:text-primary-hover"
+            variant="ghost"
+            size="sm"
+            className="px-0"
           >
             ← กลับไปหน้าแดชบอร์ด
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -275,40 +251,42 @@ export default function PracticePage() {
         {wordData && (
           <>
             <div className="text-center">
-              <h1 className="display text-ink">{wordData.word}</h1>
-              <span className="mt-2 inline-block rounded-full bg-primary-light px-3 py-1 text-sm text-primary">
+              <h1 className="text-5xl font-bold text-foreground text-balance">{wordData.word}</h1>
+              <Badge variant="secondary" className="mt-3">
                 กลุ่มรูปปาก: {wordData.viseme_group}
-              </span>
+              </Badge>
             </div>
 
-            <p className="text-center text-muted">
+            <p className="text-center text-muted-foreground text-balance">
               ลองออกเสียงคำนี้ แล้วระบบจะวิเคราะห์รูปปากและเสียงพูดของคุณ
             </p>
 
             {!result && (
               <div className="space-y-4">
-                <div className="rounded-lg bg-surface p-4 shadow-ambient-low">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h2 className="font-semibold text-ink">กล้อง</h2>
+                <Card variant="elevated" padded>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="font-semibold text-foreground">กล้อง</h2>
                     {!cameraActive ? (
-                      <button
+                      <Button
                         onClick={handleStartCamera}
                         data-testid="practice-camera-btn"
-                        className="rounded-md bg-primary px-4 py-1.5 text-sm text-surface transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-ambient-high"
+                        variant="default"
+                        size="sm"
                       >
                         เริ่มกล้อง
-                      </button>
+                      </Button>
                     ) : (
-                      <button
+                      <Button
                         onClick={handleStopCamera}
-                        className="rounded-md bg-danger px-4 py-1.5 text-sm text-surface hover:opacity-90"
+                        variant="outline"
+                        size="sm"
                       >
                         หยุดกล้อง
-                      </button>
+                      </Button>
                     )}
                   </div>
 
-                  <div className={`relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-md bg-black ${cameraActive ? "" : "hidden"}`}>
+                  <div className={`relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-lg bg-primary ${cameraActive ? "" : "hidden"}`}>
                     <video
                       ref={videoRef}
                       className="h-full w-full object-cover"
@@ -322,126 +300,105 @@ export default function PracticePage() {
                   </div>
 
                   {cameraActive && (
-                    <p className="mt-2 text-center text-sm text-muted">
+                    <p className="mt-2 text-center text-sm text-muted-foreground">
                       กล้องกำลังทำงาน
                     </p>
                   )}
 
-                  <p className="mt-1 text-center text-sm text-primary" data-testid="practice-mouth-open">
+                  <p className="mt-1 text-center text-sm text-brand" data-testid="practice-mouth-open">
                     การเปิดปาก: {mouthOpen}%
                   </p>
+                </Card>
 
-                  {lipMetrics && (
-                    <div className="mt-4 rounded-md bg-neutral-bg p-3" data-testid="practice-lip-metrics">
-                      <h3 className="mb-2 text-sm font-semibold text-ink">ตัวชี้วัดรูปปาก (Normalized)</h3>
-                      <div className="grid grid-cols-4 gap-2 text-xs">
-                        <div className="text-center">
-                          <p className="text-muted">ความกว้าง</p>
-                          <p className="font-mono text-primary" data-testid="practice-lip-width">{lipMetrics.normWidth.toFixed(3)}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-muted">ความสูง</p>
-                          <p className="font-mono text-primary" data-testid="practice-lip-height">{lipMetrics.normHeight.toFixed(3)}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-muted">ความโค้ง</p>
-                          <p className="font-mono text-primary" data-testid="practice-lip-curvature">{lipMetrics.curvature.toFixed(3)}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-muted">ความสมมาตร</p>
-                          <p className="font-mono text-primary" data-testid="practice-lip-symmetry">{(1 - lipMetrics.asymmetry).toFixed(3)}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {visemeGroup && (
-                    <div className="mt-3 rounded-md bg-primary-light p-3" data-testid="practice-viseme">
-                      <p className="text-sm text-primary">
-                        รูปปากที่ตรวจพบ: <span className="font-bold" data-testid="practice-viseme-detected">{visemeGroup}</span>
-                      </p>
-                      <p className="text-xs text-muted mt-1">
-                        เป้าหมาย: {wordData?.viseme_group || "—"}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-lg bg-surface p-4 shadow-ambient-low">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h2 className="font-semibold text-ink">เสียงพูด</h2>
+                <Card variant="elevated" padded>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="font-semibold text-foreground">เสียงพูด</h2>
                     {!listening ? (
-                      <button
+                      <Button
                         onClick={handleStartListening}
                         data-testid="practice-speech-btn"
-                        className="rounded-md bg-primary px-4 py-1.5 text-sm text-surface transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-ambient-high"
+                        variant="default"
+                        size="sm"
                       >
                         เริ่มพูด
-                      </button>
+                      </Button>
                     ) : (
-                      <button
+                      <Button
                         onClick={handleStopListening}
-                        className="rounded-md bg-danger px-4 py-1.5 text-sm text-surface hover:opacity-90"
+                        variant="outline"
+                        size="sm"
                       >
                         หยุดฟัง
-                      </button>
+                      </Button>
                     )}
                   </div>
 
                   {listening && (
-                    <p className="text-sm text-accent-green">กำลังฟัง...</p>
+                    <p className="text-sm text-brand">กำลังฟัง...</p>
                   )}
 
                   {speechError && (
-                    <p className="text-sm text-accent-amber">{speechError}</p>
+                    <p className="text-sm text-amber-500">{speechError}</p>
                   )}
 
                   {transcript && (
-                    <div className="mt-2 rounded-md bg-neutral-bg p-3" data-testid="practice-transcript">
-                      <p className="text-sm text-muted">ข้อความที่ได้:</p>
-                      <p className="text-lg font-medium text-ink">{transcript}</p>
+                    <div className="mt-2 rounded-lg bg-muted p-3" data-testid="practice-transcript">
+                      <p className="text-sm text-muted-foreground">ข้อความที่ได้:</p>
+                      <p className="mt-1 text-lg font-medium text-foreground">{transcript}</p>
                     </div>
                   )}
-                </div>
+                </Card>
 
-                <button
+                <Button
                   onClick={handleSubmit}
                   disabled={submitting || (!transcript && mouthOpen === 0)}
                   data-testid="practice-submit"
-                  className="w-full rounded-md bg-accent-green px-4 py-3 text-surface font-semibold hover:opacity-90 disabled:opacity-50"
+                  className="w-full"
                 >
                   {submitting ? "กำลังส่งผล..." : "ส่งผล"}
-                </button>
+                </Button>
               </div>
             )}
 
               {result && (
-                <div className="rounded-lg bg-surface p-6 shadow-ambient-low" data-testid="score-card">
-                  <h2 className="title mb-4 text-center text-ink">
+                <Card variant="elevated" padded className="text-center" data-testid="score-card">
+                  <h2 className="mb-4 text-lg font-semibold text-foreground text-balance">
                     ผลการฝึก
                   </h2>
-
-                {result.feedback_th && (
-                  <div className="mb-6 rounded-md bg-primary-light p-4 text-center text-muted">
-                    {result.feedback_th}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="rounded-lg bg-muted p-3">
+                      <p className="text-xs font-medium text-muted-foreground">คะแนนภาพ</p>
+                      <p className="mt-1 text-xl font-bold text-foreground tabular-nums">{result.visual_score}</p>
+                      <p className="text-[10px] text-muted-foreground">/100</p>
+                    </div>
+                    <div className="rounded-lg bg-muted p-3">
+                      <p className="text-xs font-medium text-muted-foreground">คะแนนเสียง</p>
+                      <p className="mt-1 text-xl font-bold text-emerald-500 tabular-nums">{result.audio_score}</p>
+                      <p className="text-[10px] text-muted-foreground">/100</p>
+                    </div>
+                    <div className="rounded-lg bg-muted p-3">
+                      <p className="text-xs font-medium text-muted-foreground">คะแนนรวม</p>
+                      <p className={`mt-1 text-xl font-bold tabular-nums ${result.total_score >= PASS_THRESHOLD ? "text-emerald-500" : "text-amber-500"}`}>{result.total_score}</p>
+                      <p className="text-[10px] text-muted-foreground">/100</p>
+                    </div>
                   </div>
-                )}
 
-                <div className="grid grid-cols-3 gap-4">
-                  <ScoreBarVertical score={result.visual_score} colorVar="--color-primary" label="ภาพ" />
-                  <ScoreBarVertical score={result.audio_score} colorVar="--color-accent-green" label="เสียง" />
-                  <ScoreBarVertical score={result.total_score} colorVar="--color-accent-amber" label="รวม" />
-                </div>
+                  {result.feedback_th && (
+                    <div className="mt-4 rounded-lg bg-brand/5 p-3 text-sm text-foreground">
+                      {result.feedback_th}
+                    </div>
+                  )}
 
-                <button
-                  onClick={handleTryAgain}
-                  data-testid="try-again"
-                  className="mt-6 w-full rounded-md bg-primary px-4 py-2 text-surface font-medium transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-ambient-high"
-                >
-                  ลองอีกครั้ง
-                </button>
-              </div>
-            )}
+                  <Button
+                    onClick={handleTryAgain}
+                    data-testid="try-again"
+                    variant="outline"
+                    className="mt-6 w-full"
+                  >
+                    ลองอีกครั้ง
+                  </Button>
+                </Card>
+              )}
           </>
         )}
       </main>

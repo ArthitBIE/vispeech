@@ -2,12 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Play, Sparkles } from "lucide-react";
+import { Search, Play, Sparkles, Flame } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -95,42 +94,63 @@ export default function HomePage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      <div>
-        <h1 className="text-xl font-bold">หน้าหลัก</h1>
-        <p className="text-sm text-muted-foreground">เลือกบทเรียนที่อยากฝึกวันนี้เลย</p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-10">
+      {/* Hero Header */}
+      <header className="space-y-3">
+        <h1 className="text-balance text-3xl font-bold text-foreground">
+          ฝึกออกเสียงไพเราะ
+        </h1>
+        <p className="max-w-2xl text-muted-foreground">
+          เลือกบทเรียนที่อยากฝึกวันนี้ หรือดูความก้าวหน้าของคุณที่แดชบอร์ด
+        </p>
+      </header>
 
-      <Card className="border-brand/40">
-        <div className="flex flex-wrap items-center gap-6 p-6">
-          <span className="text-4xl">🔥</span>
-          <div className="flex-1">
-            <h2 className="text-lg font-bold">ต่อเนื่อง {STREAK} วันแล้ว!</h2>
-            <div className="mt-3 flex items-center gap-4">
-              <Progress value={(STREAK / STREAK_GOAL) * 100} className="h-2 w-full max-w-sm" />
-              <span className="text-sm font-medium tabular-nums">
-                {STREAK}/{STREAK_GOAL}
-              </span>
+      {/* Streak & Quick Start - Asymmetric */}
+      <section className="grid gap-6 lg:grid-cols-3">
+        <Card variant="elevated" className="relative overflow-hidden lg:col-span-2">
+          <div className="noise-bg absolute inset-0 opacity-30" />
+          <div className="relative flex items-center gap-6 p-6">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-brand/10">
+              <Flame className="h-10 w-10 text-brand" strokeWidth={1.5} />
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="hidden h-5 w-5 text-brand sm:block" />
-            <p className="hidden text-sm font-semibold sm:block">
-              แนะนำวันนี้
-              <span className="mx-2 text-muted-foreground">·</span>
-              {lessons[0]?.group ?? "คำศัพท์ง่าย"}
-            </p>
-            <Button asChild>
+            <div className="flex-1">
+              <h2 className="text-lg font-bold">ต่อเนื่อง {STREAK} วันแล้ว!</h2>
+              <div className="mt-3 flex items-baseline gap-4">
+                <div className="flex-1">
+                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full bg-brand transition-all duration-500"
+                      style={{ width: `${(STREAK / STREAK_GOAL) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <span className="text-sm font-medium tabular-nums">
+                  {STREAK}/{STREAK_GOAL}
+                </span>
+              </div>
+            </div>
+            <Button asChild className="shrink-0">
               <Link href="/practice/session">
                 <Play className="h-3.5 w-3.5 fill-current" />
                 เริ่มการฝึก
               </Link>
             </Button>
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Card variant="surface" padded={false} className="flex items-center justify-center p-6">
+          <div className="text-center">
+            <Sparkles className="mx-auto h-8 w-8 text-brand" />
+            <p className="mt-2 text-sm">
+              แนะนำวันนี้<span className="mx-1.5 text-muted-foreground">·</span>
+              <span className="font-medium">{lessons[0]?.group ?? "คำศัพท์ง่าย"}</span>
+            </p>
+          </div>
+        </Card>
+      </section>
+
+      {/* Filter & Search */}
+      <div className="flex flex-wrap items-center gap-4">
         <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
           <TabsList>
             <TabsTrigger value="all">ทั้งหมด ({lessons.length})</TabsTrigger>
@@ -140,53 +160,76 @@ export default function HomePage() {
           </TabsList>
         </Tabs>
 
-        <div className="relative w-64">
-          <Search className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
+        <div className="relative flex-1 sm:flex-none">
+          <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="ค้นหาบทเรียน"
-            className="pr-9"
+            placeholder="ค้นหาบทเรียน..."
+            className="pl-9 sm:w-64"
           />
         </div>
       </div>
 
+      {/* Lessons Grid - Asymmetric 2-col */}
       {loading ? (
-        <p className="text-muted-foreground">กำลังโหลด...</p>
+        <div className="grid gap-6 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} variant="elevated" className="h-64 animate-pulse" />
+          ))}
+        </div>
       ) : filteredLessons.length === 0 ? (
-        <p className="text-muted-foreground">ยังไม่มีบทเรียนในระบบ</p>
+        <Card variant="ghost" className="py-20 text-center">
+          <p className="text-muted-foreground">ยังไม่มีบทเรียนในระบบ</p>
+          <Button asChild variant="outline" className="mt-6">
+            <Link href="/practice/session">เริ่มฝึกฝนแทน</Link>
+          </Button>
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredLessons.map((lesson) => (
-            <Card key={lesson.group} className="flex flex-col p-4">
-              <div className="relative mb-4 h-[135px] overflow-hidden rounded-lg bg-muted">
-                <div className="absolute bottom-2 right-4 flex h-16 w-16 items-center justify-center rounded-full bg-background text-muted-foreground">
+        <div className="grid gap-6 sm:grid-cols-2">
+          {filteredLessons.map((lesson, idx) => (
+            <Card
+              key={lesson.group}
+              variant={idx % 3 === 0 ? "elevated" : "surface"}
+              interactive
+              className="flex flex-col"
+            >
+              <div className="relative mb-4 h-36 overflow-hidden rounded-lg bg-muted">
+                <img
+                  src={`https://picsum.photos/seed/${encodeURIComponent(lesson.group)}/400/180`}
+                  alt=""
+                  className="h-full w-full object-cover opacity-60 blur-[1px]"
+                />
+                <div className="absolute inset-0 flex items-center justify-center text-4xl">
                   🦊
                 </div>
               </div>
-              <h4 className="text-base font-bold">{lesson.group}</h4>
+              <h4 className="text-base font-bold">บทเรียน: {lesson.group}</h4>
               <Badge variant="secondary" className="mt-1 w-fit">
-                บทที่ 1
+                ระดับ 1
               </Badge>
-              <p className="mt-3 min-h-[44px] text-xs leading-snug text-muted-foreground">
-                ฝึกออกเสียงคำที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด
+              <p className="mt-3 text-xs text-muted-foreground">
+                ฝึกออกเสียงคำที่ใช้บ่อย พร้อม Feedback ทันที
               </p>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <div className="rounded-lg bg-muted py-3 text-center">
-                  <p className="text-[10px] text-muted-foreground">คำ</p>
-                  <p className="text-2xl font-bold">{lesson.count}</p>
+
+              <div className="mt-auto pt-4">
+                <div className="mb-4 grid grid-cols-2 gap-2">
+                  <div className="rounded-lg bg-muted py-2 text-center">
+                    <p className="text-[10px] text-muted-foreground">คำ</p>
+                    <p className="text-xl font-bold">{lesson.count}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted py-2 text-center">
+                    <p className="text-[10px] text-muted-foreground">การฝึก</p>
+                    <p className="text-xl font-bold">-</p>
+                  </div>
                 </div>
-                <div className="rounded-lg bg-muted py-3 text-center">
-                  <p className="text-[10px] text-muted-foreground">การฝึก</p>
-                  <p className="text-2xl font-bold">-</p>
-                </div>
+                <Button asChild className="w-full">
+                  <Link href="/practice/session">
+                    <Play className="h-3.5 w-3.5 fill-current" />
+                    เริ่มการฝึก
+                  </Link>
+                </Button>
               </div>
-              <Button asChild className="mt-5 w-full">
-                <Link href="/practice/session">
-                  <Play className="h-3.5 w-3.5 fill-current" />
-                  เริ่มการฝึก
-                </Link>
-              </Button>
             </Card>
           ))}
         </div>
