@@ -1,0 +1,24 @@
+- generic [active] [ref=f5e1]:
+  - generic [ref=f5e3]:
+    - generic [ref=f5e4]:
+      - generic [ref=f5e5]:
+        - heading "Login to your account" [level=1] [ref=f5e6]
+        - paragraph [ref=f5e7]: Enter your email below to login to your account
+      - link "Sign Up" [ref=f5e8] [cursor=pointer]:
+        - /url: /auth/signup
+    - generic [ref=f5e9]:
+      - generic [ref=f5e10]:
+        - generic [ref=f5e11]:
+          - generic [ref=f5e12]: Email
+          - textbox "Email" [ref=f5e13]:
+            - /placeholder: email@example.com
+        - generic [ref=f5e14]:
+          - generic [ref=f5e15]: Password
+          - generic [ref=f5e16]:
+            - textbox "Password" [ref=f5e17]
+            - button "แสดงรหัสผ่าน" [ref=f5e18]
+        - button "Login" [ref=f5e24]
+      - button "Login with Google" [disabled]
+      - paragraph [ref=f5e25]: Don't have an account?
+  - button "Open Next.js Dev Tools" [ref=f5e31] [cursor=pointer]
+  - alert [ref=f5e35]

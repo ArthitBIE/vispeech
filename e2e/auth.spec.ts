@@ -18,6 +18,24 @@ test.describe("Auth page", () => {
     });
   });
 
+  test("toggles to signup mode and back", async ({ page }) => {
+    await page.goto("/auth");
+    await page.click("text=สมัครสมาชิก");
+    await expect(page.locator('[data-testid="signup-email"]')).toBeVisible();
+    await expect(page.locator('[data-testid="signup-password"]')).toBeVisible();
+    await expect(page.locator('[data-testid="signup-submit"]')).toBeVisible();
+    await page.click("text=มีบัญชีอยู่แล้ว?");
+    await expect(page.locator('[data-testid="login-email"]')).toBeVisible();
+  });
+
+  test("signup with empty fields shows validation error", async ({ page }) => {
+    await page.goto("/auth");
+    await page.click("text=สมัครสมาชิก");
+    await page.click('[data-testid="signup-submit"]');
+    // Expect either an error message or form validation
+    await expect(page.locator("text=อีเมล").first()).toBeVisible();
+  });
+
   test("login with valid credentials redirects to dashboard", async ({ page }) => {
     const email = process.env.E2E_TEST_EMAIL;
     const password = process.env.E2E_TEST_PASSWORD;

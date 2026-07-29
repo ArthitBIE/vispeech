@@ -2,30 +2,32 @@
   "$schema": "https://opencode.ai/config.json",
   "provider": {
     "openrouter": {
-      "models": {
-        "nvidia/nemotron-3-super-120b-a12b:free": {}
-      },
       "options": {
         "websearch_cited": {
-          "model": "nvidia/nemotron-3-super-120b-a12b:free"
+          "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
         }
       }
     }
   },
   "autoupdate": true,
-  "tools": {
-    "webfetch": true
-  },
   "plugin": [
     "@dietrichgebert/ponytail@latest",
+    "@tarquinen/opencode-dcp@latest",
     "@zenobius/opencode-skillful@latest",
-    "@plannotator/opencode@latest",
-    "@oh-my-opencode-slim@latest"
+    "@opencode-goal-plugin@latest",
+    "@plannotator/opencode@latest"
+  ],
+  "instructions": [
+    "./.agents/plugins/opencode-shell-strategy/shell_strategy.md"
   ],
   "mcp": {
     "shadcn": {
       "type": "local",
-      "command": ["npx", "shadcn@latest", "mcp"],
+      "command": [
+        "bunx",
+        "shadcn@latest",
+        "mcp"
+      ],
       "enabled": true
     },
     "context7": {
@@ -39,9 +41,18 @@
     "playwright": {
       "type": "local",
       "command": [
-        "npx",
+        "bunx",
         "@playwright/mcp@latest",
         "--caps=network,storage,testing,vision,pdf,devtools"
+      ],
+      "enabled": true
+    },
+    "sequential-thinking": {
+      "type": "local",
+      "command": [
+        "bunx",
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
       ],
       "enabled": true
     },
@@ -53,10 +64,27 @@
       "headers": {
         "Authorization": "Bearer {env:GITHUB_PERSONAL_ACCESS_TOKEN}"
       }
+    },
+    "figma": {
+      "type": "local",
+      "command": [
+        "bunx",
+        "-y",
+        "figma-developer-mcp",
+        "--stdio"
+      ],
+      "environment": {
+        "FIGMA_API_KEY": "figd_nJmRSf3ToutYjOVSbubV0TJCtZRqPN6LzT5b_9KW"
+      },
+      "enabled": true
     }
   },
   "watcher": {
-    "ignore": ["node_modules/**", "dist/**", ".git/**"]
+    "ignore": [
+      "node_modules/**",
+      "dist/**",
+      ".git/**"
+    ]
   },
   "lsp": true,
   "formatter": true,
@@ -69,6 +97,12 @@
       "rm *": "deny",
       "grep *": "allow"
     },
+    "question": "allow",
+    "websearch": "allow",
+    "edit": "allow",
+    "todowrite": "allow",
+    "skill": "allow",
+    "read": "allow",
     "external_directory": {
       "~/Document/*": "allow"
     }
@@ -81,6 +115,50 @@
     "review-pr": {
       "description": "Review PR changes with structured checklist",
       "template": "{file:.opencode/commands/review-pr.md}\n\n$ARGUMENTS"
+    },
+    "prp-commit": {
+      "description": "Commit using PRP conventions",
+      "template": "{file:.opencode/commands/prp-commit.md}\n\n$ARGUMENTS"
+    },
+    "prp-implement": {
+      "description": "Implement using PRP conventions",
+      "template": "{file:.opencode/commands/prp-implement.md}\n\n$ARGUMENTS"
+    },
+    "prp-plan": {
+      "description": "Plan using PRP conventions",
+      "template": "{file:.opencode/commands/prp-plan.md}\n\n$ARGUMENTS"
+    },
+    "prp-prd": {
+      "description": "Generate PRD using PRP conventions",
+      "template": "{file:.opencode/commands/prp-prd.md}\n\n$ARGUMENTS"
+    },
+    "prp-pr": {
+      "description": "Create PR using PRP conventions",
+      "template": "{file:.opencode/commands/prp-pr.md}\n\n$ARGUMENTS"
+    },
+    "evolve": {
+      "description": "Cluster instincts into skills",
+      "template": "{file:.opencode/commands/evolve.md}\n\n$ARGUMENTS"
+    },
+    "promote": {
+      "description": "Promote project instincts to global scope",
+      "template": "{file:.opencode/commands/promote.md}\n\n$ARGUMENTS"
+    },
+    "instinct-status": {
+      "description": "View learned instincts",
+      "template": "{file:.opencode/commands/instinct-status.md}\n\n$ARGUMENTS"
+    },
+    "instinct-import": {
+      "description": "Import instincts",
+      "template": "{file:.opencode/commands/instinct-import.md}\n\n$ARGUMENTS"
+    },
+    "instinct-export": {
+      "description": "Export instincts",
+      "template": "{file:.opencode/commands/instinct-export.md}\n\n$ARGUMENTS"
+    },
+    "projects": {
+      "description": "List known projects and instinct stats",
+      "template": "{file:.opencode/commands/projects.md}\n\n$ARGUMENTS"
     },
     "hookify": {
       "description": "Create hooks to prevent unwanted behaviors",
@@ -98,9 +176,13 @@
       "description": "List all configured hookify rules",
       "template": "{file:.opencode/commands/hookify-list.md}\n\n$ARGUMENTS"
     },
-    "setup-pre-commit": {
-      "description": "Set up Husky pre-commit hooks with lint-staged, type checking, and tests",
-      "template": "{file:.opencode/commands/setup-pre-commit.md}\n\n$ARGUMENTS"
+    "cost-report": {
+      "description": "Generate cost report from metrics log",
+      "template": "{file:.opencode/commands/cost-report.md}\n\n$ARGUMENTS"
+    },
+    "harness-audit": {
+      "description": "Run repository harness audit with prioritized scorecard",
+      "template": "{file:.opencode/commands/harness-audit.md}\n\n$ARGUMENTS"
     }
   }
 }
