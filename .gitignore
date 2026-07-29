@@ -50,3 +50,11 @@ test-results/
 # ai tooling
 workflows/
 /NOTES.md
+
+# personal tooling (not project code)
+/.opencode/
+/.agents/
+/.planning/
+.claude/
+/.kilo/
+/.impeccable/

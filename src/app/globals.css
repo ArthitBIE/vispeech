@@ -1,69 +1,129 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-
-  --color-primary: #4F46E5;
-  --color-primary-hover: #4338CA;
-  --color-primary-light: #EEF2FF;
-  --color-ink: #111827;
-  --color-muted: #6B7280;
-  --color-neutral-bg: #F9FAFB;
-  --color-surface: #FFFFFF;
-  --color-border-subtle: #E5E7EB;
-  --color-border-default: #D1D5DB;
-  --color-accent-green: #16A34A;
-  --color-accent-amber: #D97706;
-  --color-danger: #DC2626;
-  --color-danger-light: #FEF2F2;
-
-  --shadow-ambient-low: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-ambient-mid: 0 4px 16px rgba(0,0,0,0.08);
-  --shadow-ambient-high: 0 8px 24px rgba(0,0,0,0.12);
-
-  --rounded-sm: 6px;
-  --rounded-md: 8px;
-  --rounded-lg: 12px;
-  --rounded-xl: 16px;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --radius: var(--radius);
+  --font-sans: var(--font-ibm-plex-sans-thai), "IBM Plex Sans Thai", sans-serif;
+  --font-mono: var(--font-ibm-plex-sans-thai), "IBM Plex Sans Thai", monospace;
 }
 
-@utility label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.3;
+:root {
+  --background: #fefcf9;
+  --foreground: #1a1a1a;
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+  --primary: #1a1a1a;
+  --primary-foreground: #fafafa;
+  --secondary: #f3f0ec;
+  --secondary-foreground: #1a1a1a;
+  --muted: #f7f5f2;
+  --muted-foreground: #7a7a7a;
+  --accent: #f3f0ec;
+  --accent-foreground: #1a1a1a;
+  --destructive: #dc2626;
+  --destructive-foreground: #fafafa;
+  --border: #e6e0d8;
+  --input: #e6e0d8;
+  --ring: #1a1a1a;
+  --brand: #ff7a1a;
+  --brand-foreground: #ffffff;
+  --radius: 0.5rem;
 }
 
-@utility headline {
-  font-size: clamp(1.25rem, 3vw, 1.5rem);
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+.dark {
+  --background: #121210;
+  --foreground: #f0ede8;
+  --card: #1a1a17;
+  --card-foreground: #f0ede8;
+  --popover: #1a1a17;
+  --popover-foreground: #f0ede8;
+  --primary: #f0ede8;
+  --primary-foreground: #1a1a17;
+  --secondary: #2a2824;
+  --secondary-foreground: #f0ede8;
+  --muted: #2a2824;
+  --muted-foreground: #a09c95;
+  --accent: #2a2824;
+  --accent-foreground: #f0ede8;
+  --destructive: #7f1d1d;
+  --destructive-foreground: #fafafa;
+  --border: #2a2824;
+  --input: #2a2824;
+  --ring: #d4d0c8;
+  --brand: #ff8c3a;
+  --brand-foreground: #ffffff;
 }
 
-@utility title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  line-height: 1.3;
+* {
+  border-color: var(--border);
 }
 
-@utility display {
-  font-size: clamp(1.875rem, 5vw, 3rem);
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
+html {
+  scroll-behavior: smooth;
+}
+
+@supports (scrollbar-gutter: stable) {
+  html {
+    scrollbar-gutter: stable;
+  }
 }
 
 body {
-  background: var(--color-neutral-bg);
-  color: var(--color-ink);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
 }
 
-h1, h2, h3 {
+::selection {
+  background: var(--brand);
+  color: white;
+}
+
+/* ponytail: text balance via class, prefer on headings/text blocks */
+.text-balance {
   text-wrap: balance;
 }
 
-p {
+.text-pretty {
   text-wrap: pretty;
+}
+
+/* ponytail: noise texture overlay - add .noise-bg to sections for depth */
+.noise-bg {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
