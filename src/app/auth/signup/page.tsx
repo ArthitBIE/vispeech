@@ -1,210 +1,176 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
+import { EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-
-const GoogleIcon = () => (
-  <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
-    <path
-      fill="#4285F4"
-      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-    />
-    <path
-      fill="#34A853"
-      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-    />
-    <path
-      fill="#FBBC05"
-      d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"
-    />
-    <path
-      fill="#EA4335"
-      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-    />
-  </svg>
-);
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import TitleLogo from "@/components/layout/TitleLogo";
 
 export default function SignUpPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!isSupabaseConfigured || !supabase?.auth) {
-      setError(
-        "ยังไม่ได้ตั้งค่า Supabase กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL " +
-          "และ NEXT_PUBLIC_SUPABASE_ANON_KEY ในไฟล์ .env.local",
-      );
-      return;
-    }
-
-    if (password !== confirm) {
-      setError("รหัสผ่านไม่ตรงกัน");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
-      router.push("/dashboard");
-    } catch (err: any) {
-      const messages: Record<string, string> = {
-        "Invalid login credentials": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
-        "Email not confirmed": "กรุณายืนยันอีเมลของคุณ",
-        "User already registered": "อีเมลนี้ลงทะเบียนแล้ว",
-        "Password should be at least 6 characters": "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
-      };
-      setError(messages[err.message] || err.message || "เกิดข้อผิดพลาด กรุณาลองใหม่");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="flex min-h-screen bg-background noise-bg">
-      {/* Brand Panel */}
-      <div className="hidden w-1/2 items-center justify-center bg-muted/30 p-8 lg:flex">
-        <div className="max-w-sm text-center">
-          <img
-            src="/title-top-left.svg"
-            alt="Vispeech Logo"
-            className="mx-auto mb-6 h-auto w-32"
-          />
-          <h2 className="text-balance text-2xl font-semibold text-foreground">
-            เริ่มต้นการเรียนออรักษ์ กับ Vispeech
-          </h2>
-          <p className="mt-3 text-muted-foreground">
-            สร้างบัญชีเพื่อเข้าถึงหลักสูตรและการฝึกฝนที่ออกแบบเฉพาะสำหรับภาษาไทย
-          </p>
+    <main className="min-h-screen bg-background text-foreground flex flex-col font-sans">
+      <header className="h-14 border-b border-border bg-background">
+        <div className="flex h-full items-center justify-between px-5">
+          <Link href="/" aria-label="Vispeech home">
+            <TitleLogo />
+          </Link>
+
+          <nav className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-transparent"
+              asChild
+            >
+              <Link href="/auth/signin">Login</Link>
+            </Button>
+
+            <Button
+              size="sm"
+              className="h-8 rounded-md bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-accent"
+              asChild
+            >
+              <Link href="/auth/signin">Get started</Link>
+            </Button>
+          </nav>
         </div>
-      </div>
+      </header>
 
-      {/* Form Side */}
-      <div className="flex w-full items-center justify-center px-4 py-12 lg:w-1/2">
-        <Card variant="elevated" className="w-full max-w-sm space-y-6 p-8">
-          <div className="space-y-2">
-            <h1 className="text-balance text-2xl font-semibold text-foreground">
-              สร้างบัญชี
-            </h1>
-            <p className="text-muted-foreground">
-              ป้อนอีเมลและรหัสผ่านเพื่อสมัครสมาชิก
-            </p>
-          </div>
-
-          <div className="space-y-6">
-            {!isSupabaseConfigured && (
-              <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
-                ยังไม่ได้ตั้งค่า Supabase กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL
-                และ NEXT_PUBLIC_SUPABASE_ANON_KEY ในไฟล์ .env.local
-              </div>
-            )}
-
-            {error && (
-              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-5">
+      <section className="flex flex-1 items-center justify-center px-4 py-10">
+        <Card className="w-full max-w-md rounded-2xl border border-border bg-background shadow-none">
+          <CardHeader className="space-y-2 px-5 pt-5 pb-3">
+            <div className="flex items-start justify-between gap-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  อีเมล
+                <CardTitle className="text-base font-semibold tracking-tight text-foreground">
+                  Create your account
+                </CardTitle>
+                <p className="max-w-xs text-sm leading-5 text-muted-foreground">
+                  Enter your email below to create your account
+                </p>
+              </div>
+
+              <Link
+                href="/auth/signin"
+                className="mt-1 whitespace-nowrap text-sm font-semibold text-foreground hover:underline"
+              >
+                Sign In
+              </Link>
+            </div>
+          </CardHeader>
+
+          <CardContent className="px-5 pb-5">
+            <form className="space-y-5">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="email"
+                  className="text-sm font-semibold text-foreground"
+                >
+                  Email
                 </Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
                   placeholder="email@example.com"
-                  data-testid="signup-email"
+                  autoComplete="email"
+                  required
+                  className="h-9 rounded-md border-border text-sm placeholder:text-muted-foreground focus-visible:ring-ring"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">
-                  รหัสผ่าน
+                <Label
+                  htmlFor="password"
+                  className="text-sm font-semibold text-foreground"
+                >
+                  Password
                 </Label>
+
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
                     required
-                    minLength={6}
-                    className="pr-10"
+                    className="h-9 rounded-md border-border pr-10 text-sm focus-visible:ring-ring"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 rounded"
-                    aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
-                    tabIndex={0}
+                    aria-label="Toggle password visibility"
+                    className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-muted-foreground"
                   >
-                    {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    <EyeOff className="h-4 w-4" />
                   </button>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirm" className="text-sm font-medium">
-                  ยืนยันรหัสผ่าน
+                <Label
+                  htmlFor="confirm-password"
+                  className="text-sm font-semibold text-foreground"
+                >
+                  Confirm Password
                 </Label>
-                <Input
-                  id="confirm"
-                  type={showPassword ? "text" : "password"}
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  required
-                  minLength={6}
-                />
+
+                <div className="relative">
+                  <Input
+                    id="confirm-password"
+                    name="confirmPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    className="h-9 rounded-md border-border pr-10 text-sm focus-visible:ring-ring"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Toggle confirm password visibility"
+                    className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-muted-foreground"
+                  >
+                    <EyeOff className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
-              <Button
-                type="submit"
-                disabled={loading || !isSupabaseConfigured}
-                className="h-10 w-full bg-brand text-sm font-medium text-brand-foreground hover:opacity-90"
-              >
-                {loading ? "กำลังดำเนินการ..." : !isSupabaseConfigured ? "กรุณาตั้งค่าระบบก่อน" : "สมัครสมาชิก"}
-              </Button>
+              <div className="-mx-5 border-t border-border pt-5">
+                <div className="px-5 space-y-3">
+                  <Button
+                    type="submit"
+                    className="h-9 w-full rounded-lg bg-primary text-sm font-semibold text-primary-foreground hover:bg-accent"
+                  >
+                    Sign-up
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 w-full rounded-lg border-border bg-background text-sm font-semibold text-foreground hover:bg-accent"
+                  >
+                    <span className="mr-2 inline-flex h-5 w-5 items-center justify-center text-sm font-bold">
+                      <span className="text-blue-500">G</span>
+                    </span>
+                    Sign-up with Google
+                  </Button>
+                </div>
+              </div>
             </form>
+          </CardContent>
 
-            <Button
-              type="button"
-              variant="outline"
-              disabled
-              className="flex h-10 w-full items-center justify-center gap-3 text-sm font-medium"
-            >
-              <GoogleIcon />
-              สมัครด้วย Google
-            </Button>
-
-            <p className="text-center text-sm text-muted-foreground">
-              มีบัญชีอยู่แล้ว?{" "}
-              <Link href="/auth/signin" className="font-medium text-brand hover:underline">
-                เข้าสู่ระบบ
-              </Link>
+          <CardFooter className="justify-center px-5 pb-5 pt-0">
+            <p className="text-xs text-muted-foreground">
+              Don&apos;t have an account?
             </p>
-          </div>
+          </CardFooter>
         </Card>
-      </div>
-    </div>
+      </section>
+
+      <footer className="border-t border-border bg-background">
+        <div className="px-6 py-4 text-center text-xs font-medium text-muted-foreground">
+          © 2026 Vispeech. All rights reserved.
+        </div>
+      </footer>
+    </main>
   );
 }
