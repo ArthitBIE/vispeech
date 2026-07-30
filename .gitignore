@@ -52,7 +52,7 @@ workflows/
 /NOTES.md
 
 # personal tooling (not project code)
-/.opencode/
+# /.opencode/
 /.agents/
 /.planning/
 .claude/

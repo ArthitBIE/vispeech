@@ -1,13 +1,21 @@
-# Hookify List
+---
+description: List all configured hookify rules
+---
 
-List all configured hookify rules.
+Find and display all hookify rules in a formatted table.
 
-## Arguments
-$ARGUMENTS
+## Steps
 
-## Usage
-```bash
-hookify list
-```
+1. Find all `.claude/hookify.*.local.md` files
+2. Read each file's frontmatter:
+   - `name`
+   - `enabled`
+   - `event`
+   - `action`
+   - `pattern`
+3. Display them as a table:
 
-Shows: ID, Command Pattern, Action (deny/require), Condition, Message, Status (enabled/disabled)
+| Rule | Enabled | Event | Pattern | File |
+| ---- | ------- | ----- | ------- | ---- |
+
+4. Show the rule count and remind the user that `/hookify-configure` can change state later.
