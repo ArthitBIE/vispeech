@@ -1,657 +1,421 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
-import { initFaceMesh } from "@/lib/mediapipe";
-import { createSpeechRecognizer } from "@/lib/viseme";
-import type { FaceMeshInstance } from "@/lib/mediapipe";
-import type { SpeechRecognizer } from "@/lib/viseme";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
+import {
+  ChevronRight,
+  Camera,
+  Smile,
+  Bot,
+  Info,
+  Volume2,
+  Play,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import PracticeResultSidebar, {
+  type WordResult,
+} from "@/components/practice/PracticeResultSidebar";
 
-interface WordRow {
-  id: string
-  word: string
-  viseme_group: string
-  difficulty: number
-}
+const wordData = [
+  {
+    label: "ยา /ja:/",
+    word: "ยา",
+    phonetic: "/ja:/",
+    visualScore: 100,
+    audioScore: 100,
+  },
+  {
+    label: "ฝา /fa:/",
+    word: "ฝา",
+    phonetic: "/fa:/",
+    visualScore: 75,
+    audioScore: 65,
+  },
+  {
+    label: "ดี /di:/",
+    word: "ดี",
+    phonetic: "/dee:/",
+    visualScore: 90,
+    audioScore: 83,
+  },
+  {
+    label: "มี /me:/",
+    word: "มี",
+    phonetic: "/me:/",
+    visualScore: 60,
+    audioScore: 75,
+  },
+  {
+    label: "ดู /du:/",
+    word: "ดู",
+    phonetic: "/du:/",
+    visualScore: 100,
+    audioScore: 100,
+  },
+];
 
-interface ScoreResult {
-  visual_score: number
-  audio_score: number
-  total_score: number
-  feedback_th: string
-}
+export default function PracticePage() {
+  const router = useRouter();
+  const [currentWordIndex, setCurrentWordIndex] = useState(2);
+  const [wordResults, setWordResults] = useState<WordResult[]>([]);
+  const [showResults, setShowResults] = useState(false);
 
-interface Attempt {
-  word: WordRow
-  score: ScoreResult
-  passed: boolean
-}
+  const currentWord = wordData[currentWordIndex];
 
-type SessionPhase =
-  | "loading"
-  | "ready"
-  | "face-warning"
-  | "practicing"
-  | "scored"
-  | "summary"
-
-const MAX_ATTEMPTS = 12
-const ACTIVE_SET_SIZE = 3
-const PASS_THRESHOLD = 70
-
-function pickRandom<T>(arr: T[], count: number): T[] {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, count)
-}
-
-export default function SessionPage() {
-  const router = useRouter()
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  const [phase, setPhase] = useState<SessionPhase>("loading")
-  const [allWords, setAllWords] = useState<WordRow[]>([])
-  const [activeWords, setActiveWords] = useState<WordRow[]>([])
-  const [currentWord, setCurrentWord] = useState<WordRow | null>(null)
-  const [attempts, setAttempts] = useState<Attempt[]>([])
-  const [passedIds, setPassedIds] = useState<Set<string>>(new Set())
-
-  const [cameraActive, setCameraActive] = useState(false)
-  const [faceMesh, setFaceMesh] = useState<FaceMeshInstance | null>(null)
-  const [mouthOpen, setMouthOpen] = useState(0)
-  const [hasFace, setHasFace] = useState(true)
-
-  const [listening, setListening] = useState(false)
-  const [recognizer, setRecognizer] = useState<SpeechRecognizer | null>(null)
-  const [transcript, setTranscript] = useState("")
-  const [speechError, setSpeechError] = useState<string | null>(null)
-
-  const [submitting, setSubmitting] = useState(false)
-  const [lastResult, setLastResult] = useState<ScoreResult | null>(null)
-  const [lastPassed, setLastPassed] = useState(false)
-
-  const mouthOpenRef = useRef(0)
-  const hasFaceRef = useRef(true)
-  const phaseRef = useRef<SessionPhase>("loading")
-  const sessionSavedRef = useRef(false)
-
-  useEffect(() => { phaseRef.current = phase }, [phase])
-  useEffect(() => { mouthOpenRef.current = mouthOpen }, [mouthOpen])
-  useEffect(() => { hasFaceRef.current = hasFace }, [hasFace])
-
-  useEffect(() => {
-    initSession()
-    return () => {
-      faceMesh?.stop()
-      recognizer?.stop()
-    }
-  }, [])
-
-  async function initSession() {
-    try {
-      const { data: { session } } = await supabase!.auth.getSession()
-      if (!session) { router.push("/auth"); return }
-
-      const res = await fetch("/api/words", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      })
-      if (!res.ok) throw new Error("Failed to fetch words")
-      const { words } = await res.json()
-      const mapped: WordRow[] = words.map((w: any) => ({
-        id: w.id,
-        word: w.text,
-        viseme_group: w.visemeGroup,
-        difficulty: w.difficulty,
-      }))
-      if (mapped.length === 0) throw new Error("No words available")
-
-      setAllWords(mapped)
-      const initial = pickRandom(mapped, Math.min(ACTIVE_SET_SIZE, mapped.length))
-      setActiveWords(initial)
-      setCurrentWord(initial[0])
-      setPhase("ready")
-    } catch {
-      setPhase("ready")
-    }
-  }
-
-  async function handleStartPractice() {
-    if (!videoRef.current || !canvasRef.current || !currentWord) return
-    faceMesh?.stop()
-    recognizer?.stop()
-    setTranscript("")
-    setMouthOpen(0)
-    setLastResult(null)
-    setSpeechError(null)
-    setHasFace(true)
-
-    const instance = await initFaceMesh(videoRef.current, canvasRef.current)
-    instance.onResult((res) => {
-      setMouthOpen(res.mouthOpen)
-      setHasFace(res.hasFace)
-    })
-    try {
-      await instance.start()
-      setFaceMesh(instance)
-    } catch {
-      instance.stop()
-    }
-    setCameraActive(true)
-    setPhase("practicing")
-
-    setTimeout(() => {
-      if (!hasFaceRef.current && phaseRef.current === "practicing") {
-        setPhase("face-warning")
-      }
-    }, 3000)
-  }
-
-  function handleStartListening() {
-    if (speechError) setSpeechError(null)
-    const sr = createSpeechRecognizer("th-TH")
-    sr.onResult((res) => setTranscript(res.transcript))
-    sr.onError((msg) => { setSpeechError(msg); setListening(false) })
-    sr.start()
-    setRecognizer(sr)
-    setListening(true)
-  }
-
-  async function handleStopListening() {
-    if (!recognizer) return
-    const final = await recognizer.stop()
-    setTranscript((prev) => prev || final)
-    setListening(false)
-  }
-
-  async function handleSubmit() {
-    if (!currentWord || submitting) return
-    setSubmitting(true)
-    try {
-      const { data: { session } } = await supabase!.auth.getSession()
-      if (!session) { router.push("/auth"); return }
-
-      const { data: { session: scoreSession } } = await supabase!.auth.getSession()
-      const scoreHeaders: Record<string, string> = { "Content-Type": "application/json" }
-      if (scoreSession?.access_token) {
-        scoreHeaders["Authorization"] = `Bearer ${scoreSession.access_token}`
-      }
-      const res = await fetch("/api/score", {
-        method: "POST",
-        headers: scoreHeaders,
-        body: JSON.stringify({
-          wordId: currentWord.id,
-          transcript,
-          mouthOpen,
-        }),
-      })
-      if (!res.ok) throw new Error("Score API failed")
-      const score: ScoreResult = await res.json()
-      const passed = score.total_score >= PASS_THRESHOLD
-
-      const attempt: Attempt = { word: currentWord, score, passed }
-      const newAttempts = [...attempts, attempt]
-      const newPassed = new Set(passedIds)
-
-      if (passed) newPassed.add(currentWord.id)
-
-      let nextActive = [...activeWords]
-      const currentIdx = nextActive.findIndex((w) => w.id === currentWord.id)
-
-      if (passed && currentIdx >= 0) {
-        nextActive.splice(currentIdx, 1)
-        const remaining = allWords.filter(
-          (w) => !newPassed.has(w.id) && !nextActive.some((a) => a.id === w.id),
-        )
-        if (remaining.length > 0) {
-          const [replacement] = pickRandom(remaining, 1)
-          nextActive.push(replacement)
-        }
-      }
-
-      const nextWord =
-        nextActive.length > 0
-          ? nextActive[newAttempts.length % nextActive.length]
-          : null
-
-      setAttempts(newAttempts)
-      setPassedIds(newPassed)
-      setActiveWords(nextActive)
-      setLastResult(score)
-      setLastPassed(passed)
-
-      if (newAttempts.length >= MAX_ATTEMPTS || nextActive.length === 0 || !nextWord) {
-        stopMedia()
-        saveSession(newAttempts)
+  const initialScores = useMemo(() => {
+    const map: Record<string, string> = {};
+    wordData.forEach((w, i) => {
+      if (i < 2) {
+        const total = w.visualScore * 0.7 + w.audioScore * 0.3;
+        map[w.word] = total >= 70 ? "text-emerald-500" : "text-orange-500";
       } else {
-        setCurrentWord(nextWord)
-        setPhase("scored")
+        map[w.word] =
+          i === currentWordIndex ? "text-foreground" : "text-muted-foreground";
       }
-    } catch {
-      setSpeechError("เกิดข้อผิดพลาดในการส่งคะแนน")
-    } finally {
-      setSubmitting(false)
-    }
-  }
+    });
+    return map;
+  }, [currentWordIndex]);
 
-  async function saveSession(attempts: Attempt[]) {
-    if (sessionSavedRef.current) return
-    sessionSavedRef.current = true
-    const p = attempts.filter((a) => a.passed).length
-    const b = attempts.length > 0 ? Math.max(...attempts.map((a) => a.score.total_score)) : 0
-    try {
-      const { data: { session } } = await supabase!.auth.getSession()
-      const headers: Record<string, string> = { "Content-Type": "application/json" }
-      if (session?.access_token) {
-        headers["Authorization"] = `Bearer ${session.access_token}`
+  const buildResultFromWord = (word: (typeof wordData)[0]): WordResult => {
+    const totalScore = Math.round(
+      word.visualScore * 0.7 + word.audioScore * 0.3,
+    );
+    const status = totalScore >= 70 ? "success" : "warning";
+    const lipFeedback =
+      word.visualScore >= 70
+        ? "ถูกต้อง"
+        : `ปากกว้างไม่พอ (${word.visualScore}%)`;
+    const soundFeedback =
+      word.audioScore >= 70
+        ? "ถูกต้อง"
+        : `ระดับเสียงไม่ถูกต้อง (${word.audioScore}%)`;
+    const recommendation =
+      status === "warning"
+        ? `ลองอ้าปากกว้างขึ้นและออกเสียงดังขึ้นเล็กน้อย`
+        : undefined;
+    return {
+      word: word.word,
+      phonetic: word.phonetic,
+      score: totalScore,
+      status,
+      expanded: status === "warning",
+      lipFeedback,
+      soundFeedback,
+      recommendation,
+    };
+  };
+
+  const handlePracticeWord = () => {
+    const result = buildResultFromWord(currentWord);
+
+    setWordResults((prev) => {
+      const existing = prev.findIndex((r) => r.word === currentWord.word);
+      if (existing >= 0) {
+        return prev.map((r, i) => (i === existing ? result : r));
       }
-      await fetch("/api/practice-sessions", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ totalAttempts: attempts.length, passedCount: p, bestScore: b }),
-      })
-    } catch (err) {
-      console.error("Failed to save session:", err)
+      return [...prev, result];
+    });
+
+    if (currentWordIndex >= wordData.length - 1) {
+      setShowResults(true);
+    } else {
+      setCurrentWordIndex((prev) => prev + 1);
     }
-    setPhase("summary")
-  }
+  };
 
-  function stopMedia() {
-    faceMesh?.stop()
-    setFaceMesh(null)
-    setCameraActive(false)
-    recognizer?.stop()
-    setRecognizer(null)
-    setListening(false)
-  }
+  const handleSkipWord = () => {
+    if (currentWordIndex < wordData.length - 1) {
+      setCurrentWordIndex((prev) => prev + 1);
+    }
+  };
 
-  function handleNextWord() {
-    setLastResult(null)
-    setTranscript("")
-    setMouthOpen(0)
-    setPhase("ready")
-    stopMedia()
-  }
+  const handleRestart = () => {
+    setCurrentWordIndex(0);
+    setWordResults([]);
+    setShowResults(false);
+  };
 
-  function handleFinish() {
-    stopMedia()
-    saveSession(attempts)
-  }
+  const handleClose = () => {
+    router.push("/summary");
+  };
 
-  const passedCount = attempts.filter((a) => a.passed).length
-  const bestScore = attempts.length > 0
-    ? Math.max(...attempts.map((a) => a.score.total_score))
-    : 0
-
-  if (phase === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">กำลังเตรียมเซสชัน...</p>
-      </div>
-    )
-  }
+  const totalAccuracy = useMemo(() => {
+    const resolved = wordData.map(
+      (w) =>
+        wordResults.find((r) => r.word === w.word) ?? buildResultFromWord(w),
+    );
+    const avg =
+      resolved.reduce((sum, r) => sum + r.score, 0) / resolved.length;
+    return avg;
+  }, [wordResults, currentWordIndex]);
 
   return (
-    <div className="min-h-screen bg-muted/40">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Button
-            variant="outline"
-            className="text-destructive"
-            onClick={() => router.push("/dashboard")}
-          >
-            ← ยกเลิกการฝึก
-          </Button>
-          {phase !== "summary" && (
-            <div className="flex gap-5 text-sm text-muted-foreground">
-              <span>พยายาม: {attempts.length}/{MAX_ATTEMPTS}</span>
-              <span>ผ่าน: {passedCount}</span>
-              <span>คำรอ: {activeWords.length}</span>
-            </div>
-          )}
-        </div>
-      </header>
+    <div className="space-y-10">
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="grid min-h-[700px] gap-8 overflow-hidden rounded-2xl border border-border bg-card lg:grid-cols-[230px_1fr_230px]">
+          {/* --- Word list sidebar --- */}
+          <aside className="bg-card p-6 lg:p-8">
+            <div>
+              <h1 className="text-base font-bold text-foreground">
+                บทเรียน คำศัพท์ง่าย
+              </h1>
 
-      <main className="mx-auto max-w-5xl px-6 py-8">
-        {phase === "summary" ? (
-          <div className="space-y-6">
-            <Card className="p-10 text-center">
-              <h1 className="text-2xl font-bold">จบเซสชัน!</h1>
-              <p className="mt-2 text-muted-foreground">สรุปผลการฝึกของคุณ</p>
-            </Card>
-
-            <div className="grid grid-cols-3 gap-5">
-              <Card className="p-5 text-center">
-                <p className="text-sm text-muted-foreground">พยายามทั้งหมด</p>
-                <p className="mt-1 text-2xl font-bold tabular-nums">{attempts.length}</p>
-              </Card>
-              <Card className="p-5 text-center">
-                <p className="text-sm text-muted-foreground">คำที่ผ่าน</p>
-                <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-500">
-                  {passedCount}
-                </p>
-              </Card>
-              <Card className="p-5 text-center">
-                <p className="text-sm text-muted-foreground">คะแนนสูงสุด</p>
-                <p className="mt-1 text-2xl font-bold tabular-nums">{bestScore}</p>
-              </Card>
-            </div>
-
-            <Card className="p-6">
-              <h2 className="mb-4 font-semibold">รายละเอียด</h2>
-              <div className="space-y-3">
-                {attempts.map((a, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between rounded-lg border border-border bg-background p-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-                          a.passed
-                            ? "bg-emerald-50 text-emerald-500"
-                            : "bg-red-50 text-red-400"
-                        }`}
-                      >
-                        {a.passed ? "✓" : "✗"}
-                      </span>
-                      <div>
-                        <p className="font-medium">{a.word.word}</p>
-                        <p className="text-xs text-muted-foreground">
-                          ภาพ {a.score.visual_score} | เสียง {a.score.audio_score}
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`font-semibold tabular-nums ${
-                        a.passed ? "text-emerald-500" : "text-red-400"
-                      }`}
-                    >
-                      {a.score.total_score}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Button className="w-full" onClick={() => router.push("/dashboard")}>
-              กลับไปแดชบอร์ด
-            </Button>
-          </div>
-        ) : lastResult && phase === "scored" ? (
-          <div className="space-y-4">
-            <Card className="p-8 text-center">
-              <p
-                className={`text-lg font-semibold ${
-                  lastPassed ? "text-emerald-500" : "text-amber-500"
-                }`}
-              >
-                {lastPassed ? "✅ ผ่าน!" : "🔄 ลองใหม่"}
-              </p>
-              <div className="mt-6 grid grid-cols-3 gap-5">
-                <div className="rounded-lg bg-muted p-4">
-                  <p className="text-xs font-medium text-muted-foreground">ภาพ</p>
-                  <p className="mt-1 text-xl font-bold tabular-nums">
-                    {lastResult.visual_score}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-muted p-4">
-                  <p className="text-xs font-medium text-muted-foreground">เสียง</p>
-                  <p className="mt-1 text-xl font-bold tabular-nums text-emerald-500">
-                    {lastResult.audio_score}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-muted p-4">
-                  <p className="text-xs font-medium text-muted-foreground">รวม</p>
-                  <p className="mt-1 text-xl font-bold tabular-nums">
-                    {lastResult.total_score}
-                  </p>
-                </div>
-              </div>
-              {lastResult.feedback_th && (
-                <p className="mt-5 rounded-lg border border-border bg-muted/50 p-3 text-sm">
-                  {lastResult.feedback_th}
-                </p>
-              )}
-            </Card>
-            <Button className="w-full" onClick={handleNextWord}>
-              คำถัดไป
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleFinish}
-            >
-              จบเซสชัน
-            </Button>
-          </div>
-        ) : phase === "face-warning" ? (
-          <div className="space-y-4">
-            <Card className="p-10 text-center">
-              <p className="mb-4 text-4xl">😶</p>
-              <h2 className="text-lg font-semibold">ไม่พบใบหน้าของคุณ</h2>
-              <p className="mt-2 text-muted-foreground">
-                กรุณาให้กล้องเห็นใบหน้าของคุณ แล้วกดตรวจสอบอีกครั้ง
-              </p>
-              <Button
-                className="mt-6"
-                onClick={() => {
-                  if (hasFaceRef.current) {
-                    setPhase("practicing")
-                  } else {
-                    setTimeout(() => {
-                      if (hasFaceRef.current) setPhase("practicing")
-                    }, 2000)
-                  }
-                }}
-              >
-                ตรวจสอบอีกครั้ง
-              </Button>
-            </Card>
-          </div>
-        ) : (
-          <div className="grid grid-cols-[240px_1fr_245px] gap-6">
-            {/* Left: lesson panel */}
-            <Card className="h-fit p-5">
-              <h2 className="text-sm font-semibold">บทฝึก</h2>
-              {currentWord && (
-                <Badge variant="secondary" className="mt-3">
-                  {currentWord.viseme_group}
-                </Badge>
-              )}
-              <div className="mt-4 grid grid-cols-3 gap-1.5">
-                {activeWords.map((w) => {
-                  const idx = activeWords.indexOf(w)
-                  const done = passedIds.has(w.id)
+              <div className="mt-4 flex gap-2">
+                {wordData.map((_, i) => {
+                  const completed = wordResults.find(
+                    (r) => r.word === wordData[i].word,
+                  );
+                  const dotColor = completed
+                    ? "bg-emerald-500"
+                    : i === currentWordIndex
+                      ? "bg-foreground"
+                      : "bg-muted-foreground/20";
                   return (
                     <div
-                      key={w.id}
-                      className={`h-2 rounded-full ${
-                        done
-                          ? "bg-emerald-500"
-                          : w.id === currentWord?.id
-                            ? "bg-primary"
-                            : "bg-muted"
-                      }`}
+                      key={i}
+                      className={`h-3 w-3 rounded-sm ${dotColor}`}
                     />
-                  )
+                  );
                 })}
               </div>
-              <p className="mt-4 text-sm text-muted-foreground">
-                คำที่ {currentWord ? activeWords.indexOf(currentWord) + 1 : 0}/
-                {activeWords.length}
+
+              <p className="mt-4 text-sm font-semibold text-muted-foreground">
+                คำที่ {currentWordIndex + 1} / {wordData.length}
               </p>
-              <div className="mt-4 space-y-1">
-                {activeWords.map((w) => (
-                  <div
-                    key={w.id}
-                    className={`rounded-md px-3 py-2 text-sm ${
-                      w.id === currentWord?.id
-                        ? "bg-muted font-semibold"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {w.word}
-                    <span className="ml-2 text-xs text-amber-500">
-                      {"★".repeat(w.difficulty)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Center: word player + camera */}
-            <div className="space-y-6">
-              {currentWord && (
-                <div className="text-center">
-                  <div className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                    {currentWord.viseme_group}
-                  </div>
-                  <h1 className="mt-3 text-5xl font-bold tracking-tight">
-                    {currentWord.word}
-                  </h1>
-                  {phase === "ready" && (
-                    <p className="mt-3 text-muted-foreground">
-                      เตรียมตัวออกเสียงคำนี้
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {phase === "ready" && (
-                <Button className="w-full" onClick={handleStartPractice}>
-                  เริ่มการฝึกออกเสียง
-                </Button>
-              )}
-
-              {/* Always rendered so videoRef exists for handleStartPractice */}
-              <div className={`${phase !== "practicing" ? "hidden" : ""}`}>
-                <div className="relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-lg bg-primary">
-                  <video
-                    ref={videoRef}
-                    className="h-full w-full object-cover"
-                    playsInline
-                    muted
-                  />
-                  <canvas
-                    ref={canvasRef}
-                    className="absolute inset-0 h-full w-full"
-                  />
-                </div>
-              </div>
-
-              {phase === "practicing" && (
-                <div className="space-y-5">
-                  <Card className="p-5">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-sm font-semibold">กล้อง</h2>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-destructive"
-                        onClick={() => {
-                          faceMesh?.stop()
-                          setCameraActive(false)
-                          setPhase("ready")
-                        }}
-                      >
-                        หยุดกล้อง
-                      </Button>
-                    </div>
-
-                    {!hasFace && (
-                      <p className="mt-3 text-center text-sm text-amber-500">
-                        กรุณาให้ใบหน้าอยู่ในกรอบกล้อง
-                      </p>
-                    )}
-                    <p className="mt-2 text-center text-sm tabular-nums">
-                      การเปิดปาก: {mouthOpen}%
-                    </p>
-                  </Card>
-
-                  <Card className="p-5">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-sm font-semibold">เสียงพูด</h2>
-                      {!listening ? (
-                        <Button size="sm" onClick={handleStartListening}>
-                          เริ่มพูด
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-destructive"
-                          onClick={handleStopListening}
-                        >
-                          หยุดฟัง
-                        </Button>
-                      )}
-                    </div>
-
-                    {listening && (
-                      <p className="text-sm text-emerald-500">กำลังฟัง...</p>
-                    )}
-                    {speechError && (
-                      <p className="text-sm text-amber-500">{speechError}</p>
-                    )}
-                    {transcript && (
-                      <div className="mt-3 rounded-lg bg-muted p-4">
-                        <p className="text-xs text-muted-foreground">ข้อความที่ได้:</p>
-                        <p className="mt-1 text-lg font-medium">{transcript}</p>
-                      </div>
-                    )}
-                  </Card>
-
-                  {phase === "practicing" && (
-                    <Button
-                      className="w-full"
-                      onClick={handleSubmit}
-                      disabled={submitting || (!transcript && mouthOpen === 0)}
-                    >
-                      {submitting ? "กำลังส่ง..." : "ส่งผล"}
-                    </Button>
-                  )}
-                </div>
-              )}
             </div>
 
-            {/* Right: Tips from Pakky */}
-            <Card className="h-fit p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary/10 text-primary">🦊</AvatarFallback>
-                </Avatar>
-                <p className="text-sm font-semibold">เทคนิคจาก Pakky</p>
+            <div className="my-6 border-t border-border" />
+
+            <section>
+              <h2 className="text-sm font-bold text-foreground">คำในบทนี้</h2>
+
+              <div className="mt-4 space-y-3">
+                {wordData.map((word, i) => {
+                  const completed = wordResults.find(
+                    (r) => r.word === word.word,
+                  );
+                  const scoreDisplay = completed
+                    ? `${completed.score}%`
+                    : i < 2
+                      ? `${Math.round(word.visualScore * 0.7 + word.audioScore * 0.3)}%`
+                      : "-";
+                  const colorClass =
+                    completed?.status === "warning"
+                      ? "text-orange-500"
+                      : completed?.status === "success"
+                        ? "text-emerald-500"
+                        : initialScores[word.word] ?? "text-muted-foreground";
+                  return (
+                    <div
+                      key={word.label}
+                      className={`flex items-center gap-1 text-sm font-medium ${colorClass}`}
+                    >
+                      <span>◎</span>
+                      <span>{word.label}</span>
+                      <span>{scoreDisplay}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <div className="my-6 border-t border-border" />
+
+            <section>
+              <h2 className="text-sm font-bold text-foreground">ความยาก</h2>
+
+              <div className="mt-4 flex gap-2">
+                {[0, 1].map((item) => (
+                  <span
+                    key={item}
+                    className="h-4 w-4 rounded-full border border-orange-400"
+                  />
+                ))}
+                {[0, 1, 2].map((item) => (
+                  <span
+                    key={item}
+                    className="h-4 w-4 rounded-full border border-foreground/60"
+                  />
+                ))}
+              </div>
+            </section>
+          </aside>
+
+          {/* --- Practice card --- */}
+          <section className="bg-card p-6 lg:p-8">
+            <Card className="mx-auto max-w-2xl rounded-xl border border-border shadow-none">
+              <CardContent className="p-6 text-center">
+                <h2 className="text-4xl font-bold leading-none text-foreground">
+                  {currentWord.word}
+                </h2>
+                <p className="mt-2 text-lg font-medium text-muted-foreground">
+                  {currentWord.phonetic}
+                </p>
+                <p className="mt-1 text-base font-medium text-muted-foreground">
+                  Good / {currentWord.word}
+                </p>
+
+                <div className="mx-auto mt-4 flex h-5 w-44 items-center rounded border border-border bg-card px-2">
+                  <Play className="h-3 w-3 fill-foreground text-foreground" />
+                  <div className="mx-2 h-1 flex-1 rounded-full bg-muted">
+                    <div className="h-1 w-1/5 rounded-full bg-foreground" />
+                  </div>
+                  <Volume2 className="h-3 w-3 text-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="mt-8 grid gap-8 md:grid-cols-2">
+              {/* Camera preview */}
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-sm font-bold text-foreground">
+                  <Camera className="h-4 w-4" />
+                  <span>กล้อง</span>
+                </div>
+
+                <div className="flex h-56 items-center justify-center rounded-sm bg-muted text-center text-sm leading-5 text-muted-foreground">
+                  <div>
+                    <p>ยังไม่ได้เปิดกล้อง</p>
+                    <p>กด &quot;เริ่มฝึก&quot; ด้านล่าง</p>
+                  </div>
+                </div>
               </div>
 
-              {phase === "practicing" ? (
-                <div className="space-y-3 text-sm text-muted-foreground">
-                  <p>ระดับเสียง: {transcript ? "กำลังตรวจสอบ..." : "รอเสียงพูด"}</p>
-                  <p>ระดับปาก: {mouthOpen}%</p>
-                  <p className="text-xs">รอการประเมิน...</p>
+              {/* Lip preview */}
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-sm font-bold text-foreground">
+                  <Smile className="h-4 w-4" />
+                  <span>ตัวอย่างริมฝีปาก</span>
                 </div>
-              ) : phase === "scored" && lastResult ? (
-                <div className="space-y-3 text-sm">
-                  <p>ภาพ: {lastResult.visual_score}</p>
-                  <p>เสียง: {lastResult.audio_score}</p>
-                  <p className={lastPassed ? "text-emerald-500" : "text-amber-500"}>
-                    {lastPassed ? "เก่งมาก! ผ่านแล้ว" : "ลองอีกครั้งนะ"}
-                  </p>
+
+                <div className="flex h-56 items-center justify-center rounded-sm bg-muted">
+                  <div className="relative h-44 w-36 rounded-b-full rounded-t-sm bg-card">
+                    <div className="absolute left-1/2 top-10 h-4 w-10 -translate-x-1/2 rounded-b-full border-b-2 border-border" />
+                    <div className="absolute left-1/2 top-20 h-7 w-24 -translate-x-1/2 rounded-full bg-red-300">
+                      <div className="absolute left-2 right-2 top-3 h-1 rounded-full bg-white" />
+                      <div className="absolute bottom-2 left-3 right-3 h-px bg-red-700" />
+                    </div>
+                    <div className="absolute bottom-8 left-1/2 h-4 w-8 -translate-x-1/2 rounded-t-full border-t border-border" />
+                  </div>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  กดเริ่มการฝึกออกเสียง แล้ว Pakky จะคอยบอกเทคนิคให้ค่ะ~
-                </p>
-              )}
-            </Card>
-          </div>
-        )}
-      </main>
+              </div>
+            </div>
+
+            <div className="mt-10 flex flex-col items-center">
+              <Button
+                className="h-10 rounded-lg bg-black px-5 text-sm font-bold text-white hover:bg-neutral-800"
+                onClick={handlePracticeWord}
+              >
+                <Play className="mr-2 h-4 w-4 fill-white" />
+                เริ่มการฝึกออกเสียง
+              </Button>
+
+              <Button
+                variant="ghost"
+                className="mt-3 h-8 text-sm font-medium text-muted-foreground hover:bg-transparent hover:text-foreground"
+                onClick={handleSkipWord}
+              >
+                ข้ามคำ
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+          </section>
+
+          {/* --- Tips sidebar --- */}
+          <aside className="bg-card p-6 lg:p-8">
+            <section>
+              <div className="mb-4 flex items-center gap-2">
+                <Bot className="h-5 w-5" />
+                <h2 className="text-base font-bold text-foreground">
+                  Tips จาก Pakky
+                </h2>
+              </div>
+
+              <Card className="rounded-lg border border-border shadow-none">
+                <CardContent className="p-4">
+                  <div className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
+                    <Info className="h-4 w-4" />
+                    <span>Tips การออกเสียง</span>
+                  </div>
+
+                  <ul className="ml-5 list-disc space-y-2 text-sm leading-5 text-foreground">
+                    <li>ยิ้มกว้างถึงข้าง</li>
+                    <li>ลิ้นยกสูงด้านหน้าชนเพดาน</li>
+                    <li>ฟันเผยอเล็กน้อย</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </section>
+
+            <section className="mt-8 space-y-6">
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-sm font-bold text-foreground">
+                  <Volume2 className="h-4 w-4" />
+                  <span>ระดับเสียง</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Progress value={30} className="h-2 flex-1" />
+                  <span className="text-xs font-medium text-muted-foreground">
+                    30%
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-sm font-bold text-foreground">
+                  <Smile className="h-4 w-4" />
+                  <span>ริมฝีปาก</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Progress value={70} className="h-2 flex-1" />
+                  <span className="text-xs font-medium text-muted-foreground">
+                    70%
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <div className="my-8 border-t border-border" />
+
+            <Input
+              readOnly
+              value="กำลังรอเสียง ..."
+              className="h-10 rounded-lg border-border text-sm text-muted-foreground"
+            />
+
+            <div className="mt-16">
+              <div className="rounded-lg border border-border bg-card px-4 py-4 text-center text-sm font-semibold leading-5 text-foreground shadow-sm">
+                {currentWordIndex === 0
+                  ? "เริ่มต้นกัน! คำแรก"
+                  : currentWordIndex === Math.floor(wordData.length / 2)
+                    ? `ครึ่งทางแล้ว! คำที่ ${currentWordIndex + 1}`
+                    : currentWordIndex === wordData.length - 1
+                      ? "คำสุดท้าย! ตั้งใจอีกนิด"
+                      : `คำที่ ${currentWordIndex + 1} จาก ${wordData.length}`}
+                <br />
+                หายใจลึกๆ แล้วค่อยๆ พูดนะ
+              </div>
+
+              <div className="mx-auto mt-8 flex h-32 w-32 items-center justify-center rounded-full bg-muted">
+                <div className="h-24 w-24 rounded-full bg-muted-foreground/20" />
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <PracticeResultSidebar
+        results={wordResults}
+        totalAccuracy={totalAccuracy}
+        open={showResults}
+        onClose={handleClose}
+        onRestart={handleRestart}
+      />
     </div>
-  )
+  );
 }

@@ -11,7 +11,8 @@
     "test:e2e": "playwright test",
     "test:unit": "vitest run",
     "test": "vitest run && playwright test",
-    "create-test-user": "npx tsx scripts/create-test-user.ts"
+    "create-test-user": "npx tsx scripts/create-test-user.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1675466862",
@@ -49,7 +50,10 @@
     "@vitejs/plugin-react": "^6.0.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "^17.2.0",
+    "prettier": "^3.9.6",
     "supabase": "^2.109.0",
     "tailwindcss": "^4",
     "typescript": "^5",
