@@ -7,9 +7,6 @@ import { initFaceMesh } from "@/lib/mediapipe";
 import { createSpeechRecognizer } from "@/lib/viseme";
 import type { FaceMeshInstance } from "@/lib/mediapipe";
 import type { SpeechRecognizer } from "@/lib/viseme";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 interface WordRow {
   id: string;
@@ -92,7 +89,7 @@ export default function PracticePage() {
     }
   }
 
-    async function handleStartCamera() {
+  async function handleStartCamera() {
     if (!videoRef.current || !canvasRef.current) {
       setError("เกิดข้อผิดพลาดในการเริ่มกล้อง กรุณาลองใหม่");
       return;
@@ -207,86 +204,66 @@ export default function PracticePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/40 noise-bg">
-        <div className="space-y-4 text-center">
-          <div className="mx-auto h-12 w-12 rounded-full border-2 border-brand border-t-transparent animate-spin" />
-          <p className="text-sm text-muted-foreground">กำลังโหลด...</p>
-        </div>
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground">กำลังโหลด...</p>
       </div>
     );
   }
 
   if (error && !wordData) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-muted/40 noise-bg">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">{error}</p>
-        <Button
+        <button
           onClick={() => router.push("/dashboard")}
-          variant="outline"
+          className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
         >
-          ← กลับไปหน้าแดชบอร์ด
-        </Button>
+          กลับไปหน้าแดชบอร์ด
+        </button>
       </div>
     );
   }
 
-  const PASS_THRESHOLD = 70;
-
   return (
-    <div className="min-h-screen bg-muted/40 noise-bg">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-3xl items-center px-4 py-4">
-          <Button
-            onClick={() => router.push("/dashboard")}
-            variant="ghost"
-            size="sm"
-            className="px-0"
-          >
-            ← กลับไปหน้าแดชบอร์ด
-          </Button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
+    <div className="min-h-screen bg-background">
+      <main className="mx-auto max-w-3xl space-y-10 px-4 py-8">
         {wordData && (
           <>
             <div className="text-center">
-              <h1 className="text-5xl font-bold text-foreground text-balance">{wordData.word}</h1>
-              <Badge variant="secondary" className="mt-3">
+              <h1 className="text-5xl font-bold text-foreground">{wordData.word}</h1>
+              <span className="mt-2 inline-block rounded-full bg-primary/10 px-3 py-1 text-sm text-primary">
                 กลุ่มรูปปาก: {wordData.viseme_group}
-              </Badge>
+              </span>
             </div>
 
-            <p className="text-center text-muted-foreground text-balance">
+            <p className="text-center text-muted-foreground">
               ลองออกเสียงคำนี้ แล้วระบบจะวิเคราะห์รูปปากและเสียงพูดของคุณ
             </p>
 
             {!result && (
-              <div className="space-y-4">
-                <Card variant="elevated" padded>
+              <div className="space-y-8">
+                <div className="rounded-xl border border-border bg-card p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <h2 className="font-semibold text-foreground">กล้อง</h2>
                     {!cameraActive ? (
-                      <Button
+                      <button
                         onClick={handleStartCamera}
                         data-testid="practice-camera-btn"
-                        variant="default"
-                        size="sm"
+                        className="rounded-md bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
                       >
                         เริ่มกล้อง
-                      </Button>
+                      </button>
                     ) : (
-                      <Button
+                      <button
                         onClick={handleStopCamera}
-                        variant="outline"
-                        size="sm"
+                        className="rounded-md bg-destructive px-4 py-1.5 text-sm text-destructive-foreground hover:bg-destructive/90"
                       >
                         หยุดกล้อง
-                      </Button>
+                      </button>
                     )}
                   </div>
 
-                  <div className={`relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-lg bg-primary ${cameraActive ? "" : "hidden"}`}>
+                  <div className={`relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-lg bg-black ${cameraActive ? "" : "hidden"}`}>
                     <video
                       ref={videoRef}
                       className="h-full w-full object-cover"
@@ -305,100 +282,98 @@ export default function PracticePage() {
                     </p>
                   )}
 
-                  <p className="mt-1 text-center text-sm text-brand" data-testid="practice-mouth-open">
+                  <p className="mt-1 text-center text-sm text-primary" data-testid="practice-mouth-open">
                     การเปิดปาก: {mouthOpen}%
                   </p>
-                </Card>
+                </div>
 
-                <Card variant="elevated" padded>
+                <div className="rounded-xl border border-border bg-card p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <h2 className="font-semibold text-foreground">เสียงพูด</h2>
                     {!listening ? (
-                      <Button
+                      <button
                         onClick={handleStartListening}
                         data-testid="practice-speech-btn"
-                        variant="default"
-                        size="sm"
+                        className="rounded-md bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
                       >
                         เริ่มพูด
-                      </Button>
+                      </button>
                     ) : (
-                      <Button
+                      <button
                         onClick={handleStopListening}
-                        variant="outline"
-                        size="sm"
+                        className="rounded-md bg-destructive px-4 py-1.5 text-sm text-destructive-foreground hover:bg-destructive/90"
                       >
                         หยุดฟัง
-                      </Button>
+                      </button>
                     )}
                   </div>
 
                   {listening && (
-                    <p className="text-sm text-brand">กำลังฟัง...</p>
+                    <p className="text-sm text-green-600">กำลังฟัง...</p>
                   )}
 
                   {speechError && (
-                    <p className="text-sm text-amber-500">{speechError}</p>
+                    <p className="text-sm text-amber-600">{speechError}</p>
                   )}
 
                   {transcript && (
                     <div className="mt-2 rounded-lg bg-muted p-3" data-testid="practice-transcript">
                       <p className="text-sm text-muted-foreground">ข้อความที่ได้:</p>
-                      <p className="mt-1 text-lg font-medium text-foreground">{transcript}</p>
+                      <p className="text-lg font-medium text-foreground">{transcript}</p>
                     </div>
                   )}
-                </Card>
+                </div>
 
-                <Button
+                <button
                   onClick={handleSubmit}
                   disabled={submitting || (!transcript && mouthOpen === 0)}
                   data-testid="practice-submit"
-                  className="w-full"
+                  className="w-full rounded-md bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 disabled:opacity-50"
                 >
                   {submitting ? "กำลังส่งผล..." : "ส่งผล"}
-                </Button>
+                </button>
               </div>
             )}
 
-              {result && (
-                <Card variant="elevated" padded className="text-center" data-testid="score-card">
-                  <h2 className="mb-4 text-lg font-semibold text-foreground text-balance">
-                    ผลการฝึก
-                  </h2>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="rounded-lg bg-muted p-3">
-                      <p className="text-xs font-medium text-muted-foreground">คะแนนภาพ</p>
-                      <p className="mt-1 text-xl font-bold text-foreground tabular-nums">{result.visual_score}</p>
-                      <p className="text-[10px] text-muted-foreground">/100</p>
-                    </div>
-                    <div className="rounded-lg bg-muted p-3">
-                      <p className="text-xs font-medium text-muted-foreground">คะแนนเสียง</p>
-                      <p className="mt-1 text-xl font-bold text-emerald-500 tabular-nums">{result.audio_score}</p>
-                      <p className="text-[10px] text-muted-foreground">/100</p>
-                    </div>
-                    <div className="rounded-lg bg-muted p-3">
-                      <p className="text-xs font-medium text-muted-foreground">คะแนนรวม</p>
-                      <p className={`mt-1 text-xl font-bold tabular-nums ${result.total_score >= PASS_THRESHOLD ? "text-emerald-500" : "text-amber-500"}`}>{result.total_score}</p>
-                      <p className="text-[10px] text-muted-foreground">/100</p>
-                    </div>
+            {result && (
+              <div className="rounded-xl border border-border bg-card p-6" data-testid="score-card">
+                <h2 className="mb-4 text-center text-lg font-semibold text-foreground">
+                  ผลการฝึก
+                </h2>
+
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-sm text-muted-foreground">คะแนนภาพ</p>
+                    <p className="text-2xl font-bold text-primary">{result.visual_score}</p>
+                    <p className="text-xs text-muted-foreground">/100</p>
                   </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">คะแนนเสียง</p>
+                    <p className="text-2xl font-bold text-green-600">{result.audio_score}</p>
+                    <p className="text-xs text-muted-foreground">/100</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">คะแนนรวม</p>
+                    <p className="text-2xl font-bold text-amber-600">{result.total_score}</p>
+                    <p className="text-xs text-muted-foreground">/100</p>
+                  </div>
+                </div>
 
-                  {result.feedback_th && (
-                    <div className="mt-4 rounded-lg bg-brand/5 p-3 text-sm text-foreground">
-                      {result.feedback_th}
-                    </div>
-                  )}
+                {result.feedback_th && (
+                  <div className="mt-4 rounded-lg bg-primary/10 p-3 text-center text-sm text-muted-foreground">
+                    {result.feedback_th}
+                  </div>
+                )}
 
-                  <Button
-                    onClick={handleTryAgain}
-                    data-testid="try-again"
-                    variant="outline"
-                    className="mt-6 w-full"
-                  >
-                    ลองอีกครั้ง
-                  </Button>
-                </Card>
-              )}
+                <button
+                  onClick={handleTryAgain}
+                  data-testid="try-again"
+                  className="mt-6 w-full rounded-md bg-primary px-4 py-2 text-primary-foreground font-medium hover:bg-primary/90"
+                >
+                  ลองอีกครั้ง
+                </button>
+              </div>
+            )}
           </>
         )}
       </main>

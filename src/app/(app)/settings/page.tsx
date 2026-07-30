@@ -1,212 +1,134 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React from "react";
 import { Mic } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
-interface DeviceOption {
-  deviceId: string;
-  label: string;
-}
+import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function SettingsPage() {
-  const [micEnabled, setMicEnabled] = useState(true);
-  const [devices, setDevices] = useState<DeviceOption[]>([]);
-  const [deviceId, setDeviceId] = useState<string>("");
-  const [sensitivity, setSensitivity] = useState(60);
-  const [level, setLevel] = useState(0);
-  const [testing, setTesting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const streamRef = useRef<MediaStream | null>(null);
-  const rafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => stopStream();
-  }, []);
-
-  async function loadDevices() {
-    try {
-      const list = await navigator.mediaDevices.enumerateDevices();
-      const inputs = list
-        .filter((d) => d.kind === "audioinput")
-        .map((d, i) => ({
-          deviceId: d.deviceId,
-          label: d.label || `ไมโครโฟน ${i + 1}`,
-        }));
-      setDevices(inputs);
-      if (inputs.length && !deviceId) setDeviceId(inputs[0].deviceId);
-    } catch {
-      setError("ไม่อนุญาตให้ใช้ไมโครโฟน");
-    }
-  }
-
-  function stopStream() {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = null;
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-  }
-
-  async function handleTest() {
-    setError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      if (!devices.length) await loadDevices();
-      setTesting(true);
-
-      const audioCtx = new AudioContext();
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      const data = new Uint8Array(analyser.frequencyBinCount);
-
-      const tick = () => {
-        analyser.getByteTimeDomainData(data);
-        let peak = 0;
-        for (let i = 0; i < data.length; i++) {
-          const v = Math.abs(data[i] - 128) / 128;
-          if (v > peak) peak = v;
-        }
-        setLevel(Math.min(100, Math.round(peak * 140)));
-        rafRef.current = requestAnimationFrame(tick);
-      };
-      tick();
-
-      setTimeout(() => {
-        stopStream();
-        setTesting(false);
-        setLevel(0);
-        audioCtx.close();
-      }, 3000);
-    } catch {
-      setTesting(false);
-      setLevel(0);
-      setError("ไม่อนุญาตให้ใช้ไมโครโฟน");
-    }
-  }
-
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-[-0.02em] text-foreground">การตั้งค่าระบบ</h1>
-        <p className="text-sm text-muted-foreground">ตั้งค่าเสียงและไมโครโฟนเพื่อการฝึกออกเสียงที่ดีที่สุด</p>
+    <div className="mx-auto max-w-6xl space-y-10 p-6 lg:p-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          System Settings
+        </h1>
+        <div className="mt-8 inline-flex border-b border-border pb-2 text-sm font-medium text-foreground">
+          Settings
+        </div>
       </div>
 
-      <Card variant="elevated" padded={false} className="overflow-hidden">
-        <div className="border-b border-border bg-muted/50 px-8 py-5">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-sm font-bold text-foreground">เปิดใช้งานไมโครโฟน</h2>
-              <p className="mt-2 text-[13px] text-muted-foreground">
-                อนุญาตให้แอปเข้าถึงไมโครโฟนเพื่อฝึกออกเสียง
-              </p>
-            </div>
-            <Switch
-              checked={micEnabled}
-              onCheckedChange={(v) => {
-                setMicEnabled(v);
-                if (v) loadDevices();
-              }}
-              className="mt-1"
-            />
+      <div className="space-y-8 rounded-xl bg-muted p-6 lg:p-8">
+        <div className="flex items-start justify-between gap-6">
+          <div className="space-y-2">
+            <h2 className="text-base font-bold text-foreground">
+              Enable Microphone Input
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Allow the app to access your microphone for speech practice
+              sessions.
+            </p>
           </div>
+          <Switch
+            defaultChecked
+            className="data-[state=checked]:bg-foreground"
+          />
         </div>
 
-        <div className="p-8">
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-foreground">อุปกรณ์รับเสียง</h3>
-                <p className="mt-2 text-[13px] text-muted-foreground">
-                  เลือกไมโครโฟนที่ต้องการใช้ฝึก
+        <Card className="overflow-hidden rounded-2xl border-border bg-card shadow-none">
+          <CardContent className="p-0">
+            <div className="grid border-b border-border md:grid-cols-2">
+              <div className="p-6 lg:p-8">
+                <h3 className="text-base font-bold text-foreground">
+                  Input device
+                </h3>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Select the microphone you want to use for practice.
                 </p>
-                <div className="mt-4">
-                  <Select
-                    value={deviceId}
-                    onValueChange={setDeviceId}
-                    disabled={!micEnabled || !devices.length}
-                  >
-                    <SelectTrigger className="h-10 w-full text-xs">
-                      <SelectValue placeholder="เลือกไมโครโฟน" />
+              </div>
+              <div className="p-6 lg:p-8">
+                <h3 className="text-base font-bold text-foreground">
+                  Choose your input device
+                </h3>
+                <div className="mt-3 w-full max-w-xs">
+                  <Select defaultValue="macbook">
+                    <SelectTrigger className="h-11 rounded-md border-border text-sm">
+                      <SelectValue placeholder="Choose device" />
                     </SelectTrigger>
                     <SelectContent>
-                      {devices.map((d) => (
-                        <SelectItem key={d.deviceId} value={d.deviceId} className="text-xs">
-                          {d.label}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="macbook">
+                        MacBook Pro2019 Inter...
+                      </SelectItem>
+                      <SelectItem value="external">
+                        External Microphone
+                      </SelectItem>
+                      <SelectItem value="airpods">
+                        AirPods Microphone
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-
-              <div>
-                <h3 className="text-sm font-bold text-foreground">ความไวไมโครโฟน</h3>
-                <p className="mt-2 text-[13px] text-muted-foreground">
-                  ปรับความไวของไมโครโฟนระหว่างฝึก
-                </p>
-                <div className="mt-4 flex items-center gap-4">
-                  <Slider
-                    value={[sensitivity]}
-                    onValueChange={(v) => setSensitivity(v[0])}
-                    disabled={!micEnabled}
-                    className="flex-1"
-                  />
-                  <Badge variant="secondary" className="min-w-[44px] justify-center">
-                    {sensitivity}%
-                  </Badge>
-                </div>
-              </div>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold text-foreground">ทดสอบไมโครโฟน</h3>
-              <p className="text-[13px] text-muted-foreground">
-                ตรวจสอบอุปกรณ์ที่เลือกทำงานได้ดีหรือไม่
-              </p>
-              
-              <div className="space-y-4">
-                <Button
-                  size="sm"
-                  onClick={handleTest}
-                  disabled={!micEnabled || testing}
-                  className="gap-2"
-                >
-                  <Mic className="h-4 w-4" />
-                  {testing ? "กำลังทดสอบ..." : "เริ่มทดสอบ"}
-                </Button>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">ระดับเสียง</span>
-                    <span className="text-xs font-medium text-foreground">
-                      {level > 0 ? `${level}%` : "-"}
+            <div className="grid md:grid-cols-2">
+              <div className="p-6 lg:p-8">
+                <h3 className="text-base font-bold text-foreground">
+                  Microphone sensitivity
+                </h3>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Adjust how sensitive the mic is during practice.
+                </p>
+              </div>
+              <div className="space-y-8 p-6 lg:p-8">
+                <div>
+                  <h3 className="text-base font-bold text-foreground">
+                    Adjust sensitivity level
+                  </h3>
+                  <div className="mt-4 flex max-w-sm items-center gap-4">
+                    <Slider
+                      defaultValue={[60]}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                    />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      60%
                     </span>
                   </div>
-                  <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
-                    <div 
-                      className="absolute left-0 top-0 h-full bg-brand transition-all duration-150"
-                      style={{ width: `${level}%` }}
-                    />
+                </div>
+
+                <div>
+                  <h3 className="text-base font-bold text-foreground">
+                    Test microphone
+                  </h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Make sure your selected device is working properly.
+                  </p>
+                  <div className="mt-4 flex flex-wrap items-center gap-4">
+                    <Button className="h-9 rounded-md bg-foreground px-4 text-sm font-bold text-background hover:bg-foreground/90">
+                      <Mic className="mr-2 h-4 w-4" />
+                      Start Test
+                    </Button>
+                    <div className="h-1 w-36 rounded-full bg-muted-foreground/20" />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Level : -
+                    </span>
                   </div>
                 </div>
-                
-                {error && (
-                  <p className="text-xs text-destructive">{error}</p>
-                )}
               </div>
             </div>
-          </div>
-        </div>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
