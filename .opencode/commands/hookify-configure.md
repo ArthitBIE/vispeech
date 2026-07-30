@@ -1,14 +1,14 @@
-# Hookify Configure
+---
+description: Enable or disable hookify rules interactively
+---
 
-Enable or disable hookify rules interactively.
+Interactively enable or disable existing hookify rules.
 
-## Arguments
-$ARGUMENTS
+## Steps
 
-## Usage
-```bash
-hookify list          # Show all rules with status
-hookify enable <id>   # Enable a rule
-hookify disable <id>  # Disable a rule
-hookify status        # Show current configuration
-```
+1. Find all `.claude/hookify.*.local.md` files
+2. Read the current state of each rule
+3. Present the list with current enabled / disabled status
+4. Ask which rules to toggle
+5. Update the `enabled:` field in the selected rule files
+6. Confirm the changes

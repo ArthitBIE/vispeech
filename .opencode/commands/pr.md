@@ -1,18 +1,22 @@
-# Create GitHub PR
+# Create PR
 
-Create a pull request from the current branch with all unpushed commits.
+Create a GitHub Pull Request from the current branch.
 
-## Arguments
-$ARGUMENTS
+## Context
 
-## Steps
-1. Check current branch and unpushed commits
-2. Push branch to origin
-3. Create PR with descriptive title and body
-4. Add appropriate labels and reviewers
+- Current branch has unpushed commits
+- PR targets the repository's default branch
 
-## Template
-```bash
-git push -u origin HEAD
-gh pr create --fill --base main
-```
+## PR Template
+
+**Title**: [concise description of changes]
+
+**Description**:
+
+- What and why
+- Key changes
+- Testing done
+- Screenshots (if UI)
+
+/cc @reviewers
+Closes #
