@@ -8,7 +8,7 @@ export default async function RootPage() {
     : null;
 
   if (session) {
-    redirect("/dashboard");
+    redirect("/home");
   }
   redirect("/home");
 }

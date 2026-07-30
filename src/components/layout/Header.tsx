@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Menu } from "lucide-react";
+import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,30 +12,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import TitleLogo from "@/components/layout/TitleLogo";
 
-export function Header({ onMenu }: { onMenu?: () => void }) {
+export function Header() {
   const router = useRouter();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="lg:hidden"
-        onClick={onMenu}
-        aria-label="เปิดเมนู"
-      >
-        <Menu className="h-5 w-5" />
-      </Button>
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background px-5">
+      <Link href="/" aria-label="Vispeech home" className="flex-shrink-0">
+        <TitleLogo />
+      </Link>
 
-      <div className="flex items-center gap-2 lg:hidden">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
-          V
-        </div>
-        <span className="font-semibold">vispeech</span>
-      </div>
-
-      <div className="ml-auto">
+      <div className="flex items-center gap-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
