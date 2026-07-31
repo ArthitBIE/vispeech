@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/home", label: "หน้าหลัก", icon: Home },
-  { href: "/progress", label: "ความก้าวหน้า", icon: BarChart3 },
+  { href: "/dashboard", label: "ความก้าวหน้า", icon: BarChart3 },
   { href: "/settings", label: "การตั้งค่า", icon: Settings },
 ];
 
@@ -35,7 +35,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 "flex h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors",
                 active
                   ? "bg-muted font-semibold text-foreground"
-                  : "font-medium text-foreground hover:bg-muted/50",
+                  : "font-medium text-foreground hover:bg-muted/50"
               )}
             >
               <Icon className="h-5 w-5" />

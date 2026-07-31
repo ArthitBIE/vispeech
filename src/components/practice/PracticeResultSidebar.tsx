@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -11,28 +11,28 @@ import {
   Smile,
   Volume2,
   Sparkles,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 export interface WordResult {
-  word: string
-  phonetic?: string
-  score: number
-  status: "success" | "warning"
-  expanded: boolean
-  lipFeedback?: string
-  soundFeedback?: string
-  recommendation?: string
+  word: string;
+  phonetic?: string;
+  score: number;
+  status: "success" | "warning";
+  expanded: boolean;
+  lipFeedback?: string;
+  soundFeedback?: string;
+  recommendation?: string;
 }
 
 export interface PracticeResultSidebarProps {
-  results: WordResult[]
-  totalAccuracy: number
-  open: boolean
-  onClose: () => void
-  onRestart: () => void
+  results: WordResult[];
+  totalAccuracy: number;
+  open: boolean;
+  onClose: () => void;
+  onRestart: () => void;
 }
 
 export default function PracticeResultSidebar({
@@ -42,19 +42,30 @@ export default function PracticeResultSidebar({
   onClose,
   onRestart,
 }: PracticeResultSidebarProps) {
-  const [localResults, setLocalResults] = useState<WordResult[]>(results)
+  const [expandedWords, setExpandedWords] = useState<Set<string>>(new Set());
 
-  if (!open) return null
+  if (!open) return null;
 
-  const wordsNeedingPractice = localResults.filter(
+  const wordsNeedingPractice = results.filter(
     (r) => r.status === "warning"
-  ).length
+  ).length;
+
+  const isExpanded = (item: WordResult) =>
+    expandedWords.has(item.word) ? !item.expanded : item.expanded;
 
   const toggleExpand = (index: number) => {
-    setLocalResults((prev) =>
-      prev.map((r, i) => (i === index ? { ...r, expanded: !r.expanded } : r))
-    )
-  }
+    const item = results[index];
+    if (!item) return;
+    setExpandedWords((prev) => {
+      const next = new Set(prev);
+      if (next.has(item.word)) {
+        next.delete(item.word);
+      } else {
+        next.add(item.word);
+      }
+      return next;
+    });
+  };
 
   return (
     <>
@@ -94,7 +105,7 @@ export default function PracticeResultSidebar({
           <div className="my-5 border-t border-neutral-200" />
 
           <section className="space-y-3">
-            {localResults.map((item, index) => (
+            {results.map((item, index) => (
               <Card
                 key={item.word}
                 className="overflow-hidden rounded-lg border border-neutral-200 shadow-none"
@@ -114,7 +125,9 @@ export default function PracticeResultSidebar({
 
                       <span className="text-sm font-semibold">{item.word}</span>
                       {item.phonetic && (
-                        <span className="text-sm text-black">{item.phonetic}</span>
+                        <span className="text-sm text-black">
+                          {item.phonetic}
+                        </span>
                       )}
                     </div>
 
@@ -128,7 +141,7 @@ export default function PracticeResultSidebar({
                       >
                         {item.score}%
                       </span>
-                      {item.expanded ? (
+                      {isExpanded(item) ? (
                         <ChevronUp className="h-4 w-4 text-neutral-500" />
                       ) : (
                         <ChevronDown className="h-4 w-4 text-neutral-500" />
@@ -136,7 +149,7 @@ export default function PracticeResultSidebar({
                     </div>
                   </button>
 
-                  {item.expanded && (
+                  {isExpanded(item) && (
                     <div className="border-t border-neutral-100 px-3 py-4">
                       <div className="space-y-4">
                         <div className="flex items-center gap-3 text-sm">
@@ -213,5 +226,5 @@ export default function PracticeResultSidebar({
         </footer>
       </aside>
     </>
-  )
+  );
 }
