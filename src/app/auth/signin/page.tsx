@@ -1,14 +1,59 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import TitleLogo from "@/components/layout/TitleLogo";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export default function SignInPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+
+    if (!isSupabaseConfigured || !supabase?.auth) {
+      setError(
+        "ยังไม่ได้ตั้งค่า Supabase กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL " +
+          "และ NEXT_PUBLIC_SUPABASE_ANON_KEY ในไฟล์ .env.local"
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      router.push("/dashboard");
+    } catch (err: any) {
+      const messages: Record<string, string> = {
+        "Invalid login credentials": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+        "Email not confirmed": "กรุณายืนยันอีเมลของคุณ",
+      };
+      setError(messages[err.message] || err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
   return (
     <main className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       <header className="h-14 border-b border-border bg-background">
@@ -61,7 +106,7 @@ export default function SignInPage() {
           </CardHeader>
 
           <CardContent className="px-5 pb-5">
-            <form className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label
                   htmlFor="email"
@@ -76,6 +121,8 @@ export default function SignInPage() {
                   placeholder="email@example.com"
                   autoComplete="email"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="h-9 rounded-md border-border text-sm placeholder:text-muted-foreground focus-visible:ring-ring"
                 />
               </div>
@@ -95,6 +142,8 @@ export default function SignInPage() {
                     type="password"
                     autoComplete="current-password"
                     required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="h-9 rounded-md border-border pr-10 text-sm focus-visible:ring-ring"
                   />
                   <button
@@ -109,11 +158,21 @@ export default function SignInPage() {
 
               <div className="-mx-5 border-t border-border pt-5">
                 <div className="px-5 space-y-3">
+                  {error && (
+                    <p
+                      role="alert"
+                      className="rounded-lg bg-red-50 p-3 text-sm text-red-600"
+                    >
+                      {error}
+                    </p>
+                  )}
+
                   <Button
                     type="submit"
-                    className="h-9 w-full rounded-lg bg-primary text-sm font-semibold text-primary-foreground hover:bg-accent"
+                    disabled={loading}
+                    className="h-9 w-full rounded-lg bg-primary text-sm font-semibold text-primary-foreground hover:bg-accent disabled:opacity-50"
                   >
-                    Login
+                    {loading ? "กำลังเข้าสู่ระบบ..." : "Login"}
                   </Button>
 
                   <Button
