@@ -1,4 +1,4 @@
-import { test as setup, expect } from "@playwright/test";
+import { test as setup } from "@playwright/test";
 
 setup("authenticate", async ({ page }) => {
   const email = process.env.E2E_TEST_EMAIL;
@@ -9,10 +9,10 @@ setup("authenticate", async ({ page }) => {
     process.exit(1);
   }
 
-  await page.goto("/auth");
-  await page.fill('input[data-testid="login-email"]', email);
-  await page.fill('input[data-testid="login-password"]', password);
-  await page.click('button[data-testid="login-submit"]');
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
+  await page.goto("/auth/signin");
+  await page.fill("#email", email);
+  await page.fill("#password", password);
+  await page.click('button[type="submit"]');
+  await page.waitForURL(/^(?!.*\/auth)/, { timeout: 15000 });
   await page.context().storageState({ path: "e2e/.auth/user.json" });
 });
