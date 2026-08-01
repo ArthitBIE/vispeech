@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from("words")
-      .select("id, word, viseme_group, difficulty")
+      .select("id, word, viseme_group, difficulty, phonetic")
       .order("difficulty");
 
     if (group) {
@@ -61,19 +61,51 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      console.error("Words fetch error:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch words" },
-        { status: 500 }
+      // phonetic column may not exist yet (migration 003 not applied) — retry without it
+      const fallback = await supabase
+        .from("words")
+        .select("id, word, viseme_group, difficulty")
+        .order("difficulty");
+      const data2 = fallback.data;
+      if (fallback.error || !data2) {
+        console.error("Words fetch error:", error);
+        return NextResponse.json(
+          { error: "Failed to fetch words" },
+          { status: 500 }
+        );
+      }
+      const words2 = (data2 || []).map(
+        (row: {
+          id: string;
+          word: string;
+          viseme_group: string;
+          difficulty: number;
+        }) => ({
+          id: row.id,
+          text: row.word,
+          visemeGroup: row.viseme_group,
+          difficulty: row.difficulty,
+          phonetic: null,
+        })
       );
+      return NextResponse.json({ words: words2 });
     }
 
-    const words = (data || []).map((row: any) => ({
-      id: row.id,
-      text: row.word,
-      visemeGroup: row.viseme_group,
-      difficulty: row.difficulty,
-    }));
+    const words = (data || []).map(
+      (row: {
+        id: string;
+        word: string;
+        viseme_group: string;
+        difficulty: number;
+        phonetic: string | null;
+      }) => ({
+        id: row.id,
+        text: row.word,
+        visemeGroup: row.viseme_group,
+        difficulty: row.difficulty,
+        phonetic: row.phonetic,
+      })
+    );
 
     return NextResponse.json({ words });
   } catch (error) {

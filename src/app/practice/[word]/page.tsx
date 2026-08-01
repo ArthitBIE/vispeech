@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { PracticeWord, type WordRow } from "@/components/practice/PracticeWord";
 import { Button } from "@/components/ui/button";
+import { HeaderOnlyShell } from "@/components/layout/HeaderOnlyShell";
 
 export default function PracticePage() {
   const params = useParams<{ word: string }>();
@@ -72,6 +73,12 @@ export default function PracticePage() {
   if (!wordData) return null;
 
   return (
-    <PracticeWord word={wordData} onScored={handleScored} onSkip={handleSkip} />
+    <HeaderOnlyShell>
+      <PracticeWord
+        word={wordData}
+        onScored={handleScored}
+        onSkip={handleSkip}
+      />
+    </HeaderOnlyShell>
   );
 }

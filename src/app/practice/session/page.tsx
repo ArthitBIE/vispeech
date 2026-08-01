@@ -6,14 +6,17 @@ import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import {
   PracticeWord,
   type WordRow,
   type ScoreResult,
+  type LiveState,
 } from "@/components/practice/PracticeWord";
 import PracticeResultSidebar, {
   type WordResult,
 } from "@/components/practice/PracticeResultSidebar";
+import { Bot, ChevronLeft, Home, Info, Smile, Volume2 } from "lucide-react";
 
 interface PracticeWordResult extends WordResult {
   wordId: string;
@@ -29,6 +32,12 @@ export default function PracticeSessionPage() {
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [avatarLetter, setAvatarLetter] = useState("ก");
+  const [live, setLive] = useState<LiveState>({
+    mouthOpen: 0,
+    audioLevel: 0,
+    transcript: "",
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -37,6 +46,9 @@ export default function PracticeSessionPage() {
         const {
           data: { session: authSession },
         } = await supabase.auth.getSession();
+        if (!cancelled && authSession?.user?.email) {
+          setAvatarLetter(authSession.user.email[0].toUpperCase());
+        }
         const headers: Record<string, string> = {};
         if (authSession?.access_token) {
           headers["Authorization"] = `Bearer ${authSession.access_token}`;
@@ -56,12 +68,14 @@ export default function PracticeSessionPage() {
               text: string;
               visemeGroup: string;
               difficulty?: number;
+              phonetic?: string;
             }[]
           ).map((w) => ({
             id: w.id,
             word: w.text,
             viseme_group: w.visemeGroup,
             difficulty: w.difficulty ?? 0,
+            phonetic: w.phonetic,
           }))
         );
       } catch {
@@ -84,7 +98,7 @@ export default function PracticeSessionPage() {
     const word = currentWord();
     const result: PracticeWordResult = {
       word: word.word,
-      phonetic: word.viseme_group,
+      phonetic: word.phonetic ?? word.viseme_group,
       score: score.total_score,
       status: score.total_score >= 70 ? "success" : "warning",
       expanded: score.total_score < 70,
@@ -117,6 +131,7 @@ export default function PracticeSessionPage() {
   function handleSkip() {
     if (currentIndex < words.length - 1) {
       setCurrentIndex((prev) => prev + 1);
+      setLive({ mouthOpen: 0, audioLevel: 0, transcript: "" });
     } else {
       handleFinish();
     }
@@ -156,10 +171,15 @@ export default function PracticeSessionPage() {
     setCurrentIndex(0);
     setResults([]);
     setShowResults(false);
+    setLive({ mouthOpen: 0, audioLevel: 0, transcript: "" });
   }
 
   function handleClose() {
     router.push("/summary");
+  }
+
+  function handleCancel() {
+    router.push("/dashboard");
   }
 
   function totalAccuracy() {
@@ -168,23 +188,18 @@ export default function PracticeSessionPage() {
     return avg;
   }
 
-  function progressPercent() {
-    if (words.length === 0) return 0;
-    return ((currentIndex + 1) / words.length) * 100;
-  }
-
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">กำลังโหลดบทเรียน...</p>
+      <div className="flex min-h-screen items-center justify-center bg-neutral-50">
+        <p className="text-neutral-500">กำลังโหลดบทเรียน...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">{error}</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-neutral-50">
+        <p className="text-neutral-500">{error}</p>
         <Button onClick={() => router.push("/dashboard")}>
           กลับหน้าแดชบอร์ด
         </Button>
@@ -194,8 +209,8 @@ export default function PracticeSessionPage() {
 
   if (words.length === 0) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">ยังไม่มีคำศัพท์ในบทนี้</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-neutral-50">
+        <p className="text-neutral-500">ยังไม่มีคำศัพท์ในบทนี้</p>
         <Button onClick={() => router.push("/dashboard")}>
           กลับหน้าแดชบอร์ด
         </Button>
@@ -204,65 +219,94 @@ export default function PracticeSessionPage() {
   }
 
   return (
-    <div className="space-y-10">
-      <div className="mx-auto w-full max-w-6xl">
-        <div className="grid min-h-[700px] gap-8 overflow-hidden rounded-2xl border border-border bg-card lg:grid-cols-[230px_1fr_230px]">
+    <main className="min-h-screen bg-neutral-50 text-black font-sans">
+      <header className="h-16 border-b border-neutral-200 bg-white">
+        <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
+          <Button
+            variant="ghost"
+            onClick={handleCancel}
+            className="h-9 px-0 text-base font-medium text-red-500 hover:bg-transparent hover:text-red-600"
+          >
+            <ChevronLeft className="mr-1 h-5 w-5" />
+            ยกเลิกการฝึก
+          </Button>
+
+          <button
+            type="button"
+            aria-label="Open profile menu"
+            className="h-8 w-8 overflow-hidden rounded-full bg-neutral-300 ring-1 ring-neutral-200"
+          >
+            <div className="flex h-full w-full items-center justify-center bg-neutral-300 text-xs font-semibold text-neutral-600">
+              {avatarLetter}
+            </div>
+          </button>
+        </div>
+      </header>
+
+      <section className="mx-auto max-w-6xl px-4 py-12">
+        <nav className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-500">
+          <Home className="h-5 w-5 text-neutral-400" />
+          <span>Dashboard</span>
+          <span>/</span>
+          <span>Lesson</span>
+          <span>/</span>
+          <span className="text-black">Practice</span>
+        </nav>
+
+        <div className="grid min-h-[700px] overflow-hidden rounded-2xl border border-neutral-200 bg-white lg:grid-cols-[230px_1fr_230px]">
           {/* --- Word list sidebar --- */}
-          <aside className="bg-card p-6 lg:p-8">
+          <aside className="border-b border-neutral-200 bg-white p-5 lg:border-b-0 lg:border-r">
             <div>
-              <h1 className="text-base font-bold text-foreground">
-                บทเรียน คำศัพท์ง่าย
-              </h1>
+              <h1 className="text-base font-bold">บทเรียน คำศัพท์ง่าย</h1>
 
               <div className="mt-4 flex gap-2">
                 {words.map((_, i) => {
                   const completed = results.find(
                     (r) => r.word === words[i].word
                   );
-                  const dotColor = completed
-                    ? "bg-emerald-500"
-                    : i === currentIndex
-                      ? "bg-foreground"
-                      : "bg-muted-foreground/20";
                   return (
-                    <div key={i} className={`h-3 w-3 rounded-sm ${dotColor}`} />
+                    <div
+                      key={i}
+                      className={`h-3 w-3 rounded-sm ${
+                        completed ? "bg-emerald-500" : "bg-neutral-300"
+                      }`}
+                    />
                   );
                 })}
               </div>
 
-              <p className="mt-4 text-sm font-semibold text-muted-foreground">
+              <p className="mt-4 text-sm font-semibold text-neutral-300">
                 คำที่ {currentIndex + 1} / {words.length}
               </p>
             </div>
 
-            <div className="my-6 border-t border-border" />
+            <div className="my-6 border-t border-neutral-200" />
 
             <section>
-              <h2 className="text-sm font-bold text-foreground">คำในบทนี้</h2>
+              <h2 className="text-sm font-bold">คำในบทนี้</h2>
 
               <div className="mt-4 space-y-3">
                 {words.map((word, i) => {
                   const completed = results.find((r) => r.word === word.word);
-                  const scoreDisplay = completed
-                    ? `${completed.score}%`
-                    : i < currentIndex
-                      ? "-"
-                      : i === currentIndex
-                        ? "กำลังฝึก"
-                        : "-";
+                  const scoreDisplay = completed ? `${completed.score}%` : "-";
                   const colorClass =
                     completed?.status === "warning"
                       ? "text-orange-500"
                       : completed?.status === "success"
                         ? "text-emerald-500"
-                        : "text-muted-foreground";
+                        : i === currentIndex
+                          ? "text-neutral-700"
+                          : "text-neutral-300";
                   return (
                     <div
                       key={word.id}
                       className={`flex items-center gap-1 text-sm font-medium ${colorClass}`}
                     >
                       <span>◎</span>
-                      <span>{word.word}</span>
+                      <span>
+                        {word.word}
+                        {word.phonetic ? ` ${word.phonetic}` : ""}
+                      </span>
                       <span>{scoreDisplay}</span>
                     </div>
                   );
@@ -270,10 +314,10 @@ export default function PracticeSessionPage() {
               </div>
             </section>
 
-            <div className="my-6 border-t border-border" />
+            <div className="my-6 border-t border-neutral-200" />
 
             <section>
-              <h2 className="text-sm font-bold text-foreground">ความยาก</h2>
+              <h2 className="text-sm font-bold">ความยาก</h2>
 
               <div className="mt-4 flex gap-2">
                 {[0, 1].map((item) => (
@@ -285,7 +329,7 @@ export default function PracticeSessionPage() {
                 {[0, 1, 2].map((item) => (
                   <span
                     key={item}
-                    className="h-4 w-4 rounded-full border border-foreground/60"
+                    className="h-4 w-4 rounded-full border border-neutral-900"
                   />
                 ))}
               </div>
@@ -293,27 +337,31 @@ export default function PracticeSessionPage() {
           </aside>
 
           {/* --- Practice card --- */}
-          <section className="bg-card p-6 lg:p-8">
+          <section className="bg-white p-5 lg:p-7">
             <PracticeWord
               word={currentWord()}
               onScored={handleScored}
               onSkip={handleSkip}
+              onLive={setLive}
             />
           </section>
 
           {/* --- Tips sidebar --- */}
-          <aside className="bg-card p-6 lg:p-8">
+          <aside className="border-t border-neutral-200 bg-white p-5 lg:border-l lg:border-t-0">
             <section>
               <div className="mb-4 flex items-center gap-2">
-                <span className="h-5 w-5 text-primary">💡</span>
-                <h2 className="text-base font-bold text-foreground">
-                  Tips การฝึก
-                </h2>
+                <Bot className="h-5 w-5" />
+                <h2 className="text-base font-bold">Tips จาก Pakky</h2>
               </div>
 
-              <Card className="rounded-lg border border-border shadow-none">
+              <Card className="rounded-lg border border-neutral-200 shadow-none">
                 <CardContent className="p-4">
-                  <ul className="ml-5 list-disc space-y-2 text-sm leading-5 text-foreground">
+                  <div className="mb-3 flex items-center gap-2 text-sm font-bold">
+                    <Info className="h-4 w-4" />
+                    <span>Tips การออกเสียง</span>
+                  </div>
+
+                  <ul className="ml-5 list-disc space-y-2 text-sm leading-5 text-black">
                     <li>ยิ้มกว้างถึงข้าง</li>
                     <li>ลิ้นยกสูงด้านหน้าชนเพดาน</li>
                     <li>ฟันเผยอเล็กน้อย</li>
@@ -322,61 +370,65 @@ export default function PracticeSessionPage() {
               </Card>
             </section>
 
-            <section className="mt-8 space-y-6">
+            <section className="mt-8 space-y-5">
               <div>
-                <div className="mb-2 flex items-center gap-2 text-sm font-bold text-foreground">
-                  <span className="h-4 w-4">🎤</span>
-                  <span>เสียง</span>
+                <div className="mb-2 flex items-center gap-2 text-sm font-bold">
+                  <Volume2 className="h-4 w-4" />
+                  <span>ระดับเสียง</span>
                 </div>
+
                 <div className="flex items-center gap-3">
-                  <Progress value={progressPercent()} className="h-2 flex-1" />
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {Math.round(progressPercent())}%
+                  <Progress value={live.audioLevel} className="h-2 flex-1" />
+                  <span className="text-xs font-medium text-neutral-400">
+                    {live.audioLevel}%
                   </span>
                 </div>
               </div>
 
               <div>
-                <div className="mb-2 flex items-center gap-2 text-sm font-bold text-foreground">
-                  <span className="h-4 w-4">👄</span>
-                  <span>คำที่ฝึกแล้ว</span>
+                <div className="mb-2 flex items-center gap-2 text-sm font-bold">
+                  <Smile className="h-4 w-4" />
+                  <span>ริมฝีปาก</span>
                 </div>
+
                 <div className="flex items-center gap-3">
-                  <Progress
-                    value={
-                      words.length > 0
-                        ? (results.length / words.length) * 100
-                        : 0
-                    }
-                    className="h-2 flex-1"
-                  />
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {results.length} / {words.length}
+                  <Progress value={live.mouthOpen} className="h-2 flex-1" />
+                  <span className="text-xs font-medium text-neutral-400">
+                    {live.mouthOpen}%
                   </span>
                 </div>
               </div>
             </section>
 
-            <div className="my-8 border-t border-border" />
+            <div className="my-8 border-t border-neutral-200" />
 
-            <div className="rounded-lg border border-border bg-card px-4 py-4 text-center text-sm font-semibold leading-5 text-foreground shadow-sm">
-              {currentIndex === 0
-                ? "เริ่มต้นกัน! คำแรก"
-                : currentIndex === Math.floor(words.length / 2)
-                  ? `ครึ่งทางแล้ว! คำที่ ${currentIndex + 1}`
-                  : currentIndex === words.length - 1
-                    ? "คำสุดท้าย! ตั้งใจอีกนิด"
-                    : `คำที่ ${currentIndex + 1} จาก ${words.length}`}
-              <br />
-              หายใจลึกๆ แล้วค่อยๆ พูดนะ
-            </div>
+            <Input
+              readOnly
+              value={live.transcript || "กำลังรอเสียง ..."}
+              data-testid="practice-transcript"
+              className="h-10 rounded-lg border-neutral-200 text-sm text-neutral-400"
+            />
 
-            <div className="mx-auto mt-8 flex h-32 w-32 items-center justify-center rounded-full bg-muted">
-              <div className="h-24 w-24 rounded-full bg-muted-foreground/20" />
+            <div className="mt-16">
+              <div className="rounded-lg border border-neutral-200 bg-white px-4 py-4 text-center text-sm font-semibold leading-5 shadow-sm">
+                {currentIndex === 0
+                  ? "เริ่มต้นกัน! คำแรก"
+                  : currentIndex === Math.floor(words.length / 2)
+                    ? `ครึ่งทางแล้ว! คำที่ ${currentIndex + 1}`
+                    : currentIndex === words.length - 1
+                      ? "คำสุดท้าย! ตั้งใจอีกนิด"
+                      : `คำที่ ${currentIndex + 1} จาก ${words.length}`}
+                <br />
+                หายใจลึกๆ แล้วค่อยๆ พูดนะ
+              </div>
+
+              <div className="mx-auto mt-8 flex h-32 w-32 items-center justify-center rounded-full bg-neutral-100">
+                <div className="h-24 w-24 rounded-full bg-neutral-300" />
+              </div>
             </div>
           </aside>
         </div>
-      </div>
+      </section>
 
       <PracticeResultSidebar
         results={results}
@@ -385,6 +437,6 @@ export default function PracticeSessionPage() {
         onClose={handleClose}
         onRestart={handleRestart}
       />
-    </div>
+    </main>
   );
 }

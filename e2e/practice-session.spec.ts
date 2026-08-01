@@ -65,20 +65,22 @@ test.describe("Practice session page", () => {
       page.locator("h1:has-text('บทเรียน คำศัพท์ง่าย')")
     ).toBeVisible();
     // Right panel: tips
-    await expect(page.locator("h2:has-text('Tips การฝึก')")).toBeVisible();
+    await expect(page.locator("h2:has-text('Tips จาก Pakky')")).toBeVisible();
     // Center: word progress indicator
     await expect(
       page.locator("p", { hasText: /คำที่ \d+ \/ \d+/ })
     ).toBeVisible();
     // Center: camera section
     await expect(page.getByText("กล้อง", { exact: true })).toBeVisible();
-    // Center: speech section
-    await expect(page.getByText("เสียงพูด", { exact: true })).toBeVisible();
+    // Center: lip example section
+    await expect(
+      page.getByText("ตัวอย่างริมฝีปาก", { exact: true })
+    ).toBeVisible();
   });
 
   test("shows word display and progress dots", async ({ page }) => {
     // Word display with large text
-    const wordText = page.locator("h1.text-5xl");
+    const wordText = page.locator("h2.text-4xl");
     await expect(wordText).toBeVisible();
     const wordContent = await wordText.textContent();
     expect(wordContent?.trim()).toBeTruthy();
@@ -103,9 +105,9 @@ test.describe("Practice session page", () => {
   });
 
   test("shows session progress bars in tips sidebar", async ({ page }) => {
-    // Right sidebar has "เสียง" and "คำที่ฝึกแล้ว" sections
-    await expect(page.getByText("เสียง", { exact: true })).toBeVisible();
-    await expect(page.getByText("คำที่ฝึกแล้ว", { exact: true })).toBeVisible();
+    // Right sidebar has "ระดับเสียง" and "ริมฝีปาก" sections
+    await expect(page.getByText("ระดับเสียง", { exact: true })).toBeVisible();
+    await expect(page.getByText("ริมฝีปาก", { exact: true })).toBeVisible();
 
     // Progress bars
     const progressBars = page.locator('[role="progressbar"]');
@@ -153,7 +155,7 @@ test.describe("Practice session page", () => {
 
   test("results sidebar shows practiced word with score", async ({ page }) => {
     // Capture the current word's text before practicing it
-    const wordText = await page.locator("h1.text-5xl").textContent();
+    const wordText = await page.locator("h2.text-4xl").textContent();
     const word = wordText?.trim();
     expect(word).toBeTruthy();
 
