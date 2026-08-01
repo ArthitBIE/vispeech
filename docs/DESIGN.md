@@ -95,6 +95,7 @@ vispeech is where a learner meets their own reflection — literally on camera, 
 The system pairs a bold, confident primary (indigo) with soft, approachable surfaces. Shadows are present but gentle, defining depth without demanding attention. The palette stays restrained — one clear accent, clean neutrals — so the learner's face and the practice word are always the focal point.
 
 **Key Characteristics:**
+
 - One-color accent system with soft neutral surfaces
 - Clear elevation hierarchy through defined shadow layers
 - Generous breathing room around every focus point
@@ -213,6 +214,7 @@ Shadow-forward but deliberately restrained. Surfaces float with a gentle lift th
 ## 6. Do's and Don'ts
 
 ### Do:
+
 - **Do** keep the practice page minimal — one word, the camera view, and controls. The learner's face is the content.
 - **Do** use `text-wrap: balance` on h1–h3 for even line lengths.
 - **Do** use Vivid Indigo sparingly. It marks primary actions and data highlights only.
@@ -222,6 +224,7 @@ Shadow-forward but deliberately restrained. Surfaces float with a gentle lift th
 - **Do** reserve `translateY(-1px)` + shadow elevation for interactive hover states.
 
 ### Don't:
+
 - **Don't** clutter the dashboard. Three stat cards, one table, one history list — no more. Anti-reference: cluttered UIs where the learner feels buried in data.
 - **Don't** use indigo as a background wash or page section color. The accent is for actions and highlights, not for surfaces.
 - **Don't** animate layout properties (width, height, top, left). Use transform and opacity.
