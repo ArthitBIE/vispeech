@@ -1,6 +1,98 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+export async function GET(req: NextRequest) {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const canConnect =
+      supabaseUrl &&
+      supabaseKey &&
+      supabaseUrl !== "https://placeholder.supabase.co";
+
+    if (!canConnect) {
+      return NextResponse.json(
+        { error: "Supabase not configured" },
+        { status: 500 }
+      );
+    }
+
+    const authHeader = req.headers.get("authorization");
+    const token = authHeader?.startsWith("Bearer ")
+      ? authHeader.slice("Bearer ".length)
+      : null;
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl!, supabaseKey!, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get latest practice session for this user
+    const { data: session, error: sessionError } = await supabase
+      .from("practice_sessions")
+      .select("id, total_attempts, passed_count, best_score, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (sessionError || !session) {
+      return NextResponse.json({ session: null, results: [] });
+    }
+
+    // Get practice logs for this session with word details
+    const { data: logs, error: logsError } = await supabase
+      .from("practice_logs")
+      .select(
+        "id, word_id, visual_score, audio_score, total_score, attempt_number, created_at, words!inner(word, viseme_group, phonetic)"
+      )
+      .eq("session_id", session.id)
+      .eq("user_id", user.id)
+      .order("attempt_number");
+
+    if (logsError) {
+      console.error("Logs fetch error:", logsError);
+      return NextResponse.json(
+        { error: "Failed to fetch session logs" },
+        { status: 500 }
+      );
+    }
+
+    const results = (logs || []).map((log: any) => ({
+      word: log.words.word,
+      phonetic: log.words.phonetic || log.words.viseme_group,
+      viseme_group: log.words.viseme_group,
+      visual_score: log.visual_score,
+      audio_score: log.audio_score,
+      total_score: log.total_score,
+      attempt_number: log.attempt_number,
+      created_at: log.created_at,
+    }));
+
+    return NextResponse.json({ session, results });
+  } catch (error) {
+    console.error("Session fetch error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { totalAttempts, passedCount, bestScore } = await req.json();
@@ -8,14 +100,16 @@ export async function POST(req: NextRequest) {
     if (totalAttempts == null) {
       return NextResponse.json(
         { error: "Missing required field: totalAttempts" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const canConnect =
-      supabaseUrl && supabaseKey && supabaseUrl !== "https://placeholder.supabase.co";
+      supabaseUrl &&
+      supabaseKey &&
+      supabaseUrl !== "https://placeholder.supabase.co";
 
     if (!canConnect) {
       return NextResponse.json({ id: null });
@@ -34,7 +128,9 @@ export async function POST(req: NextRequest) {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -57,7 +153,7 @@ export async function POST(req: NextRequest) {
     console.error("Session save error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

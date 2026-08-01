@@ -34,9 +34,10 @@ test.describe("Sidebar navigation", () => {
     await expect(page.locator("h1")).toBeVisible({ timeout: 10000 });
 
     // Retry in case the header re-renders (element detached) during client nav
+    // Avatar letter = first letter of the signed-in email (unknown a-priori)
     const avatarButton = page
       .locator("header")
-      .getByRole("button", { name: "ก" });
+      .getByRole("button", { name: /^[ก-ฮA-Z]$/ });
     await expect(async () => {
       await avatarButton.click();
       await expect(page.locator('[role="menu"]')).toBeVisible({

@@ -2,8 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Play, Volume2, Home as HomeIcon, Flame, Sparkles } from "lucide-react";
+import {
+  Search,
+  Play,
+  Volume2,
+  Home as HomeIcon,
+  Flame,
+  Sparkles,
+} from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
+import { STREAK_GOAL, PASS_THRESHOLD } from "@/lib/constants";
+import { computeStreak, dateKey, thaiFullDate } from "@/lib/streak";
+import { SupabaseNotConfigured } from "@/components/SupabaseNotConfigured";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,27 +26,28 @@ interface Word {
   difficulty: number;
 }
 
-interface Lesson {
-  group: string;
-  count: number;
+interface WordAccuracy {
+  word_id: string;
+  best_score: number;
+  average_score: number;
+  total_attempts: number;
+  last_practiced_at: string;
 }
-
-const STREAK = 2;
-const STREAK_GOAL = 10;
 
 type Filter = "all" | "learning" | "done" | "not-started";
 
 export default function HomePage() {
   const [words, setWords] = useState<Word[]>([]);
+  const [accuracy, setAccuracy] = useState<Record<string, WordAccuracy>>({});
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [loading, setLoading] = useState(true);
+  const [streakInfo, setStreakInfo] = useState(() => ({
+    streak: 0,
+    startDate: null as Date | null,
+  }));
 
-  useEffect(() => {
-    loadWords();
-  }, []);
-
-  async function loadWords() {
+  async function loadData() {
     try {
       if (!isSupabaseConfigured || !supabase?.auth) {
         setLoading(false);
@@ -46,18 +57,66 @@ export default function HomePage() {
       const token = sessionData.session?.access_token;
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      const res = await fetch("/api/words", { headers });
-      if (!res.ok) {
+
+      // Fetch words
+      const wordsRes = await fetch("/api/words", { headers });
+      if (!wordsRes.ok) {
         setLoading(false);
         return;
       }
-      const { words } = await res.json();
-      setWords(words as Word[]);
+      const { words: wordsData } = await wordsRes.json();
+      setWords(wordsData as Word[]);
+
+      // Fetch word accuracy if user is authenticated
+      if (sessionData.session) {
+        const { data: accData } = await supabase
+          .from("word_accuracy")
+          .select("*")
+          .eq("user_id", sessionData.session.user.id);
+
+        const accMap: Record<string, WordAccuracy> = {};
+        (accData || []).forEach(
+          (a: {
+            word_id: string;
+            best_score: number;
+            average_score: number;
+            total_attempts: number;
+            last_practiced_at: string;
+          }) => {
+            accMap[a.word_id] = {
+              word_id: a.word_id,
+              best_score: a.best_score,
+              average_score: a.average_score,
+              total_attempts: a.total_attempts,
+              last_practiced_at: a.last_practiced_at,
+            };
+          }
+        );
+        setAccuracy(accMap);
+      }
+
+      // Fetch practice dates for streak
+      if (sessionData.session) {
+        const { data: logs } = await supabase
+          .from("practice_logs")
+          .select("created_at");
+        const keys = (logs || []).map((l: { created_at: string }) =>
+          dateKey(new Date(l.created_at))
+        );
+        const { streak, startDate } = computeStreak(keys);
+        setStreakInfo({ streak, startDate });
+      }
     } catch {
     } finally {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    (async () => {
+      await loadData();
+    })();
+  }, []);
 
   const lessons = useMemo(() => {
     const byGroup = new Map<string, Word[]>();
@@ -81,36 +140,52 @@ export default function HomePage() {
     return list;
   }, [lessons, filter, search]);
 
-  const filterCounts = useMemo(
-    () => ({
+  const filterCounts = useMemo(() => {
+    const groupStatus = new Map<string, "learning" | "done" | "not-started">();
+
+    for (const lesson of lessons) {
+      const groupWords = words.filter((w) => w.visemeGroup === lesson.group);
+      const wordsWithAccuracy = groupWords.filter((w) => accuracy[w.id]);
+
+      if (wordsWithAccuracy.length === 0) {
+        groupStatus.set(lesson.group, "not-started");
+      } else {
+        const allDone = wordsWithAccuracy.every(
+          (w) => accuracy[w.id]!.average_score >= PASS_THRESHOLD
+        );
+        if (allDone && wordsWithAccuracy.length === groupWords.length) {
+          groupStatus.set(lesson.group, "done");
+        } else {
+          groupStatus.set(lesson.group, "learning");
+        }
+      }
+    }
+
+    const counts = { learning: 0, done: 0, "not-started": 0 };
+    for (const status of groupStatus.values()) {
+      counts[status]++;
+    }
+
+    return {
       all: lessons.length,
-      learning: 0,
-      done: 0,
-      "not-started": lessons.length,
-    }),
-    [lessons],
-  );
+      learning: counts.learning,
+      done: counts.done,
+      "not-started": counts["not-started"],
+    };
+  }, [lessons, words, accuracy]);
 
   const filters: { key: Filter; label: string }[] = [
     { key: "all", label: `ทั้งหมด (${filterCounts.all})` },
     { key: "learning", label: `กำลังเรียน (${filterCounts.learning})` },
     { key: "done", label: `เสร็จแล้ว (${filterCounts.done})` },
-    { key: "not-started", label: `ยังไม่เริ่ม (${filterCounts["not-started"]})` },
+    {
+      key: "not-started",
+      label: `ยังไม่เริ่ม (${filterCounts["not-started"]})`,
+    },
   ];
 
   if (!isSupabaseConfigured) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-        <h1 className="text-2xl font-bold text-foreground">ยังไม่ได้ตั้งค่า Supabase</h1>
-        <p className="max-w-md text-muted-foreground">
-          กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL และ
-          NEXT_PUBLIC_SUPABASE_ANON_KEY ในไฟล์ .env.local
-        </p>
-        <Button asChild>
-          <Link href="/auth">ไปหน้าเข้าสู่ระบบ</Link>
-        </Button>
-      </div>
-    );
+    return <SupabaseNotConfigured ctaHref="/auth" />;
   }
 
   return (
@@ -135,10 +210,12 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-foreground">
-                    ต่อเนื่อง {STREAK} วันแล้ว!
+                    ต่อเนื่อง {streakInfo.streak} วันแล้ว!
                   </h2>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    เริ่มตั้งแต่ อาทิตย์ที่ 5 ก.ค. 2569
+                    {streakInfo.startDate
+                      ? `เริ่มตั้งแต่ ${thaiFullDate(streakInfo.startDate)}`
+                      : "ยังไม่ได้เริ่มฝึก"}
                   </p>
                 </div>
               </div>
@@ -147,22 +224,29 @@ export default function HomePage() {
                 <div className="h-5 flex-1 overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-orange-400"
-                    style={{ width: `${(STREAK / STREAK_GOAL) * 100}%` }}
+                    style={{
+                      width: `${Math.min(100, (streakInfo.streak / STREAK_GOAL) * 100)}%`,
+                    }}
                   />
                 </div>
                 <p className="text-base font-medium text-foreground">
-                  {STREAK}/{STREAK_GOAL}
+                  {streakInfo.streak}/{STREAK_GOAL}
                 </p>
               </div>
 
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <Sparkles className="h-5 w-5 text-orange-500" />
-                <span className="font-semibold text-foreground">แนะนำการฝึกวันนี้</span>
+                <span className="font-semibold text-foreground">
+                  แนะนำการฝึกวันนี้
+                </span>
                 <span className="text-muted-foreground">·</span>
                 <span className="font-semibold text-foreground">
                   {lessons[0]?.group ?? "คำศัพท์ง่าย"} บทที่ 1
                 </span>
-                <Button asChild className="h-8 rounded-md bg-foreground px-4 text-xs font-bold text-background hover:bg-foreground/90">
+                <Button
+                  asChild
+                  className="h-8 rounded-md bg-foreground px-4 text-xs font-bold text-background hover:bg-foreground/90"
+                >
                   <Link href="/practice/session">
                     <Play className="mr-2 h-3 w-3 fill-current" />
                     เริ่มการฝึก
@@ -211,13 +295,18 @@ export default function HomePage() {
         <section>
           <div className="mb-6 flex items-center gap-2">
             <Volume2 className="h-5 w-5 text-foreground" />
-            <h2 className="text-lg font-bold text-foreground">บทเรียนทั้งหมด</h2>
+            <h2 className="text-lg font-bold text-foreground">
+              บทเรียนทั้งหมด
+            </h2>
           </div>
 
           {loading ? (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 3 }).map((_, i) => (
-                <Card key={i} className="animate-pulse rounded-2xl border border-border shadow-none">
+                <Card
+                  key={i}
+                  className="animate-pulse rounded-2xl border border-border shadow-none"
+                >
                   <CardContent className="p-4">
                     <div className="mb-4 h-32 rounded-lg bg-muted" />
                     <div className="mb-2 h-5 w-3/4 rounded bg-muted" />
@@ -261,8 +350,8 @@ export default function HomePage() {
                     </p>
 
                     <p className="mt-4 min-h-10 text-sm leading-5 text-muted-foreground">
-                      ฝึกออกเสียงคำที่ใช้บ่อยในชีวิตประจำวัน
-                      พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด
+                      ฝึกออกเสียงคำที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ
+                      Feedback ทันทีทุกครั้งที่พูด
                     </p>
 
                     <div className="mt-5 grid grid-cols-2 gap-3">
@@ -274,11 +363,16 @@ export default function HomePage() {
                       </div>
                       <div className="rounded-lg bg-muted px-4 py-3 text-center">
                         <p className="text-xs text-muted-foreground">การฝึก</p>
-                        <p className="mt-1 text-xl font-bold text-muted-foreground">-</p>
+                        <p className="mt-1 text-xl font-bold text-muted-foreground">
+                          -
+                        </p>
                       </div>
                     </div>
 
-                    <Button asChild className="mt-5 h-10 w-full rounded-lg bg-foreground text-sm font-bold text-background hover:bg-foreground/90">
+                    <Button
+                      asChild
+                      className="mt-5 h-10 w-full rounded-lg bg-foreground text-sm font-bold text-background hover:bg-foreground/90"
+                    >
                       <Link href="/practice/session">
                         <Play className="mr-2 h-4 w-4 fill-current" />
                         เริ่มการฝึก

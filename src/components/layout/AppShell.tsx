@@ -1,20 +1,16 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
-
-  const isPracticeSession = pathname?.includes("/practice/session");
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {!isPracticeSession && <Header />}
+      <Header />
 
       <div className="flex flex-1">
         <div className="hidden lg:block">
