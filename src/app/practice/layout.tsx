@@ -1,9 +1,9 @@
-import { HeaderOnlyShell } from "@/components/layout/HeaderOnlyShell";
+import { BareShell } from "@/components/layout/BareShell";
 
 export default function PracticeLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <HeaderOnlyShell>{children}</HeaderOnlyShell>;
+  return <BareShell>{children}</BareShell>;
 }
