@@ -6,12 +6,14 @@ export async function GET(req: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const canConnect =
-      supabaseUrl && supabaseKey && supabaseUrl !== "https://placeholder.supabase.co";
+      supabaseUrl &&
+      supabaseKey &&
+      supabaseUrl !== "https://placeholder.supabase.co";
 
     if (!canConnect) {
       return NextResponse.json(
         { error: "Supabase not configured" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -23,7 +25,7 @@ export async function GET(req: NextRequest) {
     if (!token) {
       return NextResponse.json(
         { error: "Authentication required" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -34,6 +36,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = req.nextUrl;
     const group = searchParams.get("group")?.trim() || "";
     const search = searchParams.get("search")?.trim() || "";
+    const difficulty = searchParams.get("difficulty")?.trim() || "";
 
     let query = supabase
       .from("words")
@@ -48,13 +51,20 @@ export async function GET(req: NextRequest) {
       query = query.ilike("word", `%${search}%`);
     }
 
+    if (difficulty) {
+      const diff = parseInt(difficulty, 10);
+      if (!isNaN(diff)) {
+        query = query.lte("difficulty", diff);
+      }
+    }
+
     const { data, error } = await query;
 
     if (error) {
       console.error("Words fetch error:", error);
       return NextResponse.json(
         { error: "Failed to fetch words" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -70,7 +80,7 @@ export async function GET(req: NextRequest) {
     console.error("Words fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch words" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
