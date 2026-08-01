@@ -28,10 +28,8 @@ test.describe("Settings page", () => {
       page.getByText("Choose your input device", { exact: true })
     ).toBeVisible();
 
-    // Device selector
-    const selectTrigger = page.locator(
-      'button:has-text("MacBook Pro2019 Inter")'
-    );
+    // Device selector combobox is present
+    const selectTrigger = page.locator('button[role="combobox"]');
     await expect(selectTrigger).toBeVisible();
   });
 
@@ -51,27 +49,22 @@ test.describe("Settings page", () => {
   test("shows test microphone button", async ({ page }) => {
     await expect(page.locator("text=Test microphone")).toBeVisible();
     await expect(
-      page.locator("text=Make sure your selected device is working")
+      page.locator("text=Make sure your selected device is working properly")
     ).toBeVisible();
 
     const testButton = page.locator('button:has-text("Start Test")');
     await expect(testButton).toBeVisible();
   });
 
-  test("device selector opens dropdown with options", async ({ page }) => {
-    // Click the device selector to open dropdown
-    const selectTrigger = page.locator(
-      'button:has-text("MacBook Pro2019 Inter")'
-    );
+  test("device selector lists available microphones", async ({ page }) => {
+    // Headless browsers expose a single default "Microphone" device
+    const selectTrigger = page.locator('button[role="combobox"]');
     await selectTrigger.click();
-
-    // Dropdown options should appear
-    await expect(
-      page.locator('[role="option"]').filter({ hasText: "External Microphone" })
-    ).toBeVisible({ timeout: 3000 });
-    await expect(
-      page.locator('[role="option"]').filter({ hasText: "AirPods Microphone" })
-    ).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[role="listbox"]')).toBeVisible({
+      timeout: 3000,
+    });
+    const option = page.locator('[role="option"]').first();
+    await expect(option).toBeVisible({ timeout: 3000 });
   });
 
   test("toggling mic switch updates state", async ({ page }) => {

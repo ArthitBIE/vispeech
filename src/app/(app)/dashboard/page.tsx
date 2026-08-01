@@ -3,16 +3,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
+import { PASS_THRESHOLD } from "@/lib/constants";
+import { SupabaseNotConfigured } from "@/components/SupabaseNotConfigured";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  BarChart3,
-  Play,
-  RotateCcw,
-  Star,
-  AlertTriangle,
-} from "lucide-react";
+import { BarChart3, Play, RotateCcw, Star, AlertTriangle } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────
 
@@ -31,43 +27,6 @@ interface WordAccuracy {
   last_practiced_at: string;
 }
 
-// ── Lesson definitions ─────────────────────────────────
-
-interface LessonDef {
-  id: string;
-  title: string;
-  chapter: string;
-  description: string;
-  filter: (w: Word) => boolean;
-}
-
-const LESSON_DEFS: LessonDef[] = [
-  {
-    id: "easy-vocab",
-    title: "คำศัพท์ง่าย",
-    chapter: "บทที่ 1",
-    description:
-      "ฝึกออกเสียงคำที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด",
-    filter: (w) => w.difficulty <= 1,
-  },
-  {
-    id: "vowels",
-    title: "เสียงสระ",
-    chapter: "บทที่ 1",
-    description:
-      "ฝึกออกเสียงสระในภาษาไทย พร้อมรูปปากและ Feedback ทันที",
-    filter: (w) => w.difficulty === 2,
-  },
-  {
-    id: "conversation",
-    title: "บทสนทนา",
-    chapter: "บทที่ 1",
-    description:
-      "ฝึกออกเสียงบทสนทนาที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด",
-    filter: (w) => w.difficulty >= 3,
-  },
-];
-
 // ── LessonItem (what each card renders) ────────────────
 
 interface LessonItem {
@@ -81,41 +40,6 @@ interface LessonItem {
   accuracy?: string;
   warning?: string;
 }
-
-const MOCK_LESSONS: LessonItem[] = [
-  {
-    title: "คำศัพท์ง่าย",
-    chapter: "บทที่ 1",
-    description:
-      "ฝึกออกเสียงคำที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด",
-    progressText: "5 / 5 คำ",
-    progressWidth: "100%",
-    completed: true,
-    highlighted: true,
-    accuracy: "84.6%",
-    warning: "มี 2 คำที่ควรฝึกเพิ่ม",
-  },
-  {
-    title: "เสียงสระ",
-    chapter: "บทที่ 1",
-    description:
-      "ฝึกออกเสียงสระในภาษาไทย พร้อมรูปปากและ Feedback ทันที",
-    progressText: "0 / 31 เสียง",
-    progressWidth: "0%",
-    completed: false,
-    highlighted: false,
-  },
-  {
-    title: "บทสนทนา",
-    chapter: "บทที่ 1",
-    description:
-      "ฝึกออกเสียงบทสนทนาที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันทีทุกครั้งที่พูด",
-    progressText: "0 / 5 บทสนทนา",
-    progressWidth: "0%",
-    completed: false,
-    highlighted: false,
-  },
-];
 
 // ── Skeleton ───────────────────────────────────────────
 
@@ -282,15 +206,9 @@ function LessonCard({ item }: { item: LessonItem }) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [session, setSession] = useState<any>(null);
   const [words, setWords] = useState<Word[]>([]);
   const [accuracy, setAccuracy] = useState<Record<string, WordAccuracy>>({});
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function loadData() {
     try {
@@ -306,7 +224,6 @@ export default function DashboardPage() {
         router.push("/auth/signin");
         return;
       }
-      setSession(session);
 
       // Fetch words via API, fallback to direct supabase query
       let fetchedWords: Word[] = [];
@@ -318,24 +235,38 @@ export default function DashboardPage() {
         const res = await fetch("/api/words", { headers });
         if (res.ok) {
           const { words: apiWords } = await res.json();
-          fetchedWords = (apiWords || []).map((w: any) => ({
-            id: w.id,
-            word: w.text,
-            viseme_group: w.visemeGroup,
-            difficulty: w.difficulty ?? 0,
-          }));
+          fetchedWords = (apiWords || []).map(
+            (w: {
+              id: string;
+              text: string;
+              visemeGroup: string;
+              difficulty?: number;
+            }) => ({
+              id: w.id,
+              word: w.text,
+              viseme_group: w.visemeGroup,
+              difficulty: w.difficulty ?? 0,
+            })
+          );
         }
       } catch (e) {
         console.warn("API words failed, querying supabase directly:", e);
         const { data } = await supabase
           .from("words")
           .select("id, word, viseme_group, difficulty");
-        fetchedWords = (data || []).map((w: any) => ({
-          id: w.id,
-          word: w.word,
-          viseme_group: w.viseme_group,
-          difficulty: w.difficulty ?? 0,
-        }));
+        fetchedWords = (data || []).map(
+          (w: {
+            id: string;
+            word: string;
+            viseme_group: string;
+            difficulty?: number;
+          }) => ({
+            id: w.id,
+            word: w.word,
+            viseme_group: w.viseme_group,
+            difficulty: w.difficulty ?? 0,
+          })
+        );
       }
 
       setWords(fetchedWords);
@@ -347,15 +278,23 @@ export default function DashboardPage() {
         .eq("user_id", session.user.id);
 
       const accMap: Record<string, WordAccuracy> = {};
-      (accData || []).forEach((a: any) => {
-        accMap[a.word_id] = {
-          word_id: a.word_id,
-          best_score: a.best_score,
-          average_score: a.average_score,
-          total_attempts: a.total_attempts,
-          last_practiced_at: a.last_practiced_at,
-        };
-      });
+      (accData || []).forEach(
+        (a: {
+          word_id: string;
+          best_score: number;
+          average_score: number;
+          total_attempts: number;
+          last_practiced_at: string;
+        }) => {
+          accMap[a.word_id] = {
+            word_id: a.word_id,
+            best_score: a.best_score,
+            average_score: a.average_score,
+            total_attempts: a.total_attempts,
+            last_practiced_at: a.last_practiced_at,
+          };
+        }
+      );
       setAccuracy(accMap);
     } catch (err) {
       console.error("Dashboard load error:", err);
@@ -364,18 +303,38 @@ export default function DashboardPage() {
     }
   }
 
-  // Build lesson items from real Supabase data
-  const realLessonItems = useMemo((): LessonItem[] | null => {
-    if (words.length === 0) return null;
+  useEffect(() => {
+    (async () => {
+      await loadData();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    const items = LESSON_DEFS.map((def) => {
-      const lessonWords = words.filter(def.filter);
+  // Build lesson items from real Supabase data (data-driven from viseme_group)
+  const realLessonItems = useMemo((): LessonItem[] => {
+    if (words.length === 0) return [];
+
+    // Get distinct viseme_groups from words
+    const groups = Array.from(new Set(words.map((w) => w.viseme_group))).sort();
+
+    const groupDescriptions: Record<string, string> = {
+      ริมฝีปากปิด:
+        "ฝึกออกเสียงคำที่มีริมฝีปากปิด พร้อมรูปปากและ Feedback ทันที",
+      ปากเปิดกว้าง:
+        "ฝึกออกเสียงคำที่ปากเปิดกว้าง พร้อมรูปปากและ Feedback ทันที",
+      ปากห่อกลม: "ฝึกออกเสียงคำที่ปากห่อกลม พร้อมรูปปากและ Feedback ทันที",
+      ฟันแตะริมฝีปาก:
+        "ฝึกออกเสียงคำที่ฟันแตะริมฝีปาก พร้อมรูปปากและ Feedback ทันที",
+      ปากเปิดกลาง: "ฝึกออกเสียงคำที่ปากเปิดกลาง พร้อมรูปปากและ Feedback ทันที",
+      ทักทาย: "ฝึกออกเสียงคำทักทายที่ใช้บ่อย พร้อมรูปปากและ Feedback ทันที",
+      ตัวเลข: "ฝึกออกเสียงตัวเลขไทย พร้อมรูปปากและ Feedback ทันที",
+    };
+
+    const items = groups.map((group) => {
+      const lessonWords = words.filter((w) => w.viseme_group === group);
       const totalWords = lessonWords.length;
-      if (totalWords === 0) return null;
 
-      const completedWords = lessonWords.filter(
-        (w) => accuracy[w.id],
-      ).length;
+      const completedWords = lessonWords.filter((w) => accuracy[w.id]).length;
       const completed = completedWords > 0;
       const progressWidth =
         totalWords > 0
@@ -390,14 +349,14 @@ export default function DashboardPage() {
         accValues.length > 0
           ? Math.round(
               accValues.reduce((s, a) => s + a.average_score, 0) /
-                accValues.length,
+                accValues.length
             )
           : 0;
 
-      // Words needing improvement (score < 70)
+      // Words needing improvement (score < PASS_THRESHOLD)
       const needingPractice = lessonWords.filter((w) => {
         const a = accuracy[w.id];
-        return a && a.average_score < 70;
+        return a && a.average_score < PASS_THRESHOLD;
       });
       const highlighted = needingPractice.length > 0;
 
@@ -406,9 +365,11 @@ export default function DashboardPage() {
         : `0 / ${totalWords} คำ`;
 
       return {
-        title: def.title,
-        chapter: def.chapter,
-        description: def.description,
+        title: group,
+        chapter: "บทที่ 1",
+        description:
+          groupDescriptions[group] ??
+          `ฝึกออกเสียงคำในกลุ่ม ${group} พร้อมรูปปากและ Feedback ทันที`,
         progressText,
         progressWidth,
         completed,
@@ -419,39 +380,51 @@ export default function DashboardPage() {
             ? `มี ${needingPractice.length} คำที่ควรฝึกเพิ่ม`
             : undefined,
       };
-    }).filter(Boolean) as LessonItem[];
+    });
 
-    return items.length > 0 ? items : null;
+    return items;
   }, [words, accuracy]);
 
-  const displayItems = realLessonItems ?? MOCK_LESSONS;
+  const displayItems = realLessonItems;
 
   // ── Render ──────────────────────────────────────
 
   if (!isSupabaseConfigured) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 px-4 py-20 text-center">
-        <h1 className="text-2xl font-bold text-foreground">ยังไม่ได้ตั้งค่า Supabase</h1>
-        <p className="max-w-md text-muted-foreground">
-          กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL และ NEXT_PUBLIC_SUPABASE_ANON_KEY
-          ในไฟล์ .env.local แล้วรีสตาร์ทเซิร์ฟเวอร์
-        </p>
-        <Button asChild>
-          <a href="/auth/signin">ไปหน้าเข้าสู่ระบบ</a>
-        </Button>
-      </div>
-    );
+    return <SupabaseNotConfigured ctaHref="/auth/signin" />;
   }
 
   if (loading) {
     return <DashboardSkeleton />;
   }
 
+  if (displayItems.length === 0) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-10">
+        <div className="flex items-center gap-3">
+          <BarChart3 className="h-5 w-5 text-foreground" />
+          <h1 className="text-lg font-bold text-foreground">
+            ความก้าวหน้าทั้งหมด
+          </h1>
+        </div>
+        <Card className="rounded-2xl border border-border shadow-none">
+          <CardContent className="p-12 text-center">
+            <p className="text-muted-foreground">ยังไม่มีบทเรียนในระบบ</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              โปรดเพิ่มข้อมูลคำศัพท์ในฐานข้อมูล Supabase
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <div className="flex items-center gap-3">
         <BarChart3 className="h-5 w-5 text-foreground" />
-        <h1 className="text-lg font-bold text-foreground">ความก้าวหน้าทั้งหมด</h1>
+        <h1 className="text-lg font-bold text-foreground">
+          ความก้าวหน้าทั้งหมด
+        </h1>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">

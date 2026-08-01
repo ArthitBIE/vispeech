@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +14,134 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const STORAGE_KEY = "vispeech.settings";
+
+interface Settings {
+  micEnabled: boolean;
+  deviceId: string;
+  sensitivity: number;
+}
+
+function loadSettings(): Settings {
+  if (typeof window === "undefined") {
+    return { micEnabled: true, deviceId: "", sensitivity: 60 };
+  }
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<Settings>;
+      return {
+        micEnabled: parsed.micEnabled ?? true,
+        deviceId: parsed.deviceId ?? "",
+        sensitivity: parsed.sensitivity ?? 60,
+      };
+    }
+  } catch {
+    // ignore corrupt storage
+  }
+  return { micEnabled: true, deviceId: "", sensitivity: 60 };
+}
+
 export default function SettingsPage() {
+  const [settings, setSettings] = useState<Settings>(loadSettings);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [level, setLevel] = useState<number | null>(null);
+  const [testing, setTesting] = useState(false);
+  const streamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    } catch {
+      // storage unavailable
+    }
+  }, [settings]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refreshDevices = async () => {
+      if (!navigator.mediaDevices?.enumerateDevices) return;
+      try {
+        // request permission so labels are exposed
+        const permStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        permStream.getTracks().forEach((t) => t.stop());
+        if (cancelled) return;
+        const list = await navigator.mediaDevices.enumerateDevices();
+        setDevices(list.filter((d) => d.kind === "audioinput"));
+      } catch {
+        // permission denied: labels unavailable, show defaults
+        if (cancelled) return;
+        const list = await navigator.mediaDevices.enumerateDevices();
+        setDevices(list.filter((d) => d.kind === "audioinput"));
+      }
+    };
+    refreshDevices();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const stopTest = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setTesting(false);
+    setLevel(null);
+  }, []);
+
+  useEffect(() => stopTest, [stopTest]);
+
+  const startTest = async () => {
+    if (testing) {
+      stopTest();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          deviceId: settings.deviceId
+            ? { exact: settings.deviceId }
+            : undefined,
+          echoCancellation: false,
+        },
+      });
+      streamRef.current = stream;
+      setTesting(true);
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
+      const ctx = new AudioCtx();
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / data.length);
+        setLevel(Math.min(100, Math.round(rms * 400)));
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch {
+      setTesting(false);
+      setLevel(null);
+    }
+  };
+
+  const update = (patch: Partial<Settings>) =>
+    setSettings((s) => ({ ...s, ...patch }));
+
   return (
     <div className="mx-auto max-w-6xl space-y-10 p-6 lg:p-8">
       <div>
@@ -38,7 +165,8 @@ export default function SettingsPage() {
             </p>
           </div>
           <Switch
-            defaultChecked
+            checked={settings.micEnabled}
+            onCheckedChange={(v) => update({ micEnabled: v })}
             className="data-[state=checked]:bg-foreground"
           />
         </div>
@@ -59,20 +187,24 @@ export default function SettingsPage() {
                   Choose your input device
                 </h3>
                 <div className="mt-3 w-full max-w-xs">
-                  <Select defaultValue="macbook">
+                  <Select
+                    value={settings.deviceId}
+                    onValueChange={(v) => update({ deviceId: v })}
+                  >
                     <SelectTrigger className="h-11 rounded-md border-border text-sm">
                       <SelectValue placeholder="Choose device" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="macbook">
-                        MacBook Pro2019 Inter...
-                      </SelectItem>
-                      <SelectItem value="external">
-                        External Microphone
-                      </SelectItem>
-                      <SelectItem value="airpods">
-                        AirPods Microphone
-                      </SelectItem>
+                      {devices.length === 0 && (
+                        <SelectItem value="none" disabled>
+                          No microphones found
+                        </SelectItem>
+                      )}
+                      {devices.map((d) => (
+                        <SelectItem key={d.deviceId} value={d.deviceId}>
+                          {d.label || `Microphone ${d.deviceId.slice(0, 5)}`}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -95,13 +227,14 @@ export default function SettingsPage() {
                   </h3>
                   <div className="mt-4 flex max-w-sm items-center gap-4">
                     <Slider
-                      defaultValue={[60]}
+                      value={[settings.sensitivity]}
+                      onValueChange={(v) => update({ sensitivity: v[0] })}
                       max={100}
                       step={1}
                       className="w-full"
                     />
                     <span className="text-sm font-medium text-muted-foreground">
-                      60%
+                      {settings.sensitivity}%
                     </span>
                   </div>
                 </div>
@@ -114,13 +247,21 @@ export default function SettingsPage() {
                     Make sure your selected device is working properly.
                   </p>
                   <div className="mt-4 flex flex-wrap items-center gap-4">
-                    <Button className="h-9 rounded-md bg-foreground px-4 text-sm font-bold text-background hover:bg-foreground/90">
+                    <Button
+                      className="h-9 rounded-md bg-foreground px-4 text-sm font-bold text-background hover:bg-foreground/90"
+                      onClick={startTest}
+                    >
                       <Mic className="mr-2 h-4 w-4" />
-                      Start Test
+                      {testing ? "Stop Test" : "Start Test"}
                     </Button>
-                    <div className="h-1 w-36 rounded-full bg-muted-foreground/20" />
+                    <div className="h-1 w-36 rounded-full bg-muted-foreground/20">
+                      <div
+                        className="h-full rounded-full bg-foreground transition-all"
+                        style={{ width: `${level ?? 0}%` }}
+                      />
+                    </div>
                     <span className="text-sm font-medium text-muted-foreground">
-                      Level : -
+                      Level : {level ?? "-"}
                     </span>
                   </div>
                 </div>
