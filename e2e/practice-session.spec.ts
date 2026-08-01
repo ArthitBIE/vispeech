@@ -1,31 +1,54 @@
 import { test, expect, type Page } from "@playwright/test";
 
+const resultsSidebar = (page: Page) => page.locator("text=ผลการฝึกแต่ละคำ");
+
+async function practiceCurrentWord(page: Page) {
+  // Start the camera. Headless has no real camera, so the demo fallback
+  // feeds a non-zero mouth-open value within ~1s.
+  const cameraBtn = page.getByTestId("practice-camera-btn");
+  await expect(cameraBtn).toBeVisible({ timeout: 3000 });
+  await cameraBtn.click();
+
+  // Wait until the mouth-open meter shows a non-zero value.
+  await expect(page.getByTestId("practice-mouth-open")).toContainText(
+    /การเปิดปาก: [1-9]\d*%/,
+    { timeout: 8000 }
+  );
+
+  // Submit the score for the current word.
+  const submit = page.getByTestId("practice-submit");
+  await expect(submit).toBeEnabled({ timeout: 5000 });
+  await submit.click();
+
+  await expect(page.getByTestId("score-card")).toBeVisible({ timeout: 8000 });
+}
+
 async function completeSession(page: Page) {
-  const practiceBtn = page
-    .locator('button:has-text("เริ่มการฝึกออกเสียง")')
-    .first();
-  for (let i = 0; i < 5; i++) {
-    await expect(practiceBtn).toBeVisible({ timeout: 3000 });
-    await practiceBtn.click();
-    await page.waitForTimeout(300);
+  const overlay = page.locator("div.fixed.inset-0.z-40");
+  for (let i = 0; i < 60; i++) {
     if (
-      await page
-        .locator("text=ผลการฝึกแต่ละคำ")
+      (await resultsSidebar(page)
         .isVisible()
-        .catch(() => false)
-    ) {
+        .catch(() => false)) ||
+      (await overlay.isVisible().catch(() => false))
+    )
+      return;
+    const skip = page.locator('button:has-text("ข้ามคำ")').first();
+    if (await skip.isVisible().catch(() => false)) {
+      await skip.click({ timeout: 3000 }).catch(() => {});
+      // Give the async finish flow a moment to open the sidebar.
+      await page.waitForTimeout(300);
+    } else {
       break;
     }
   }
-  await expect(page.locator("text=ผลการฝึกแต่ละคำ")).toBeVisible({
-    timeout: 5000,
-  });
+  await expect(resultsSidebar(page)).toBeVisible({ timeout: 8000 });
 }
 
 test.describe("Practice session page", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/practice/session");
-    await expect(page.locator("h1")).toBeVisible({ timeout: 15000 });
+    await expect(page.locator("h1").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("shows heading with lesson title", async ({ page }) => {
@@ -34,34 +57,31 @@ test.describe("Practice session page", () => {
     ).toBeVisible();
   });
 
-  test("has 3-panel layout: lesson panel, word area, Pakky sidebar", async ({
+  test("has 3-panel layout: lesson panel, word area, tips sidebar", async ({
     page,
   }) => {
     // Left panel: lesson info
     await expect(
       page.locator("h1:has-text('บทเรียน คำศัพท์ง่าย')")
     ).toBeVisible();
-    // Right panel: Tips from Pakky
-    await expect(page.locator("h2:has-text('Tips จาก Pakky')")).toBeVisible();
+    // Right panel: tips
+    await expect(page.locator("h2:has-text('Tips การฝึก')")).toBeVisible();
     // Center: word progress indicator
     await expect(
       page.locator("p", { hasText: /คำที่ \d+ \/ \d+/ })
     ).toBeVisible();
     // Center: camera section
     await expect(page.getByText("กล้อง", { exact: true })).toBeVisible();
-    // Center: lip example
-    await expect(page.locator("text=ตัวอย่างริมฝีปาก")).toBeVisible();
+    // Center: speech section
+    await expect(page.getByText("เสียงพูด", { exact: true })).toBeVisible();
   });
 
   test("shows word display and progress dots", async ({ page }) => {
     // Word display with large text
-    const wordText = page.locator("h2.text-4xl");
+    const wordText = page.locator("h1.text-5xl");
     await expect(wordText).toBeVisible();
     const wordContent = await wordText.textContent();
     expect(wordContent?.trim()).toBeTruthy();
-
-    // Phonetic display
-    await expect(page.locator("p.text-lg.font-medium").first()).toBeVisible();
 
     // Progress dots (small colored squares showing word progress)
     const dots = page.locator("div.flex.gap-2 > div.h-3.w-3");
@@ -82,30 +102,18 @@ test.describe("Practice session page", () => {
     expect(count).toBeGreaterThanOrEqual(1);
   });
 
-  test("shows microphone and lip progress bars in Pakky sidebar", async ({
-    page,
-  }) => {
-    // Right sidebar has "ระดับเสียง" and "ริมฝีปาก" sections
-    await expect(page.getByText("ระดับเสียง", { exact: true })).toBeVisible();
-    await expect(page.getByText("ริมฝีปาก", { exact: true })).toBeVisible();
+  test("shows session progress bars in tips sidebar", async ({ page }) => {
+    // Right sidebar has "เสียง" and "คำที่ฝึกแล้ว" sections
+    await expect(page.getByText("เสียง", { exact: true })).toBeVisible();
+    await expect(page.getByText("คำที่ฝึกแล้ว", { exact: true })).toBeVisible();
 
     // Progress bars
-    const progressBars = page.locator(
-      'aside:has(h2:has-text("Tips จาก Pakky")) [role="progressbar"]'
-    );
+    const progressBars = page.locator('[role="progressbar"]');
     const count = await progressBars.count();
     expect(count).toBeGreaterThanOrEqual(1);
   });
 
-  test("shows input field placeholder in Pakky sidebar", async ({ page }) => {
-    await expect(
-      page.locator('input[readonly][value="กำลังรอเสียง ..."]')
-    ).toBeVisible();
-  });
-
   test("shows motivational message per word index", async ({ page }) => {
-    // Initially at index 2 (currentWordIndex = 2)
-    // Should show "ครึ่งทางแล้ว! คำที่ 3" or similar
     const messages = [
       "เริ่มต้นกัน! คำแรก",
       "ครึ่งทางแล้ว",
@@ -125,25 +133,13 @@ test.describe("Practice session page", () => {
     expect(found).toBeTruthy();
   });
 
-  test("practicing a word moves progress and shows next word", async ({
-    page,
-  }) => {
-    // Click "เริ่มการฝึกออกเสียง" button
-    const practiceBtn = page
-      .locator('button:has-text("เริ่มการฝึกออกเสียง")')
-      .first();
-    await expect(practiceBtn).toBeVisible();
-    await practiceBtn.click();
+  test("practicing a word shows the score card", async ({ page }) => {
+    await practiceCurrentWord(page);
 
-    // After practicing, check the word changed (now at next index)
-    // The word display should update
-    await page.waitForTimeout(500);
-
-    // Skip word if we're at the end
-    const skipBtn = page.locator('button:has-text("ข้ามคำ")').first();
-    if (await skipBtn.isVisible()) {
-      await skipBtn.click();
-    }
+    // Score card with per-criterion breakdown
+    await expect(page.getByTestId("score-card")).toBeVisible();
+    await expect(page.locator("text=ผลการฝึก")).toBeVisible();
+    await expect(page.locator("text=คะแนนภาพ")).toBeVisible();
   });
 
   test("completing all words shows results sidebar", async ({ page }) => {
@@ -155,32 +151,24 @@ test.describe("Practice session page", () => {
     });
   });
 
-  test("results sidebar shows word results with scores", async ({ page }) => {
+  test("results sidebar shows practiced word with score", async ({ page }) => {
+    // Capture the current word's text before practicing it
+    const wordText = await page.locator("h1.text-5xl").textContent();
+    const word = wordText?.trim();
+    expect(word).toBeTruthy();
+
+    await practiceCurrentWord(page);
     await completeSession(page);
 
-    // Check word results are listed
+    // The practiced word should be listed in the results sidebar
     const resultsAside = page
       .locator("aside")
       .filter({ hasText: "ผลการฝึกแต่ละคำ" });
-    const leftWords = page
-      .locator("aside section")
-      .first()
-      .locator("div.space-y-3 > div");
-    const count = await leftWords.count();
-    expect(count).toBeGreaterThanOrEqual(1);
-    for (let i = 2; i < count; i++) {
-      const label = (
-        await leftWords.nth(i).locator("span").nth(1).textContent()
-      )?.trim();
-      const word = label?.split(" ")[0];
-      if (word) {
-        await expect(resultsAside.locator(`text=${word}`).first()).toBeVisible({
-          timeout: 3000,
-        });
-      }
-    }
+    await expect(resultsAside.locator(`text=${word}`).first()).toBeVisible({
+      timeout: 3000,
+    });
 
-    // Check score badges exist
+    // Score badge exists
     await expect(resultsAside.getByText(/\d+%/).first()).toBeVisible();
   });
 
@@ -196,9 +184,9 @@ test.describe("Practice session page", () => {
     });
 
     // Practice button should be visible again
-    await expect(
-      page.locator('button:has-text("เริ่มการฝึกออกเสียง")').first()
-    ).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId("practice-camera-btn")).toBeVisible({
+      timeout: 3000,
+    });
   });
 
   test('"ปิด" navigates to /summary', async ({ page }) => {
