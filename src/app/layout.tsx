@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_Thai } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const ibmPlexSansThai = IBM_Plex_Sans_Thai({
@@ -30,8 +32,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="th" className={`${ibmPlexSansThai.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html
+      lang="th"
+      className={`${ibmPlexSansThai.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col">
+        {children}
+        <SpeedInsights />
+        <Analytics />
+      </body>
     </html>
   );
 }
