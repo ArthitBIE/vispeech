@@ -166,6 +166,13 @@ Row Level Security is enabled — users can only read/write their own practice d
 - `docs/TESTING.md` — Test setup and guidelines
 - `docs/CONFIGURATION.md` — Supabase and runtime configuration
 
+## Credits
+
+| Role      | Name                                   |
+| --------- | -------------------------------------- |
+| Designer  | [Waisoka](https://github.com/Waisoka)  |
+| Developer | [Atiyut](https://github.com/ArthitBIE) |
+
 ## License
 
-This project is private and not licensed for public distribution.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
