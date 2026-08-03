@@ -75,6 +75,7 @@ workflows/
 /settings2.yml
 /signin.yml
 /opencode.json
+/opencode.local.json.bak
 
 # Plannotator local planning artifacts
 .plannotator/
