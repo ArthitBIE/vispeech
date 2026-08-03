@@ -80,23 +80,51 @@ export async function POST(req: NextRequest) {
 
         const attemptNumber = ((logs && logs[0]?.attempt_number) || 0) + 1;
 
-        await supabase.from("practice_logs").insert({
-          user_id: user.id,
-          word_id: wordId,
-          visual_score: result.visualScore,
-          audio_score: result.audioScore,
-          total_score: result.totalScore,
-          attempt_number: attemptNumber,
-          // ponytail: hosted DB lacks practice_logs.session_id (migration 003
-          // unapplied); dropping it keeps inserts working. Re-add once column exists.
-        });
+        // Verify ownership before linking a log to a session.
+        let sessionOwned = false;
+        if (sessionId) {
+          const { data: session } = await supabase
+            .from("practice_sessions")
+            .select("id")
+            .eq("id", sessionId)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          sessionOwned = !!session;
+        }
+
+        const { error: insertError } = await supabase
+          .from("practice_logs")
+          .insert({
+            user_id: user.id,
+            word_id: wordId,
+            visual_score: result.visualScore,
+            audio_score: result.audioScore,
+            total_score: result.totalScore,
+            attempt_number: attemptNumber,
+            // ponytail: session_id included only when the caller's sessionId
+            // belongs to this user; otherwise dropped to keep inserts working.
+            ...(sessionOwned ? { session_id: sessionId } : {}),
+          });
+
+        // ponytail: hosted DB predates migration 003 (no practice_logs.session_id),
+        // so session-linked insert fails with PGRST204; retry without session_id.
+        if (insertError && sessionOwned && insertError.code === "PGRST204") {
+          await supabase.from("practice_logs").insert({
+            user_id: user.id,
+            word_id: wordId,
+            visual_score: result.visualScore,
+            audio_score: result.audioScore,
+            total_score: result.totalScore,
+            attempt_number: attemptNumber,
+          });
+        }
 
         const { data: existing } = await supabase
           .from("word_accuracy")
           .select("*")
           .eq("user_id", user.id)
           .eq("word_id", wordId)
-          .single();
+          .maybeSingle();
 
         if (existing) {
           const newAttempts = existing.total_attempts + 1;
