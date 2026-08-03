@@ -4,11 +4,18 @@ import { defaultScoringStrategy } from "@/lib/scoring";
 
 export async function POST(req: NextRequest) {
   try {
-    const { wordId, transcript, mouthOpen, sessionId } = await req.json();
+    const {
+      wordId,
+      transcript,
+      mouthOpen,
+      sessionId,
+      targetText,
+      visemeGroup,
+    } = await req.json();
 
-    if (!wordId) {
+    if (!wordId && !targetText) {
       return NextResponse.json(
-        { error: "Missing required field: wordId" },
+        { error: "Missing required field: wordId or targetText" },
         { status: 400 }
       );
     }
@@ -35,22 +42,29 @@ export async function POST(req: NextRequest) {
         )
       : null;
 
-    const { data: word } = await supabase!
-      .from("words")
-      .select("word, viseme_group")
-      .eq("id", wordId)
-      .single();
+    // Synthetic ids (lesson item text not in DB) resolve to no row → null.
+    let word: { word: string; viseme_group: string } | null = null;
+    if (supabase && wordId) {
+      const { data } = await supabase
+        .from("words")
+        .select("word, viseme_group")
+        .eq("id", wordId)
+        .single();
+      word = data;
+    }
 
-    const targetWord = word?.word || "";
+    const targetWord = word?.word || targetText || "";
     const result = defaultScoringStrategy.score({
       wordId,
       targetWord,
       transcript: transcript || "",
       mouthOpen: mouthOpen || 0,
-      visemeGroup: word?.viseme_group || undefined,
+      visemeGroup: word?.viseme_group || visemeGroup || undefined,
     });
 
-    if (supabase) {
+    // Persist only for real DB words; synthetic lesson items are scored
+    // without touching practice_logs / word_accuracy.
+    if (supabase && word) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -73,7 +87,8 @@ export async function POST(req: NextRequest) {
           audio_score: result.audioScore,
           total_score: result.totalScore,
           attempt_number: attemptNumber,
-          session_id: sessionId || null,
+          // ponytail: hosted DB lacks practice_logs.session_id (migration 003
+          // unapplied); dropping it keeps inserts working. Re-add once column exists.
         });
 
         const { data: existing } = await supabase

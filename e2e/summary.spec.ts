@@ -60,10 +60,13 @@ test.describe("Summary page", () => {
     await expect(page.locator("text=ความแม่นยำเฉลี่ย 75.0%")).toBeVisible();
   });
 
-  test("shows star rating (5 stars)", async ({ page }) => {
-    const stars = page.locator("div.flex.items-center.gap-1 svg");
-    const starCount = await stars.count();
-    expect(starCount).toBe(5);
+  test("shows star rating (4 stars)", async ({ page }) => {
+    // Count filled stars (yellow) vs empty (muted)
+    const filledStars = page.locator(
+      "div.flex.items-center.gap-1 svg.fill-yellow-400"
+    );
+    const starCount = await filledStars.count();
+    expect(starCount).toBe(4);
   });
 
   test("shows word results section heading", async ({ page }) => {

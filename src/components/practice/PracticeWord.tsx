@@ -8,6 +8,8 @@ import type { FaceMeshInstance } from "@/lib/mediapipe";
 import type { SpeechRecognizer } from "@/lib/viseme";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { LipExample } from "@/components/practice/LipExample";
+import { speakThai, stopSpeaking } from "@/lib/tts";
 import { Camera, ChevronRight, Play, Smile, Volume2 } from "lucide-react";
 
 export interface WordRow {
@@ -36,6 +38,7 @@ export interface PracticeWordProps {
   onScored: (result: ScoreResult) => void;
   onSkip: () => void;
   onLive?: (live: LiveState) => void;
+  sessionId?: string | null;
 }
 
 export function PracticeWord({
@@ -43,6 +46,7 @@ export function PracticeWord({
   onScored,
   onSkip,
   onLive,
+  sessionId,
 }: PracticeWordProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -53,6 +57,11 @@ export function PracticeWord({
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const rafRef = useRef<number | null>(null);
+  const fallbackAudioRef = useRef<HTMLAudioElement | null>(null);
+  const recognizerRef = useRef<SpeechRecognizer | null>(null);
+  // Latest handleStopCamera, so the unmount cleanup stops the current
+  // face-mesh instance (state would be stale inside the [] effect).
+  const stopCameraRef = useRef<() => void>(() => {});
 
   const [cameraActive, setCameraActive] = useState(false);
   const [faceMesh, setFaceMesh] = useState<FaceMeshInstance | null>(null);
@@ -68,6 +77,7 @@ export function PracticeWord({
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [, setError] = useState<string | null>(null);
+  const [audioProgress, setAudioProgress] = useState(0);
 
   useEffect(() => {
     mouthOpenRef.current = mouthOpen;
@@ -87,12 +97,67 @@ export function PracticeWord({
       demoCameraCleanupRef.current?.();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       audioCtxRef.current?.close();
+      stopSpeaking();
+      fallbackAudioRef.current?.pause();
+      if (fallbackAudioRef.current?.src)
+        URL.revokeObjectURL(fallbackAudioRef.current.src);
+      // Stop the active recognizer and camera (face-mesh + stream tracks)
+      // so nothing keeps capturing after unmount/word change.
+      recognizerRef.current?.stop();
+      stopCameraRef.current();
     };
   }, []);
 
   useEffect(() => {
     onLive?.({ mouthOpen, audioLevel, transcript });
   }, [mouthOpen, audioLevel, transcript, onLive]);
+
+  useEffect(() => {
+    // Reset playback meter when the word changes (component is not remounted)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAudioProgress(0);
+  }, [word.id]);
+
+  async function playFallback(text: string) {
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      fallbackAudioRef.current?.pause();
+      if (fallbackAudioRef.current?.src)
+        URL.revokeObjectURL(fallbackAudioRef.current.src);
+      fallbackAudioRef.current = audio;
+      audio.addEventListener("timeupdate", () => {
+        if (audio.duration) {
+          setAudioProgress(Math.min(1, audio.currentTime / audio.duration));
+        }
+      });
+      audio.addEventListener("ended", () => {
+        setAudioProgress(0);
+        URL.revokeObjectURL(url);
+        if (fallbackAudioRef.current === audio) fallbackAudioRef.current = null;
+      });
+      await audio.play();
+    } catch {
+      // ignore: nothing else to fall back to
+    }
+  }
+
+  function playWordSound() {
+    speakThai(word.word, {
+      onProgress: setAudioProgress,
+      onEnd: () => setAudioProgress(0),
+      onError: () => {
+        playFallback(word.word);
+      },
+    });
+  }
 
   async function handleStartCamera() {
     if (!videoRef.current || !canvasRef.current) {
@@ -144,6 +209,7 @@ export function PracticeWord({
     setCameraActive(false);
     setFaceMesh(null);
   }
+  stopCameraRef.current = handleStopCamera;
 
   function startAudioLevel(stream: MediaStream) {
     const AudioCtx =
@@ -200,6 +266,7 @@ export function PracticeWord({
 
     sr.start();
     setRecognizer(sr);
+    recognizerRef.current = sr;
     setListening(true);
   }
 
@@ -242,11 +309,17 @@ export function PracticeWord({
         wordId: word.id,
         transcript,
         mouthOpen,
+        sessionId,
+        targetText: word.word,
+        visemeGroup: word.viseme_group,
       };
 
       const res = await fetch("/api/score", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(payload),
       });
 
@@ -266,6 +339,7 @@ export function PracticeWord({
     setTranscript("");
     setMouthOpen(0);
     setPracticing(false);
+    playWordSound();
     handleStopCamera();
     handleStopListening();
   }
@@ -287,10 +361,20 @@ export function PracticeWord({
             Good / {word.word}
           </p>
 
-          <div className="mx-auto mt-4 flex h-5 w-44 items-center rounded border border-neutral-200 bg-white px-2">
-            <Play className="h-3 w-3 fill-black text-black" />
-            <div className="mx-2 h-1 flex-1 rounded-full bg-neutral-200">
-              <div className="h-1 w-1/5 rounded-full bg-black" />
+          <div className="mx-auto mt-4 flex w-44 items-center gap-2">
+            <button
+              type="button"
+              onClick={playWordSound}
+              aria-label="ฟังเสียงคำ"
+              className="text-black hover:text-primary"
+            >
+              <Play className="h-3 w-3 fill-black" />
+            </button>
+            <div className="h-1 flex-1 rounded-full bg-neutral-200">
+              <div
+                className="h-1 rounded-full bg-black"
+                style={{ width: `${audioProgress * 100}%` }}
+              />
             </div>
             <Volume2 className="h-3 w-3 text-black" />
           </div>
@@ -305,27 +389,25 @@ export function PracticeWord({
             <span>กล้อง</span>
           </div>
 
-          {!cameraActive ? (
-            <div className="flex h-56 items-center justify-center rounded-sm bg-neutral-100 text-center text-sm leading-5 text-neutral-400">
-              <div>
-                <p>ยังไม่ได้เปิดกล้อง</p>
-                <p>กด &quot;เริ่มฝึก&quot; ด้านล่าง</p>
+          <div className="relative h-56 w-full overflow-hidden rounded-sm bg-black">
+            <video
+              ref={videoRef}
+              className="h-full w-full object-cover"
+              playsInline
+              muted
+              hidden={!cameraActive}
+            />
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 h-full w-full"
+              hidden={!cameraActive}
+            />
+            {!cameraActive && (
+              <div className="flex h-full items-center justify-center text-sm text-white">
+                ยังไม่ได้เปิดกล้อง
               </div>
-            </div>
-          ) : (
-            <div className="relative h-56 w-full overflow-hidden rounded-sm bg-black">
-              <video
-                ref={videoRef}
-                className="h-full w-full object-cover"
-                playsInline
-                muted
-              />
-              <canvas
-                ref={canvasRef}
-                className="absolute inset-0 h-full w-full"
-              />
-            </div>
-          )}
+            )}
+          </div>
 
           <p
             className="mt-2 text-center text-sm text-neutral-500"
@@ -342,16 +424,7 @@ export function PracticeWord({
             <span>ตัวอย่างริมฝีปาก</span>
           </div>
 
-          <div className="flex h-56 items-center justify-center rounded-sm bg-neutral-300">
-            <div className="relative h-44 w-36 rounded-b-full rounded-t-sm bg-neutral-100">
-              <div className="absolute left-1/2 top-10 h-4 w-10 -translate-x-1/2 rounded-b-full border-b-2 border-neutral-300" />
-              <div className="absolute left-1/2 top-20 h-7 w-24 -translate-x-1/2 rounded-full bg-red-300">
-                <div className="absolute left-2 right-2 top-3 h-1 rounded-full bg-white" />
-                <div className="absolute bottom-2 left-3 right-3 h-px bg-red-700" />
-              </div>
-              <div className="absolute bottom-8 left-1/2 h-4 w-8 -translate-x-1/2 rounded-t-full border-t border-neutral-300" />
-            </div>
-          </div>
+          <LipExample visemeGroup={word.viseme_group} />
         </div>
       </div>
 

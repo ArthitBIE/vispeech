@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -8,7 +9,10 @@ import { SupabaseNotConfigured } from "@/components/SupabaseNotConfigured";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import PracticeResultSidebar from "@/components/practice/PracticeResultSidebar";
+import type { WordResult } from "@/components/practice/PracticeResultSidebar";
 import { BarChart3, Play, RotateCcw, Star, AlertTriangle } from "lucide-react";
+import { LESSONS } from "@/lib/lesson";
 
 // ── Types ──────────────────────────────────────────────
 
@@ -39,6 +43,7 @@ interface LessonItem {
   highlighted: boolean;
   accuracy?: string;
   warning?: string;
+  lessonWords: Word[];
 }
 
 // ── Skeleton ───────────────────────────────────────────
@@ -66,7 +71,13 @@ function DashboardSkeleton() {
 
 // ── LessonCard ─────────────────────────────────────────
 
-function LessonCard({ item }: { item: LessonItem }) {
+function LessonCard({
+  item,
+  onSummaryClick,
+}: {
+  item: LessonItem;
+  onSummaryClick: () => void;
+}) {
   const router = useRouter();
 
   return (
@@ -158,7 +169,7 @@ function LessonCard({ item }: { item: LessonItem }) {
               <>
                 <Button
                   className="h-8 rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90"
-                  onClick={() => router.push("/summary")}
+                  onClick={onSummaryClick}
                 >
                   <BarChart3 className="mr-2 h-3 w-3" />
                   สรุปผล
@@ -186,17 +197,17 @@ function LessonCard({ item }: { item: LessonItem }) {
         </div>
 
         {/* Decorative illustration circle */}
-        <div
+        <Image
+          src={item.completed ? "/mascot/image 8.png" : "/mascot/image 9.png"}
+          alt={item.completed ? "Lesson complete mascot" : "Lesson mascot"}
+          width={112}
+          height={112}
           className={
             item.highlighted
-              ? "absolute bottom-4 right-8 h-28 w-28 rounded-full bg-muted"
-              : "absolute bottom-4 right-8 h-28 w-28 rounded-full bg-muted opacity-60"
+              ? "absolute bottom-4 right-8 h-28 w-28 rounded-full"
+              : "absolute bottom-4 right-8 h-28 w-28 rounded-full opacity-60"
           }
         />
-
-        {item.highlighted && (
-          <div className="absolute bottom-8 right-14 h-24 w-32 rounded-xl border border-dashed border-muted-foreground/30 opacity-60" />
-        )}
       </CardContent>
     </Card>
   );
@@ -209,6 +220,86 @@ export default function DashboardPage() {
   const [words, setWords] = useState<Word[]>([]);
   const [accuracy, setAccuracy] = useState<Record<string, WordAccuracy>>({});
   const [loading, setLoading] = useState(true);
+
+  // ── Sidebar state ──────────────────────────────────────
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarResults, setSidebarResults] = useState<WordResult[]>([]);
+  const [sidebarAccuracy, setSidebarAccuracy] = useState(0);
+
+  async function handleSummaryClick(lessonWords: Word[]) {
+    try {
+      if (!isSupabaseConfigured || !supabase?.auth) return;
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        router.push("/auth/signin");
+        return;
+      }
+
+      const headers: Record<string, string> = {};
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+      const res = await fetch("/api/practice-sessions", { headers });
+      if (!res.ok) return;
+
+      const { results } = await res.json();
+
+      // Filter to lesson words + dedupe by word (keep latest log per word)
+      const lessonWordSet = new Set(lessonWords.map((w) => w.word));
+      const seen = new Set<string>();
+      const filtered = (results || []).filter((r: any) => {
+        if (!lessonWordSet.has(r.word)) return false;
+        if (seen.has(r.word)) return false;
+        seen.add(r.word);
+        return true;
+      });
+
+      const mapped: WordResult[] = filtered.map(
+        (r: {
+          word: string;
+          phonetic?: string;
+          total_score: number;
+          visual_score?: number;
+          audio_score?: number;
+          lipFeedback?: string;
+          soundFeedback?: string;
+          recommendation?: string;
+        }) => ({
+          word: r.word,
+          phonetic: r.phonetic,
+          score: r.total_score,
+          status: r.total_score >= PASS_THRESHOLD ? "success" : "warning",
+          expanded: r.total_score < PASS_THRESHOLD,
+          lipFeedback:
+            (r.visual_score ?? 0) >= PASS_THRESHOLD
+              ? "ถูกต้อง"
+              : `ปากกว้างไม่พอ (${r.visual_score ?? 0}%)`,
+          soundFeedback:
+            (r.audio_score ?? 0) >= PASS_THRESHOLD
+              ? "ถูกต้อง"
+              : `ระดับเสียงไม่ถูกต้อง (${r.audio_score ?? 0}%)`,
+          recommendation:
+            r.total_score >= PASS_THRESHOLD
+              ? undefined
+              : "ลองอ้าปากกว้างขึ้นให้เห็นฟันบนเล็กน้อย",
+        })
+      );
+
+      const avgAcc =
+        mapped.length > 0
+          ? Math.round(mapped.reduce((s, r) => s + r.score, 0) / mapped.length)
+          : 0;
+
+      setSidebarResults(mapped);
+      setSidebarAccuracy(avgAcc);
+      setSidebarOpen(true);
+    } catch (err) {
+      console.error("Summary fetch error:", err);
+    }
+  }
 
   async function loadData() {
     try {
@@ -310,29 +401,21 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Build lesson items from real Supabase data (data-driven from viseme_group)
+  // Build lesson items from static LESSONS; progress computed from
+  // DB-backed items (text match). Non-DB items count toward total but
+  // never toward completion, so they show "0 / N".
   const realLessonItems = useMemo((): LessonItem[] => {
-    if (words.length === 0) return [];
+    const wordByText = new Map<string, Word>();
+    for (const w of words) wordByText.set(w.word, w);
 
-    // Get distinct viseme_groups from words
-    const groups = Array.from(new Set(words.map((w) => w.viseme_group))).sort();
+    const description =
+      "ฝึกออกเสียงคำที่ใช้บ่อยในชีวิตประจำวัน พร้อมรูปปากและ Feedback ทันที";
 
-    const groupDescriptions: Record<string, string> = {
-      ริมฝีปากปิด:
-        "ฝึกออกเสียงคำที่มีริมฝีปากปิด พร้อมรูปปากและ Feedback ทันที",
-      ปากเปิดกว้าง:
-        "ฝึกออกเสียงคำที่ปากเปิดกว้าง พร้อมรูปปากและ Feedback ทันที",
-      ปากห่อกลม: "ฝึกออกเสียงคำที่ปากห่อกลม พร้อมรูปปากและ Feedback ทันที",
-      ฟันแตะริมฝีปาก:
-        "ฝึกออกเสียงคำที่ฟันแตะริมฝีปาก พร้อมรูปปากและ Feedback ทันที",
-      ปากเปิดกลาง: "ฝึกออกเสียงคำที่ปากเปิดกลาง พร้อมรูปปากและ Feedback ทันที",
-      ทักทาย: "ฝึกออกเสียงคำทักทายที่ใช้บ่อย พร้อมรูปปากและ Feedback ทันที",
-      ตัวเลข: "ฝึกออกเสียงตัวเลขไทย พร้อมรูปปากและ Feedback ทันที",
-    };
-
-    const items = groups.map((group) => {
-      const lessonWords = words.filter((w) => w.viseme_group === group);
-      const totalWords = lessonWords.length;
+    return LESSONS.map((lesson) => {
+      const lessonWords = lesson.items
+        .map((item) => wordByText.get(item.text))
+        .filter((w): w is Word => !!w);
+      const totalWords = lesson.items.length;
 
       const completedWords = lessonWords.filter((w) => accuracy[w.id]).length;
       const completed = completedWords > 0;
@@ -341,7 +424,7 @@ export default function DashboardPage() {
           ? `${Math.round((completedWords / totalWords) * 100)}%`
           : "0%";
 
-      // Average accuracy for this lesson type
+      // Average accuracy for this lesson
       const accValues = lessonWords
         .map((w) => accuracy[w.id])
         .filter((a): a is WordAccuracy => !!a);
@@ -365,11 +448,9 @@ export default function DashboardPage() {
         : `0 / ${totalWords} คำ`;
 
       return {
-        title: group,
+        title: lesson.name,
         chapter: "บทที่ 1",
-        description:
-          groupDescriptions[group] ??
-          `ฝึกออกเสียงคำในกลุ่ม ${group} พร้อมรูปปากและ Feedback ทันที`,
+        description,
         progressText,
         progressWidth,
         completed,
@@ -379,10 +460,9 @@ export default function DashboardPage() {
           needingPractice.length > 0
             ? `มี ${needingPractice.length} คำที่ควรฝึกเพิ่ม`
             : undefined,
+        lessonWords,
       };
     });
-
-    return items;
   }, [words, accuracy]);
 
   const displayItems = realLessonItems;
@@ -429,9 +509,22 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 xl:grid-cols-2">
         {displayItems.map((item) => (
-          <LessonCard key={item.title} item={item} />
+          <LessonCard
+            key={item.title}
+            item={item}
+            onSummaryClick={() => handleSummaryClick(item.lessonWords)}
+          />
         ))}
       </div>
+
+      {/* Results sidebar */}
+      <PracticeResultSidebar
+        results={sidebarResults}
+        totalAccuracy={sidebarAccuracy}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onRestart={() => router.push("/practice/session")}
+      />
     </div>
   );
 }
