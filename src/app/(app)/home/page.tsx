@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Search,
   Play,
@@ -40,6 +41,7 @@ interface WordAccuracy {
 type Filter = "all" | "learning" | "done" | "not-started";
 
 export default function HomePage() {
+  const router = useRouter();
   const [words, setWords] = useState<Word[]>([]);
   const [accuracy, setAccuracy] = useState<Record<string, WordAccuracy>>({});
   const [search, setSearch] = useState("");
@@ -57,7 +59,12 @@ export default function HomePage() {
         return;
       }
       const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
+      if (!sessionData.session) {
+        router.push("/auth/signin");
+        setLoading(false);
+        return;
+      }
+      const token = sessionData.session.access_token;
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 

@@ -46,6 +46,7 @@ function PracticeSessionContent() {
   });
   const [activeLevel, setActiveLevel] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [totalAttempts, setTotalAttempts] = useState(0);
   const [mascotImage, setMascotImage] = useState("/mascot/image 2.png");
   // ponytail: setMascotImage("/mascot/image 4.png") when trigger decided
 
@@ -133,6 +134,7 @@ function PracticeSessionContent() {
   }
 
   function handleScored(score: ScoreResult) {
+    setTotalAttempts((prev) => prev + 1);
     const word = currentWord();
     const result: PracticeWordResult = {
       ...word,
@@ -183,7 +185,7 @@ function PracticeSessionContent() {
         data: { session },
       } = await supabase.auth.getSession();
       if (session) {
-        const totalAttempts = results.length;
+        // totalAttempts: use state counter (actual attempts, not unique words)
         const passedCount = results.filter(
           (r) => r.status === "success"
         ).length;
@@ -359,6 +361,7 @@ function PracticeSessionContent() {
             <PracticeWord
               key={filteredWords[currentIndex]?.id}
               word={filteredWords[currentIndex]}
+              sessionId={sessionId}
               onScored={handleScored}
               onSkip={handleSkip}
               onLive={setLive}

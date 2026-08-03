@@ -13,6 +13,7 @@ export default function PracticePage() {
   const [wordData, setWordData] = useState<WordRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +32,29 @@ export default function PracticePage() {
           return;
         }
         setWordData(data);
+
+        // Create practice session up-front
+        const {
+          data: { session: authSession },
+        } = await supabase.auth.getSession();
+        if (!cancelled && authSession?.access_token) {
+          const sessionRes = await fetch("/api/practice-sessions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authSession.access_token}`,
+            },
+            body: JSON.stringify({
+              totalAttempts: 0,
+              passedCount: 0,
+              bestScore: 0,
+            }),
+          });
+          if (sessionRes.ok) {
+            const { id } = await sessionRes.json();
+            if (!cancelled) setSessionId(id);
+          }
+        }
       } catch {
         if (cancelled) return;
         setError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
@@ -76,6 +100,7 @@ export default function PracticePage() {
     <HeaderOnlyShell>
       <PracticeWord
         word={wordData}
+        sessionId={sessionId}
         onScored={handleScored}
         onSkip={handleSkip}
       />

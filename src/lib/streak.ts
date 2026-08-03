@@ -26,7 +26,12 @@ export function computeStreak(
     streak++;
     cursor.setDate(cursor.getDate() - 1);
   }
-  return { streak, startDate: streak > 0 ? start : null };
+  // startDate is the earliest date in the streak (start - (streak-1) days)
+  const startDate = streak > 0 ? new Date(start) : null;
+  if (startDate) {
+    startDate.setDate(startDate.getDate() - (streak - 1));
+  }
+  return { streak, startDate };
 }
 
 // The n calendar days ending at `end` (oldest first).
