@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import {
   ChevronRight,
@@ -143,7 +144,12 @@ export default function SummarizePage() {
     );
   }
 
-  const starCount = Math.max(1, Math.round((totalAccuracy / 100) * 5));
+  // Star rating: 5 Stars: 90-100%, 4 Stars: 75-89%, 3 Stars: 60-74%, 2 Stars: 45-59%, 1 Star: 0-44%
+  let starCount = 1;
+  if (totalAccuracy >= 90) starCount = 5;
+  else if (totalAccuracy >= 75) starCount = 4;
+  else if (totalAccuracy >= 60) starCount = 3;
+  else if (totalAccuracy >= 45) starCount = 2;
 
   return (
     <div className="mx-auto max-w-6xl space-y-10">
@@ -173,11 +179,13 @@ export default function SummarizePage() {
       <Card className="overflow-hidden rounded-2xl border border-border bg-card shadow-none">
         <CardContent className="p-0">
           <section className="flex flex-col items-center px-6 pt-10 pb-9 text-center">
-            <div className="mb-8 flex h-44 w-44 items-center justify-center rounded-full bg-muted">
-              <div className="flex h-32 w-32 items-center justify-center rounded-full bg-muted-foreground/20">
-                <Trophy className="h-12 w-12 text-muted-foreground/60" />
-              </div>
-            </div>
+            <Image
+              src="/mascot/image 8.png"
+              alt="Completion mascot"
+              width={176}
+              height={176}
+              className="mb-8 h-44 w-44 rounded-full"
+            />
 
             <h1 className="text-lg font-bold leading-6 text-foreground">
               เยี่ยมมากเลย!

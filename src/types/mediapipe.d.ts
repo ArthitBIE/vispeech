@@ -7,13 +7,14 @@ declare module "@mediapipe/face_mesh" {
     close(): void;
   }
   export const FACEMESH_TESSELATION: any[];
+  export const FACEMESH_LIPS: any[];
 }
 
 declare module "@mediapipe/camera_utils" {
   export class Camera {
     constructor(
       videoElement: HTMLVideoElement,
-      config: { onFrame: () => Promise<void>; width?: number; height?: number },
+      config: { onFrame: () => Promise<void>; width?: number; height?: number }
     );
     start(): Promise<void>;
     stop(): void;
@@ -25,6 +26,12 @@ declare module "@mediapipe/drawing_utils" {
     ctx: CanvasRenderingContext2D,
     landmarks: any[],
     connections: any[],
-    config?: any,
+    config?: any
   ): void;
+  export function drawLandmarks(
+    ctx: CanvasRenderingContext2D,
+    landmarks: any[],
+    config?: any
+  ): void;
+  export type LandmarkConnectionArray = any[];
 }
