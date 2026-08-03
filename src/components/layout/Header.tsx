@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,7 @@ export function Header({
   alignToContent?: boolean;
 }) {
   const router = useRouter();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarLetter, setAvatarLetter] = useState("ก");
 
   useEffect(() => {
@@ -28,8 +29,13 @@ export function Header({
     (async () => {
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
-      const email = data.session?.user?.email;
+      const user = data.session?.user;
+      const email = user?.email;
       if (email) setAvatarLetter(email[0].toUpperCase());
+      const url =
+        (user?.user_metadata?.avatar_url as string | undefined) ||
+        (user?.user_metadata?.picture as string | undefined);
+      if (url) setAvatarUrl(url);
     })();
     return () => {
       cancelled = true;
@@ -52,6 +58,9 @@ export function Header({
             <DropdownMenuTrigger asChild>
               <button className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <Avatar className="h-9 w-9">
+                  {avatarUrl && (
+                    <AvatarImage src={avatarUrl} alt="Profile avatar" />
+                  )}
                   <AvatarFallback className="bg-primary/10 text-primary">
                     {avatarLetter}
                   </AvatarFallback>

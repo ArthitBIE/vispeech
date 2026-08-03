@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { estimateMouthOpen, createFallbackInstance } from "../index";
+import {
+  estimateMouthOpen,
+  createFallbackInstance,
+  drawLipMesh,
+} from "../index";
 
 function makeLandmark(x: number, y: number, z: number) {
   return { x, y, z };
@@ -75,5 +79,69 @@ describe("createFallbackInstance", () => {
       expect(mouthOpen).toBeGreaterThanOrEqual(20);
       expect(mouthOpen).toBeLessThanOrEqual(80);
     }
+  });
+});
+
+describe("drawLipMesh", () => {
+  function makeFakeCtx() {
+    return {
+      canvas: { width: 640, height: 480 },
+      clearRect: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
+      closePath: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+    };
+  }
+
+  it("draws lip mesh: clearRect + stroke (drawConnectors) + arc (drawLandmarks)", () => {
+    const ctx = makeFakeCtx();
+    const canvas = {
+      getContext: vi.fn(() => ctx),
+      width: 640,
+      height: 480,
+    };
+    const landmarks = [
+      { x: 0.3, y: 0.4, z: 0 },
+      { x: 0.35, y: 0.4, z: 0 },
+      { x: 0.4, y: 0.4, z: 0 },
+    ];
+    const connections = [
+      [0, 1],
+      [1, 2],
+    ];
+
+    drawLipMesh(
+      canvas as unknown as HTMLCanvasElement,
+      landmarks,
+      connections as any
+    );
+
+    expect(ctx.clearRect).toHaveBeenCalledWith(0, 0, 640, 480);
+    expect(ctx.stroke).toHaveBeenCalled();
+    expect(ctx.arc).toHaveBeenCalled();
+  });
+
+  it("no-ops when getContext returns null", () => {
+    const canvas = {
+      getContext: vi.fn(() => null),
+      width: 640,
+      height: 480,
+    };
+    const landmarks = [{ x: 0.3, y: 0.4, z: 0 }];
+    const connections = [[0, 0]];
+
+    expect(() =>
+      drawLipMesh(
+        canvas as unknown as HTMLCanvasElement,
+        landmarks,
+        connections as any
+      )
+    ).not.toThrow();
   });
 });

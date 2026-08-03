@@ -1,15 +1,15 @@
 export interface SpeechResult {
-  transcript: string
-  confidence: number
-  isFinal: boolean
+  transcript: string;
+  confidence: number;
+  isFinal: boolean;
 }
 
 export interface SpeechRecognizer {
-  start: () => Promise<void>
-  stop: () => Promise<string>
-  isAvailable: () => boolean
-  onResult: (callback: (result: SpeechResult) => void) => void
-  onError: (callback: (error: string) => void) => void
+  start: () => Promise<void>;
+  stop: () => Promise<string>;
+  isAvailable: () => boolean;
+  onResult: (callback: (result: SpeechResult) => void) => void;
+  onError: (callback: (error: string) => void) => void;
 }
 
 export function createSpeechRecognizer(lang = "th-TH"): SpeechRecognizer {
@@ -31,13 +31,18 @@ export function createSpeechRecognizer(lang = "th-TH"): SpeechRecognizer {
   const resultCallbacks: ((result: SpeechResult) => void)[] = [];
   const errorCallbacks: ((error: string) => void)[] = [];
   let finalTranscript = "";
-  let fallbackRecognizer: ReturnType<typeof createFallbackRecognizer> | null = null;
+  let fallbackRecognizer: ReturnType<typeof createFallbackRecognizer> | null =
+    null;
   let inFallback = false;
+  let running = false;
+  let stopping = false;
 
   const switchToFallback = () => {
     if (inFallback) return;
     inFallback = true;
-    try { recognition.stop(); } catch {}
+    try {
+      recognition.stop();
+    } catch {}
     fallbackRecognizer = createFallbackRecognizer();
     resultCallbacks.forEach((cb) => fallbackRecognizer!.onResult(cb));
     errorCallbacks.forEach((cb) => fallbackRecognizer!.onError(cb));
@@ -55,34 +60,46 @@ export function createSpeechRecognizer(lang = "th-TH"): SpeechRecognizer {
       }
     }
 
-    const current = interim || finalTranscript.split(" ").slice(-1)[0] || "";
+    const current = (interim || finalTranscript).trim();
     resultCallbacks.forEach((cb) =>
       cb({
         transcript: current,
         confidence: event.results[event.results.length - 1][0].confidence,
-        isFinal: !!interim,
-      }),
+        isFinal: !interim,
+      })
     );
   };
 
   const errorMessages: Record<string, string> = {
-    network: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เสียง กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต",
+    network:
+      "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เสียง กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต",
     "not-allowed": "ไม่อนุญาตให้ใช้ไมโครโฟน กรุณาอนุญาตการเข้าใช้งานไมโครโฟน",
     "no-speech": "ไม่พบเสียงพูด กรุณาลองอีกครั้ง",
     aborted: "การฟังถูกขัดจังหวะ กรุณาลองใหม่",
     "audio-capture": "ไม่พบไมโครโฟน กรุณาตรวจสอบไมโครโฟนของคุณ",
-    "language-not-supported": "เบราว์เซอร์นี้ไม่รองรับภาษาไทยสำหรับการรู้จำเสียงพูด",
-    "service-not-allowed": "ไม่สามารถใช้บริการรู้จำเสียงพูดในขณะนี้ กรุณาลองใหม่ภายหลัง",
+    "language-not-supported":
+      "เบราว์เซอร์นี้ไม่รองรับภาษาไทยสำหรับการรู้จำเสียงพูด",
+    "service-not-allowed":
+      "ไม่สามารถใช้บริการรู้จำเสียงพูดในขณะนี้ กรุณาลองใหม่ภายหลัง",
   };
 
-  const recoverableErrors = ["network", "service-not-allowed", "language-not-supported", "audio-capture", "not-allowed"];
+  const recoverableErrors = [
+    "network",
+    "service-not-allowed",
+    "language-not-supported",
+    "audio-capture",
+    "not-allowed",
+  ];
 
   recognition.onerror = (event: any) => {
     const code = event.error || "unknown";
-    const msg = errorMessages[code] || "เกิดข้อผิดพลาดในการรู้จำเสียงพูด กรุณาลองใหม่";
+    const msg =
+      errorMessages[code] || "เกิดข้อผิดพลาดในการรู้จำเสียงพูด กรุณาลองใหม่";
 
     if (recoverableErrors.includes(code)) {
-      console.warn(`Speech recognition ${code} error, falling back to demo mode`);
+      console.warn(
+        `Speech recognition ${code} error, falling back to demo mode`
+      );
       switchToFallback();
       return;
     }
@@ -90,17 +107,39 @@ export function createSpeechRecognizer(lang = "th-TH"): SpeechRecognizer {
     errorCallbacks.forEach((cb) => cb(msg));
   };
 
+  // Chrome fires onend after silence/network hiccups even with continuous=true.
+  // Restart automatically unless the user stopped or we switched to fallback.
+  recognition.onend = () => {
+    if (!running || stopping || inFallback) return;
+    try {
+      recognition.start();
+    } catch {}
+  };
+
   return {
     start: async () => {
       if (inFallback && fallbackRecognizer) {
         return fallbackRecognizer.start();
       }
-      recognition.start();
+      if (running) return;
+      finalTranscript = "";
+      running = true;
+      stopping = false;
+      try {
+        recognition.start();
+      } catch (err) {
+        running = false;
+        errorCallbacks.forEach((cb) =>
+          cb("เกิดข้อผิดพลาดในการรู้จำเสียงพูด กรุณาลองใหม่")
+        );
+      }
     },
     stop: async () => {
       if (inFallback && fallbackRecognizer) {
         return fallbackRecognizer.stop();
       }
+      stopping = true;
+      running = false;
       recognition.stop();
       return finalTranscript;
     },
@@ -145,7 +184,7 @@ export function createFallbackRecognizer(): SpeechRecognizer {
       errorCallbacks.push(cb);
       timeoutId = setTimeout(
         () => cb("เบราว์เซอร์นี้ไม่รองรับการรู้จำเสียงพูด"),
-        100,
+        100
       );
     },
   };

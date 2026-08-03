@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -142,7 +143,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               </p>
             </div>
 
-            <div className="mt-2 ml-auto h-14 w-14 rounded-md bg-muted" />
+            <Image
+              src="/mascot/image 6.png"
+              alt="Streak mascot"
+              width={56}
+              height={56}
+              className="mt-2 ml-auto h-14 w-14 rounded-md"
+            />
           </CardContent>
         </Card>
       </div>
@@ -151,9 +158,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <div className="rounded-md border border-border px-4 py-3 text-center text-sm font-semibold text-foreground">
           แพ็คที่รออยู่นะ~ ฝึกกันเถอะ!
         </div>
-        <div className="mx-auto mt-6 flex h-32 w-32 items-center justify-center rounded-full bg-muted">
-          <div className="h-24 w-24 rounded-full bg-muted-foreground/20" />
-        </div>
+        <Image
+          src="/mascot/image 5.png"
+          alt="Pakky mascot"
+          width={128}
+          height={128}
+          className="mx-auto mt-6 h-32 w-32 rounded-full"
+        />
       </div>
     </aside>
   );

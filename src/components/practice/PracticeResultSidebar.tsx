@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import {
-  CheckCircle2,
-  AlertTriangle,
+  CircleCheck,
+  TriangleAlert,
   ChevronDown,
   ChevronUp,
   Star,
@@ -11,6 +11,9 @@ import {
   Smile,
   Volume2,
   Sparkles,
+  Speech,
+  AudioLines,
+  Wand,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +45,9 @@ export default function PracticeResultSidebar({
   onClose,
   onRestart,
 }: PracticeResultSidebarProps) {
-  const [expandedWords, setExpandedWords] = useState<Set<string>>(new Set());
+  const [expandedIndices, setExpandedIndices] = useState<Set<number>>(
+    new Set()
+  );
 
   if (!open) return null;
 
@@ -50,18 +55,19 @@ export default function PracticeResultSidebar({
     (r) => r.status === "warning"
   ).length;
 
-  const isExpanded = (item: WordResult) =>
-    expandedWords.has(item.word) ? !item.expanded : item.expanded;
+  const isExpanded = (index: number) =>
+    expandedIndices.has(index)
+      ? !results[index].expanded
+      : results[index].expanded;
 
   const toggleExpand = (index: number) => {
-    const item = results[index];
-    if (!item) return;
-    setExpandedWords((prev) => {
+    if (index < 0 || index >= results.length) return;
+    setExpandedIndices((prev) => {
       const next = new Set(prev);
-      if (next.has(item.word)) {
-        next.delete(item.word);
+      if (next.has(index)) {
+        next.delete(index);
       } else {
-        next.add(item.word);
+        next.add(index);
       }
       return next;
     });
@@ -93,9 +99,9 @@ export default function PracticeResultSidebar({
               {wordsNeedingPractice > 0 && (
                 <Badge
                   variant="secondary"
-                  className="rounded-md bg-orange-100 px-3 py-2 text-sm font-semibold text-black hover:bg-orange-100"
+                  className="rounded-md bg-yellow-100 px-3 py-2 text-sm font-semibold text-black hover:bg-yellow-100"
                 >
-                  <AlertTriangle className="mr-1 h-4 w-4 fill-orange-500 text-orange-500" />
+                  <TriangleAlert className="mr-1 h-4 w-4 fill-yellow-500 text-yellow-500" />
                   มี {wordsNeedingPractice} คำที่ควรฝึกเพิ่ม
                 </Badge>
               )}
@@ -107,7 +113,7 @@ export default function PracticeResultSidebar({
           <section className="space-y-3">
             {results.map((item, index) => (
               <Card
-                key={item.word}
+                key={`${item.word}-${index}`}
                 className="overflow-hidden rounded-lg border border-neutral-200 shadow-none"
               >
                 <CardContent className="p-0">
@@ -118,9 +124,9 @@ export default function PracticeResultSidebar({
                   >
                     <div className="flex items-center gap-2">
                       {item.status === "success" ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        <CircleCheck className="h-4 w-4 text-emerald-500" />
                       ) : (
-                        <AlertTriangle className="h-4 w-4 fill-orange-500 text-orange-500" />
+                        <TriangleAlert className="h-4 w-4 fill-yellow-500 text-yellow-500" />
                       )}
 
                       <span className="text-sm font-semibold">{item.word}</span>
@@ -141,7 +147,7 @@ export default function PracticeResultSidebar({
                       >
                         {item.score}%
                       </span>
-                      {isExpanded(item) ? (
+                      {isExpanded(index) ? (
                         <ChevronUp className="h-4 w-4 text-neutral-500" />
                       ) : (
                         <ChevronDown className="h-4 w-4 text-neutral-500" />
@@ -149,11 +155,11 @@ export default function PracticeResultSidebar({
                     </div>
                   </button>
 
-                  {isExpanded(item) && (
+                  {isExpanded(index) && (
                     <div className="border-t border-neutral-100 px-3 py-4">
                       <div className="space-y-4">
                         <div className="flex items-center gap-3 text-sm">
-                          <Smile className="h-5 w-5 text-black" />
+                          <Speech className="h-5 w-5 text-black" />
                           <span className="font-semibold text-neutral-700">
                             ริมฝีปาก
                           </span>
@@ -170,7 +176,7 @@ export default function PracticeResultSidebar({
                         </div>
 
                         <div className="flex items-center gap-3 text-sm">
-                          <Volume2 className="h-5 w-5 text-black" />
+                          <AudioLines className="h-5 w-5 text-black" />
                           <span className="font-semibold text-neutral-700">
                             ระดับเสียง
                           </span>
@@ -188,7 +194,7 @@ export default function PracticeResultSidebar({
 
                         {item.recommendation && (
                           <div className="flex items-start gap-3 text-sm">
-                            <Sparkles className="mt-0.5 h-5 w-5 text-orange-500" />
+                            <Wand className="mt-0.5 h-5 w-5 text-orange-500" />
                             <span className="font-semibold text-neutral-700">
                               คำแนะนำ
                             </span>

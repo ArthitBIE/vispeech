@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,8 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -60,6 +63,33 @@ export default function SignUpPage() {
       setLoading(false);
     }
   }
+
+  async function handleGoogleLogin() {
+    setError(null);
+
+    if (!isSupabaseConfigured || !supabase?.auth) {
+      setError(
+        "ยังไม่ได้ตั้งค่า Supabase กรุณาเพิ่ม NEXT_PUBLIC_SUPABASE_URL " +
+          "และ NEXT_PUBLIC_SUPABASE_ANON_KEY ในไฟล์ .env.local"
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
   return (
     <main className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       <header className="h-14 border-b border-border bg-background">
@@ -67,47 +97,19 @@ export default function SignUpPage() {
           <Link href="/" aria-label="Vispeech home">
             <TitleLogo />
           </Link>
-
-          <nav className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-transparent"
-              asChild
-            >
-              <Link href="/auth/signin">Login</Link>
-            </Button>
-
-            <Button
-              size="sm"
-              className="h-8 rounded-md bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-accent"
-              asChild
-            >
-              <Link href="/auth/signin">Get started</Link>
-            </Button>
-          </nav>
         </div>
       </header>
 
       <section className="flex flex-1 items-center justify-center px-4 py-10">
         <Card className="w-full max-w-md rounded-2xl border border-border bg-background shadow-none">
           <CardHeader className="space-y-2 px-5 pt-5 pb-3">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-2">
-                <CardTitle className="text-base font-semibold tracking-tight text-foreground">
-                  Create your account
-                </CardTitle>
-                <p className="max-w-xs text-sm leading-5 text-muted-foreground">
-                  Enter your email below to create your account
-                </p>
-              </div>
-
-              <Link
-                href="/auth/signin"
-                className="mt-1 whitespace-nowrap text-sm font-semibold text-foreground hover:underline"
-              >
-                Sign In
-              </Link>
+            <div className="space-y-2">
+              <CardTitle className="text-base font-semibold tracking-tight text-foreground">
+                Create your account
+              </CardTitle>
+              <p className="max-w-xs text-sm leading-5 text-muted-foreground">
+                Enter your email below to create your account
+              </p>
             </div>
           </CardHeader>
 
@@ -145,7 +147,7 @@ export default function SignUpPage() {
                   <Input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
                     required
                     value={password}
@@ -155,9 +157,14 @@ export default function SignUpPage() {
                   <button
                     type="button"
                     aria-label="Toggle password visibility"
+                    onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-muted-foreground"
                   >
-                    <EyeOff className="h-4 w-4" />
+                    {showPassword ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -174,7 +181,7 @@ export default function SignUpPage() {
                   <Input
                     id="confirm-password"
                     name="confirmPassword"
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     autoComplete="new-password"
                     required
                     value={confirmPassword}
@@ -184,9 +191,14 @@ export default function SignUpPage() {
                   <button
                     type="button"
                     aria-label="Toggle confirm password visibility"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-muted-foreground"
                   >
-                    <EyeOff className="h-4 w-4" />
+                    {showConfirmPassword ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -213,11 +225,17 @@ export default function SignUpPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-9 w-full rounded-lg border-border bg-background text-sm font-semibold text-foreground hover:bg-accent"
+                    onClick={handleGoogleLogin}
+                    disabled={loading}
+                    className="h-9 w-full rounded-lg border-border bg-background text-sm font-semibold text-foreground hover:bg-accent disabled:opacity-50"
                   >
-                    <span className="mr-2 inline-flex h-5 w-5 items-center justify-center text-sm font-bold">
-                      <span className="text-blue-500">G</span>
-                    </span>
+                    <Image
+                      src="/google-icon.svg"
+                      alt=""
+                      width={20}
+                      height={20}
+                      className="mr-2"
+                    />
                     Sign-up with Google
                   </Button>
                 </div>
@@ -226,9 +244,12 @@ export default function SignUpPage() {
           </CardContent>
 
           <CardFooter className="justify-center px-5 pb-5 pt-0">
-            <p className="text-xs text-muted-foreground">
-              Don&apos;t have an account?
-            </p>
+            <Link
+              href="/auth/signin"
+              className="text-xs text-muted-foreground hover:underline"
+            >
+              Already have an account? Sign In
+            </Link>
           </CardFooter>
         </Card>
       </section>

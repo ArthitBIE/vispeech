@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -18,12 +19,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LESSONS, lessonHref, type Lesson } from "@/lib/lesson";
 
 interface Word {
   id: string;
   text: string;
   visemeGroup: string;
   difficulty: number;
+  phonetic: string | null;
 }
 
 interface WordAccuracy {
@@ -118,49 +121,53 @@ export default function HomePage() {
     })();
   }, []);
 
-  const lessons = useMemo(() => {
-    const byGroup = new Map<string, Word[]>();
-    for (const w of words) {
-      const arr = byGroup.get(w.visemeGroup) ?? [];
-      arr.push(w);
-      byGroup.set(w.visemeGroup, arr);
-    }
-    return Array.from(byGroup.entries()).map(([group, items]) => ({
-      group,
-      count: items.length,
-    }));
+  const lessons = useMemo((): Lesson[] => LESSONS, []);
+
+  // text → word map for progress on DB-backed items (e.g. ดี, ดู)
+  const wordByText = useMemo(() => {
+    const m = new Map<string, Word>();
+    for (const w of words) m.set(w.text, w);
+    return m;
   }, [words]);
 
-  const filteredLessons = useMemo(() => {
-    let list = lessons;
-    if (filter === "learning" || filter === "done") list = [];
-    if (search.trim()) {
-      list = list.filter((l) => l.group.includes(search.trim()));
-    }
-    return list;
-  }, [lessons, filter, search]);
-
-  const filterCounts = useMemo(() => {
-    const groupStatus = new Map<string, "learning" | "done" | "not-started">();
+  const groupStatus = useMemo(() => {
+    const status = new Map<string, "learning" | "done" | "not-started">();
 
     for (const lesson of lessons) {
-      const groupWords = words.filter((w) => w.visemeGroup === lesson.group);
-      const wordsWithAccuracy = groupWords.filter((w) => accuracy[w.id]);
+      const lessonWords = lesson.items
+        .map((item) => wordByText.get(item.text))
+        .filter((w): w is Word => !!w);
+      const wordsWithAccuracy = lessonWords.filter((w) => accuracy[w.id]);
 
       if (wordsWithAccuracy.length === 0) {
-        groupStatus.set(lesson.group, "not-started");
+        status.set(lesson.id, "not-started");
       } else {
         const allDone = wordsWithAccuracy.every(
           (w) => accuracy[w.id]!.average_score >= PASS_THRESHOLD
         );
-        if (allDone && wordsWithAccuracy.length === groupWords.length) {
-          groupStatus.set(lesson.group, "done");
+        if (allDone && wordsWithAccuracy.length === lessonWords.length) {
+          status.set(lesson.id, "done");
         } else {
-          groupStatus.set(lesson.group, "learning");
+          status.set(lesson.id, "learning");
         }
       }
     }
 
+    return status;
+  }, [lessons, wordByText, accuracy]);
+
+  const filteredLessons = useMemo(() => {
+    let list = lessons;
+    if (filter !== "all") {
+      list = list.filter((l) => groupStatus.get(l.id) === filter);
+    }
+    if (search.trim()) {
+      list = list.filter((l) => l.name.includes(search.trim()));
+    }
+    return list;
+  }, [lessons, filter, search, groupStatus]);
+
+  const filterCounts = useMemo(() => {
     const counts = { learning: 0, done: 0, "not-started": 0 };
     for (const status of groupStatus.values()) {
       counts[status]++;
@@ -172,7 +179,7 @@ export default function HomePage() {
       done: counts.done,
       "not-started": counts["not-started"],
     };
-  }, [lessons, words, accuracy]);
+  }, [lessons, groupStatus]);
 
   const filters: { key: Filter; label: string }[] = [
     { key: "all", label: `ทั้งหมด (${filterCounts.all})` },
@@ -241,13 +248,13 @@ export default function HomePage() {
                 </span>
                 <span className="text-muted-foreground">·</span>
                 <span className="font-semibold text-foreground">
-                  {lessons[0]?.group ?? "คำศัพท์ง่าย"} บทที่ 1
+                  {LESSONS[0].name} บทที่ 1
                 </span>
                 <Button
                   asChild
                   className="h-8 rounded-md bg-foreground px-4 text-xs font-bold text-background hover:bg-foreground/90"
                 >
-                  <Link href="/practice/session">
+                  <Link href={lessonHref(LESSONS[0].id)}>
                     <Play className="mr-2 h-3 w-3 fill-current" />
                     เริ่มการฝึก
                   </Link>
@@ -256,7 +263,13 @@ export default function HomePage() {
             </div>
 
             <div className="hidden items-center justify-center md:flex">
-              <div className="h-40 w-40 rounded-xl bg-muted" />
+              <Image
+                src="/mascot/image 6.png"
+                alt="Banner mascot"
+                width={160}
+                height={160}
+                className="h-40 w-40 rounded-xl"
+              />
             </div>
           </div>
         </section>
@@ -334,19 +347,25 @@ export default function HomePage() {
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filteredLessons.map((lesson) => (
                 <Card
-                  key={lesson.group}
+                  key={lesson.id}
                   className="rounded-2xl border border-border shadow-none"
                 >
                   <CardContent className="p-4">
                     <div className="relative mb-4 h-32 overflow-hidden rounded-lg bg-muted">
-                      <div className="absolute bottom-2 right-4 h-16 w-16 rounded-full bg-muted-foreground/20" />
+                      <Image
+                        src="/mascot/image 7.png"
+                        alt="Lesson mascot"
+                        width={64}
+                        height={64}
+                        className="absolute bottom-2 right-4 h-16 w-16 rounded-full"
+                      />
                     </div>
 
                     <h3 className="text-lg font-bold leading-tight text-foreground">
-                      {lesson.group}
+                      {lesson.name}
                     </h3>
                     <p className="text-sm font-medium text-muted-foreground">
-                      บทที่ 1
+                      {lesson.items.length} คำศัพท์
                     </p>
 
                     <p className="mt-4 min-h-10 text-sm leading-5 text-muted-foreground">
@@ -358,7 +377,7 @@ export default function HomePage() {
                       <div className="rounded-lg bg-muted px-4 py-3 text-center">
                         <p className="text-xs text-muted-foreground">คำศัพท์</p>
                         <p className="mt-1 text-xl font-bold text-foreground">
-                          {lesson.count}
+                          {lesson.items.length}
                         </p>
                       </div>
                       <div className="rounded-lg bg-muted px-4 py-3 text-center">
@@ -373,7 +392,7 @@ export default function HomePage() {
                       asChild
                       className="mt-5 h-10 w-full rounded-lg bg-foreground text-sm font-bold text-background hover:bg-foreground/90"
                     >
-                      <Link href="/practice/session">
+                      <Link href={lessonHref(lesson.id)}>
                         <Play className="mr-2 h-4 w-4 fill-current" />
                         เริ่มการฝึก
                       </Link>

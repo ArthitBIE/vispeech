@@ -54,15 +54,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ session: null, results: [] });
     }
 
-    // Get practice logs for this session with word details
+    // Get practice logs for this user with word details.
+    // ponytail: hosted DB lacks practice_logs.session_id (migration 003 unapplied),
+    // so logs are not session-scoped; return recent logs instead.
     const { data: logs, error: logsError } = await supabase
       .from("practice_logs")
       .select(
-        "id, word_id, visual_score, audio_score, total_score, attempt_number, created_at, words!inner(word, viseme_group, phonetic)"
+        "id, word_id, visual_score, audio_score, total_score, attempt_number, created_at, words!inner(word, viseme_group)"
       )
-      .eq("session_id", session.id)
       .eq("user_id", user.id)
-      .order("attempt_number");
+      .order("created_at", { ascending: false })
+      .limit(100);
 
     if (logsError) {
       console.error("Logs fetch error:", logsError);
@@ -151,6 +153,73 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: data.id });
   } catch (error) {
     console.error("Session save error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const { sessionId, totalAttempts, passedCount, bestScore } =
+      await req.json();
+
+    if (!sessionId || totalAttempts == null) {
+      return NextResponse.json(
+        { error: "Missing required fields: sessionId, totalAttempts" },
+        { status: 400 }
+      );
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const canConnect =
+      supabaseUrl &&
+      supabaseKey &&
+      supabaseUrl !== "https://placeholder.supabase.co";
+
+    if (!canConnect) {
+      return NextResponse.json({ id: null });
+    }
+
+    const authHeader = req.headers.get("authorization");
+    const token = authHeader?.startsWith("Bearer ")
+      ? authHeader.slice("Bearer ".length)
+      : null;
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const supabase = createClient(supabaseUrl!, supabaseKey!, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data, error } = await supabase
+      .from("practice_sessions")
+      .update({
+        total_attempts: totalAttempts,
+        passed_count: passedCount,
+        best_score: bestScore,
+      })
+      .eq("id", sessionId)
+      .eq("user_id", user.id)
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw error;
+
+    return NextResponse.json({ id: data?.id ?? null });
+  } catch (error) {
+    console.error("Session update error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
