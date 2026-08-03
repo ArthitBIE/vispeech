@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { dedupeByBestScore } from "@/lib/practice-summary";
 
 export async function GET(req: NextRequest) {
   try {
@@ -74,16 +75,18 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const results = (logs || []).map((log: any) => ({
-      word: log.words.word,
-      phonetic: log.words.phonetic || log.words.viseme_group,
-      viseme_group: log.words.viseme_group,
-      visual_score: log.visual_score,
-      audio_score: log.audio_score,
-      total_score: log.total_score,
-      attempt_number: log.attempt_number,
-      created_at: log.created_at,
-    }));
+    const results = dedupeByBestScore(
+      (logs || []).map((log: any) => ({
+        word: log.words.word,
+        phonetic: log.words.phonetic || log.words.viseme_group,
+        viseme_group: log.words.viseme_group,
+        visual_score: log.visual_score,
+        audio_score: log.audio_score,
+        total_score: log.total_score,
+        attempt_number: log.attempt_number,
+        created_at: log.created_at,
+      }))
+    );
 
     return NextResponse.json({ session, results });
   } catch (error) {
