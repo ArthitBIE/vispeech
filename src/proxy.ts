@@ -6,7 +6,7 @@ export async function proxy(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  let response = NextResponse.next({ request });
+  const response = NextResponse.next({ request });
 
   if (
     supabaseUrl &&
@@ -29,16 +29,20 @@ export async function proxy(request: NextRequest) {
       },
     });
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
     const { pathname } = request.nextUrl;
 
-    // API routes authenticate via the Authorization header; assets pass through.
-    if (pathname.startsWith("/api") || pathname.startsWith("/_next")) {
+    // API routes, auth pages, and _next assets pass through without auth check
+    if (
+      pathname.startsWith("/api") ||
+      pathname.startsWith("/auth") ||
+      pathname.startsWith("/_next")
+    ) {
       return response;
     }
+
+    // Fast local auth check (no network round-trip to Supabase Auth)
+    const { data } = await supabase.auth.getClaims();
+    const user = data?.claims?.sub ? { id: data.claims.sub } : null;
 
     // Public static assets (/google-icon.svg, /title-top-left.svg) are requested
     // by /auth pages that unauthenticated visitors must render; without this the
