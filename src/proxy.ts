@@ -40,6 +40,15 @@ export async function proxy(request: NextRequest) {
       return response;
     }
 
+    // Public static assets (/google-icon.svg, /title-top-left.svg) are requested
+    // by /auth pages that unauthenticated visitors must render; without this the
+    // proxy 302s them to /auth/signin, breaking the Google icon and producing a
+    // "preloaded but not used" warning. Anchored to the end of the pathname so no
+    // real route (none contain dots) is affected and auth-gating is unchanged.
+    if (/\.[a-z0-9]+$/i.test(pathname)) {
+      return response;
+    }
+
     if (!user && !pathname.startsWith("/auth")) {
       return NextResponse.redirect(new URL("/auth/signin", request.url));
     }

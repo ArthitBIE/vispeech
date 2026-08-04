@@ -9,6 +9,19 @@ test.describe("Auth sign-in flow", () => {
     await expect(page.locator('button[type="submit"]')).toHaveText("Login");
   });
 
+  test("renders OAuth error from ?error= query param in the alert box", async ({
+    page,
+  }) => {
+    await page.goto(
+      "/auth/signin?error=" +
+        encodeURIComponent("Session not found after OAuth")
+    );
+    // Scope to the form — Next's route announcer also carries role="alert"
+    await expect(page.locator('form [role="alert"]')).toContainText(
+      "Session not found after OAuth"
+    );
+  });
+
   test("signs in with valid credentials and redirects away from /auth", async ({
     page,
   }) => {

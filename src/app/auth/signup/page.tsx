@@ -47,8 +47,16 @@ export default function SignUpPage() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error, data } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
+      // With email confirmation enabled (Supabase default), signUp resolves with
+      // session: null — tell the user instead of bouncing them to /auth/signin.
+      if (!data.session) {
+        setError(
+          "กรุณายืนยันอีเมลของคุณ — เราได้ส่งลิงก์ยืนยันไปที่อีเมลของคุณแล้ว"
+        );
+        return;
+      }
       router.push("/dashboard");
     } catch (err: any) {
       const messages: Record<string, string> = {
