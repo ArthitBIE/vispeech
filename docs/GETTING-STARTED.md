@@ -1,4 +1,5 @@
 <!-- generated-by: gsd-doc-writer -->
+
 # Getting Started
 
 Follow these steps to get ViSpeech running locally for development or evaluation.
@@ -68,11 +69,10 @@ Open [http://localhost:3000](http://localhost:3000) in your browser. The app red
 
 ### Key Pages
 
-| Route | Purpose |
-|-------|---------|
-| `/auth` | Login / signup page |
-| `/dashboard` | Practice dashboard with per-word accuracy and history |
-| `/practice/{word}` | Practice a single word with camera + speech scoring |
+| Route               | Purpose                                                                 |
+| ------------------- | ----------------------------------------------------------------------- |
+| `/auth`             | Login / signup page                                                     |
+| `/dashboard`        | Practice dashboard with per-word accuracy and history                   |
 | `/practice/session` | Structured session — cycles through random words with up to 12 attempts |
 
 ## Common Setup Issues

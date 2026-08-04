@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { Home } from "lucide-react";
 import Link from "next/link";
 import {
@@ -21,17 +22,19 @@ export function AppBreadcrumb({ items }: { items: AppBreadcrumbItem[] }) {
     <Breadcrumb>
       <BreadcrumbList>
         {items.map((item, i) => (
-          <BreadcrumbItem key={i}>
+          <Fragment key={i}>
             {i > 0 && <BreadcrumbSeparator />}
-            {i === 0 && <Home className="h-4 w-4" aria-hidden />}
-            {item.href ? (
-              <BreadcrumbLink asChild>
-                <Link href={item.href}>{item.label}</Link>
-              </BreadcrumbLink>
-            ) : (
-              <BreadcrumbPage>{item.label}</BreadcrumbPage>
-            )}
-          </BreadcrumbItem>
+            <BreadcrumbItem>
+              {i === 0 && <Home className="h-4 w-4" aria-hidden />}
+              {item.href ? (
+                <BreadcrumbLink asChild>
+                  <Link href={item.href}>{item.label}</Link>
+                </BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage>{item.label}</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+          </Fragment>
         ))}
       </BreadcrumbList>
     </Breadcrumb>

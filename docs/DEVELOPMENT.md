@@ -1,4 +1,5 @@
 <!-- generated-by: gsd-doc-writer -->
+
 # Development
 
 ## Local Setup
@@ -17,13 +18,13 @@ cp .env.local.example .env.local
 
 Edit `.env.local` with your Supabase project credentials:
 
-| Variable | Required | Description |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL (from Project Settings → API) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon/public key |
-| `E2E_TEST_EMAIL` | For E2E | Email of a test user for Playwright authentication |
-| `E2E_TEST_PASSWORD` | For E2E | Password of the test user |
-| `SUPABASE_SERVICE_ROLE_KEY` | For scripts | Service role key (for `create-test-user.ts`) |
+| Variable                        | Required    | Description                                        |
+| ------------------------------- | ----------- | -------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Yes         | Supabase project URL (from Project Settings → API) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes         | Supabase anon/public key                           |
+| `E2E_TEST_EMAIL`                | For E2E     | Email of a test user for Playwright authentication |
+| `E2E_TEST_PASSWORD`             | For E2E     | Password of the test user                          |
+| `SUPABASE_SERVICE_ROLE_KEY`     | For scripts | Service role key (for `create-test-user.ts`)       |
 
 **Supabase setup:** Create a project on [supabase.com](https://supabase.com), then run the migrations and seed data:
 
@@ -47,15 +48,15 @@ npm run create-test-user
 
 ## Build Commands
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start the Next.js development server on `http://localhost:3000` |
-| `npm run build` | Production build (compiles and optimizes for deployment) |
-| `npm start` | Start the production server (requires `build` first) |
-| `npm run lint` | Run ESLint across the codebase |
-| `npm run test:unit` | Run Vitest unit tests (co-located in `__tests__` directories) |
-| `npm run test:e2e` | Run Playwright E2E tests (in `e2e/`) |
-| `npm test` | Run all tests (unit + E2E) |
+| Command             | Description                                                     |
+| ------------------- | --------------------------------------------------------------- |
+| `npm run dev`       | Start the Next.js development server on `http://localhost:3000` |
+| `npm run build`     | Production build (compiles and optimizes for deployment)        |
+| `npm start`         | Start the production server (requires `build` first)            |
+| `npm run lint`      | Run ESLint across the codebase                                  |
+| `npm run test:unit` | Run Vitest unit tests (co-located in `__tests__` directories)   |
+| `npm run test:e2e`  | Run Playwright E2E tests (in `e2e/`)                            |
+| `npm test`          | Run all tests (unit + E2E)                                      |
 
 **Type checking:** The project uses TypeScript `strict` mode. Run type checks with:
 
@@ -78,7 +79,6 @@ src/
 │   ├── dashboard/page.tsx               Practice dashboard with stats
 │   ├── home/page.tsx                     Landing page content
 │   ├── practice/
-│   │   ├── [word]/page.tsx              Single-word practice (camera + mic + scoring)
 │   │   └── session/page.tsx            Multi-word session with adaptive rotation
 │   ├── globals.css                      Tailwind CSS entry point
 │   ├── layout.tsx                       Root layout (IBM Plex Sans Thai font)
@@ -177,10 +177,10 @@ Schema changes go in `supabase/migrations/` as versioned SQL files:
 
 **Current migration order:**
 
-| File | Adds |
-|---|---|
-| `001_schema.sql` | `words`, `practice_logs`, `word_accuracy` tables with RLS |
-| `002_practice_sessions.sql` | `practice_sessions` table with RLS |
+| File                        | Adds                                                      |
+| --------------------------- | --------------------------------------------------------- |
+| `001_schema.sql`            | `words`, `practice_logs`, `word_accuracy` tables with RLS |
+| `002_practice_sessions.sql` | `practice_sessions` table with RLS                        |
 
 ## Adding New Practice Word Types
 

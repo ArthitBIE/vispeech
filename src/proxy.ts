@@ -1,21 +1,54 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-export function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+export async function proxy(request: NextRequest) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  let response = NextResponse.next({ request });
 
   if (
-    pathname === "/" ||
-    pathname === "/auth" ||
-    pathname.startsWith("/api") ||
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon")
+    supabaseUrl &&
+    supabaseAnonKey &&
+    supabaseUrl !== "https://placeholder.supabase.co"
   ) {
-    return NextResponse.next();
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet, headers) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+          Object.entries(headers).forEach(([key, value]) =>
+            response.headers.set(key, value)
+          );
+        },
+      },
+    });
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const { pathname } = request.nextUrl;
+
+    // API routes authenticate via the Authorization header; assets pass through.
+    if (pathname.startsWith("/api") || pathname.startsWith("/_next")) {
+      return response;
+    }
+
+    if (!user && !pathname.startsWith("/auth")) {
+      return NextResponse.redirect(new URL("/auth/signin", request.url));
+    }
+    if (user && pathname.startsWith("/auth")) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 
-  // Protected routes: client-side session check handles redirect
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

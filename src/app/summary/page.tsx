@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import {
   ChevronRight,
   ChevronDown,
@@ -15,11 +15,12 @@ import {
   Trophy,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase/client";
 import { PASS_THRESHOLD } from "@/lib/constants";
+import { lessonHref, deriveLesson } from "@/lib/lesson";
 
 interface SummaryResult {
   word: string;
@@ -41,7 +42,23 @@ interface SummarySession {
 }
 
 export default function SummarizePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted-foreground">
+          กำลังโหลดผลการฝึก...
+        </div>
+      }
+    >
+      <SummaryContent />
+    </Suspense>
+  );
+}
+
+function SummaryContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionIdParam = searchParams.get("sessionId");
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<SummarySession | null>(null);
   const [results, setResults] = useState<SummaryResult[]>([]);
@@ -56,7 +73,10 @@ export default function SummarizePage() {
         const {
           data: { session: authSession },
         } = await supabase.auth.getSession();
-        const res = await fetch("/api/practice-sessions", {
+        const qs = sessionIdParam
+          ? `?sessionId=${encodeURIComponent(sessionIdParam)}`
+          : "";
+        const res = await fetch(`/api/practice-sessions${qs}`, {
           headers: {
             Authorization: `Bearer ${authSession?.access_token ?? ""}`,
           },
@@ -87,12 +107,15 @@ export default function SummarizePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sessionIdParam]);
 
   const totalAccuracy =
     results.length > 0
       ? results.reduce((sum, r) => sum + r.total_score, 0) / results.length
       : 0;
+
+  const lesson = deriveLesson(results.map((r) => r.word));
+  const practiceHref = lessonHref(lesson?.id ?? "");
 
   const toggleExpanded = (word: string) => {
     setExpanded((prev) => {
@@ -119,10 +142,7 @@ export default function SummarizePage() {
       <div className="mx-auto max-w-md space-y-6 py-16 text-center">
         <AlertTriangle className="mx-auto h-8 w-8 text-orange-500" />
         <p className="text-sm text-muted-foreground">{error}</p>
-        <Button
-          variant="outline"
-          onClick={() => router.push("/practice/session")}
-        >
+        <Button variant="outline" onClick={() => router.push(practiceHref)}>
           เริ่มการฝึก
         </Button>
       </div>
@@ -137,9 +157,7 @@ export default function SummarizePage() {
         <p className="text-sm text-muted-foreground">
           เริ่มฝึกคำศัพท์เพื่อดูผลลัพธ์และความคืบหน้าของคุณ
         </p>
-        <Button onClick={() => router.push("/practice/session")}>
-          เริ่มการฝึก
-        </Button>
+        <Button onClick={() => router.push(practiceHref)}>เริ่มการฝึก</Button>
       </div>
     );
   }
@@ -158,7 +176,7 @@ export default function SummarizePage() {
         <Button
           variant="ghost"
           className="h-9 px-0 text-sm font-medium text-muted-foreground hover:bg-transparent hover:text-foreground"
-          onClick={() => router.push("/practice/session")}
+          onClick={() => router.push(practiceHref)}
         >
           <RotateCcw className="mr-2 h-4 w-4" />
           เริ่มการฝึกซ้ำ

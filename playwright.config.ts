@@ -39,6 +39,16 @@ export default defineConfig({
         storageState: "e2e/.auth/user.json",
       },
     },
+    {
+      // Runs last: signOut() revokes the server session, so this project must
+      // not run in parallel with tests that need the shared session.
+      name: "logout",
+      testMatch: ["logout.spec.ts"],
+      dependencies: ["setup", "authenticated"],
+      use: {
+        storageState: "e2e/.auth/user.json",
+      },
+    },
   ],
   webServer: {
     command: "npm run dev",

@@ -17,7 +17,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Next.js 16 specifics that apply here
 
 - **`proxy.ts` not `middleware.ts`** — the `middleware` filename/export is deprecated. The file lives at `src/proxy.ts` and exports `proxy(request)`. Proxy runs on the Node runtime (edge is not supported).
-- Route protection is a pass-through in `src/proxy.ts`; the real auth gate is client-side session checks.
+- `src/proxy.ts` is an auth gate: it reads the Supabase session cookie and redirects unauthenticated visitors away from protected pages to `/auth/signin`; `/api/*` and `/_next/*` pass through (API routes auth via the `Authorization` header).
 - The Next.js 16 docs in `node_modules/next/dist/docs/01-app/` are authoritative — read them before writing Next-specific code.
 
 ## Commands
@@ -43,7 +43,7 @@ pnpm create-test-user # seed E2E test user into Supabase
 - **Scoring**: visual (mouth openness via MediaPipe) + audio (Web Speech transcript) → weighted total, persisted via `POST /api/score` and sessions via `/api/practice-sessions` (GET/POST/PATCH).
 - **Supabase clients**: browser client in `src/lib/supabase/client.ts`; server-side API routes create a per-request client with the `Authorization: Bearer <token>` header. Use `.maybeSingle()` (not `.single()`) on queries that may return zero rows to avoid PGRST116 errors.
 - **Env**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`.env.local`, gitignored). E2E uses `E2E_TEST_EMAIL`/`E2E_TEST_PASSWORD`.
-- **Middleware/proxy change**: if you touch `src/proxy.ts`, keep the same matcher and pass-through behavior.
+- **Middleware/proxy change**: if you touch `src/proxy.ts`, keep the same matcher. The proxy intentionally enforces auth (see the auth gate note above).
 
 ## Docs
 
@@ -52,3 +52,12 @@ pnpm create-test-user # seed E2E test user into Supabase
 ## Verification
 
 Before committing, ensure: `bunx tsc --noEmit`, `pnpm test:unit`, and the relevant e2e specs pass (`bunx playwright test e2e/<spec>.spec.ts`). The husky hook runs the full suite on commit anyway.
+
+## Repository Map
+
+A full codemap is available at `codemap.md` in project root. Before working on any task, read `codemap.md` understand:
+
+- Project architecture entry points
+- Directory responsibilities design patterns
+- Data flow integration points between modules
+  For deep work on specific folder, also read folder's `codemap.md`.

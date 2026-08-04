@@ -39,6 +39,7 @@ export interface PracticeWordProps {
   onSkip: () => void;
   onLive?: (live: LiveState) => void;
   sessionId?: string | null;
+  isLast?: boolean;
 }
 
 export function PracticeWord({
@@ -47,6 +48,7 @@ export function PracticeWord({
   onSkip,
   onLive,
   sessionId,
+  isLast = false,
 }: PracticeWordProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -463,7 +465,7 @@ export function PracticeWord({
             onClick={onSkip}
             className="mt-3 h-8 text-sm font-medium text-neutral-500 hover:bg-transparent hover:text-neutral-700"
           >
-            ข้ามคำ
+            {isLast ? "จบบทเรียน" : "คำถัดไป"}
             <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         </div>
@@ -521,7 +523,7 @@ export function PracticeWord({
               onClick={onSkip}
               className="flex-1 h-12 px-4 text-sm font-semibold"
             >
-              ข้ามคำ
+              {isLast ? "จบบทเรียน" : "คำถัดไป"}
             </Button>
           </div>
         </div>

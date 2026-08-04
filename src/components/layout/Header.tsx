@@ -73,7 +73,12 @@ export function Header({
               <DropdownMenuItem onClick={() => router.push("/settings")}>
                 โปรไฟล์
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/auth")}>
+              <DropdownMenuItem
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  router.push("/auth/signin");
+                }}
+              >
                 ออกจากระบบ
               </DropdownMenuItem>
             </DropdownMenuContent>
