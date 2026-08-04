@@ -176,6 +176,7 @@ function PracticeSessionContent() {
   }
 
   async function handleFinish() {
+    const lesson = findLesson(groupParam ?? "") ?? LESSONS[0];
     if (!sessionId) {
       router.push("/summary");
       return;
@@ -210,7 +211,7 @@ function PracticeSessionContent() {
       console.error("Failed to update session:", err);
     }
 
-    router.push("/summary");
+    router.push(`/summary?sessionId=${sessionId}`);
   }
 
   function handleCancel() {
@@ -365,6 +366,7 @@ function PracticeSessionContent() {
               onScored={handleScored}
               onSkip={handleSkip}
               onLive={setLive}
+              isLast={currentIndex === filteredWords.length - 1}
             />
           </section>
 

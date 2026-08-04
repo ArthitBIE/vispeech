@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import PracticeResultSidebar from "@/components/practice/PracticeResultSidebar";
 import type { WordResult } from "@/components/practice/PracticeResultSidebar";
 import { BarChart3, Play, RotateCcw, Star, AlertTriangle } from "lucide-react";
-import { LESSONS } from "@/lib/lesson";
+import { LESSONS, lessonHref } from "@/lib/lesson";
 
 // ── Types ──────────────────────────────────────────────
 
@@ -34,6 +34,7 @@ interface WordAccuracy {
 // ── LessonItem (what each card renders) ────────────────
 
 interface LessonItem {
+  group: string;
   title: string;
   chapter: string;
   description: string;
@@ -178,7 +179,7 @@ function LessonCard({
                 <Button
                   variant="ghost"
                   className="h-8 px-0 text-xs font-semibold text-muted-foreground hover:bg-transparent hover:text-foreground"
-                  onClick={() => router.push("/practice/session")}
+                  onClick={() => router.push(lessonHref(item.group))}
                 >
                   <RotateCcw className="mr-2 h-3 w-3" />
                   เริ่มการฝึกซ้ำ
@@ -187,7 +188,7 @@ function LessonCard({
             ) : (
               <Button
                 className="h-8 rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90"
-                onClick={() => router.push("/practice/session")}
+                onClick={() => router.push(lessonHref(item.group))}
               >
                 <Play className="mr-2 h-3 w-3 fill-primary-foreground" />
                 เริ่มการฝึก
@@ -225,8 +226,9 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarResults, setSidebarResults] = useState<WordResult[]>([]);
   const [sidebarAccuracy, setSidebarAccuracy] = useState(0);
+  const [sidebarGroup, setSidebarGroup] = useState("");
 
-  async function handleSummaryClick(lessonWords: Word[]) {
+  async function handleSummaryClick(lessonWords: Word[], group: string) {
     try {
       if (!isSupabaseConfigured || !supabase?.auth) return;
 
@@ -295,6 +297,7 @@ export default function DashboardPage() {
 
       setSidebarResults(mapped);
       setSidebarAccuracy(avgAcc);
+      setSidebarGroup(group);
       setSidebarOpen(true);
     } catch (err) {
       console.error("Summary fetch error:", err);
@@ -448,6 +451,7 @@ export default function DashboardPage() {
         : `0 / ${totalWords} คำ`;
 
       return {
+        group: lesson.id,
         title: lesson.name,
         chapter: "บทที่ 1",
         description,
@@ -512,7 +516,9 @@ export default function DashboardPage() {
           <LessonCard
             key={item.title}
             item={item}
-            onSummaryClick={() => handleSummaryClick(item.lessonWords)}
+            onSummaryClick={() =>
+              handleSummaryClick(item.lessonWords, item.group)
+            }
           />
         ))}
       </div>
@@ -523,7 +529,8 @@ export default function DashboardPage() {
         totalAccuracy={sidebarAccuracy}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        onRestart={() => router.push("/practice/session")}
+        onRestart={(group) => router.push(lessonHref(group))}
+        group={sidebarGroup}
       />
     </div>
   );

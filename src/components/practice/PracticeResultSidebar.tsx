@@ -35,7 +35,8 @@ export interface PracticeResultSidebarProps {
   totalAccuracy: number;
   open: boolean;
   onClose: () => void;
-  onRestart: () => void;
+  onRestart: (group: string) => void;
+  group: string;
 }
 
 export default function PracticeResultSidebar({
@@ -44,6 +45,7 @@ export default function PracticeResultSidebar({
   open,
   onClose,
   onRestart,
+  group,
 }: PracticeResultSidebarProps) {
   const [expandedIndices, setExpandedIndices] = useState<Set<number>>(
     new Set()
@@ -224,7 +226,7 @@ export default function PracticeResultSidebar({
           <Button
             variant="outline"
             className="h-9 w-full rounded-full border-neutral-300 bg-white text-sm font-medium text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600"
-            onClick={onRestart}
+            onClick={() => onRestart(group)}
           >
             <RotateCcw className="mr-2 h-4 w-4" />
             เริ่มการฝึกซ้ำ

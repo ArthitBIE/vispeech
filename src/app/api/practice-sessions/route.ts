@@ -1,6 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { dedupeByBestScore } from "@/lib/practice-summary";
+import { findLesson, type Lesson } from "@/lib/lesson";
+
+function filterByLesson(
+  results: {
+    word: string;
+    phonetic: string;
+    viseme_group: string;
+    visual_score: number;
+    audio_score: number;
+    total_score: number;
+    attempt_number: number;
+    created_at: string;
+  }[],
+  lesson: Lesson | undefined
+): typeof results {
+  if (!lesson) return results;
+  const lessonWords = new Set(lesson.items.map((item) => item.text));
+  return results.filter((r) => lessonWords.has(r.word));
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -45,6 +64,9 @@ export async function GET(req: NextRequest) {
     // Resolve the session to scope logs to: an explicit sessionId (must be
     // owned by this user) or, when omitted, the user's latest session.
     const sessionIdParam = req.nextUrl.searchParams.get("sessionId");
+    const groupParam = req.nextUrl.searchParams.get("group");
+
+    const lesson = groupParam ? findLesson(groupParam) : undefined;
 
     let session: {
       id: string;
@@ -142,7 +164,8 @@ export async function GET(req: NextRequest) {
         }))
       );
 
-      return NextResponse.json({ session, results });
+      const filteredResults = filterByLesson(results, lesson);
+      return NextResponse.json({ session, results: filteredResults });
     }
 
     if (logsError) {
@@ -166,7 +189,8 @@ export async function GET(req: NextRequest) {
       }))
     );
 
-    return NextResponse.json({ session, results });
+    const filteredResults = filterByLesson(results, lesson);
+    return NextResponse.json({ session, results: filteredResults });
   } catch (error) {
     console.error("Session fetch error:", error);
     return NextResponse.json(

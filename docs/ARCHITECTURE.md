@@ -1,4 +1,5 @@
 <!-- generated-by: gsd-doc-writer -->
+
 # Architecture
 
 ## System Overview
@@ -49,19 +50,10 @@ graph TD
 
 ## Data Flow
 
-### Single-Word Practice (`/practice/[word]`)
-
-1. User navigates to a practice word page; the word is loaded from Supabase via the `words` table.
-2. **Camera path**: User clicks "Start Camera" → `initFaceMesh()` from `src/lib/mediapipe` initializes MediaPipe Face Mesh on the live video stream → the `onResult` callback fires every frame with `{ landmarks, mouthOpen, hasFace }` → the `mouthOpen` percentage (0–100) is displayed and stored in React state.
-3. **Microphone path**: User clicks "Start Speech" → `createSpeechRecognizer("th-TH")` from `src/lib/viseme` creates a Web Speech API recognizer → interim and final transcripts flow through `onResult` callbacks into React state.
-4. **Submission**: User clicks "Submit" → a POST request to `/api/score` sends `{ wordId, transcript, mouthOpen }`.
-5. **Server-side scoring**: The `POST /api/score` route (in `src/app/api/score/route.ts`) loads the target word from Supabase, runs `DeterministicHeuristicStrategy.score()`, inserts a row into `practice_logs`, upserts `word_accuracy` (rolling best/average/attempts), and returns `{ visual_score, audio_score, total_score, feedback_th }`.
-6. **Result display**: The client renders the score card with three sub-scores and Thai feedback text. User can "Try Again" to reset.
-
 ### Multi-Word Session (`/practice/session`)
 
 1. On load, the page fetches all available words from `GET /api/words`, randomly picks an active set of 3 (`ACTIVE_SET_SIZE`), and presents the first word.
-2. The practice loop repeats per-word camera + microphone + submission steps (identical to single-word flow).
+2. The practice loop repeats per-word camera + microphone + submission steps.
 3. After each submission:
    - If the score passes the threshold (`PASS_THRESHOLD = 70`), the word is removed from the active set and replaced with a new unpracticed word from the pool.
    - Scores below threshold keep the word in the active set for retry.
@@ -75,17 +67,17 @@ graph TD
 
 ## Key Abstractions
 
-| Abstraction | Role | File |
-|---|---|---|
-| `FaceMeshInstance` (interface) | Controls face tracking lifecycle: `start()/stop()/isActive()/onResult()` | `src/lib/mediapipe/index.ts` |
-| `FaceMeshResult` (interface) | Shape of tracking output: `landmarks`, `mouthOpen`, `hasFace` | `src/lib/mediapipe/index.ts` |
-| `initFaceMesh()` | Factory function — creates MediaPipe Face Mesh or demo fallback instance | `src/lib/mediapipe/index.ts` |
-| `SpeechRecognizer` (interface) | Controls speech recognition lifecycle: `start()/stop()/isAvailable()/onResult()/onError()` | `src/lib/viseme/index.ts` |
-| `createSpeechRecognizer()` | Factory function — creates Web Speech API or demo fallback recognizer | `src/lib/viseme/index.ts` |
-| `ScoringStrategy` (interface) | Strategy pattern for scoring: `score(params) => ScoreResult` | `src/lib/scoring/index.ts` |
-| `DeterministicHeuristicStrategy` (class) | Default scoring implementation combining audio string similarity + visual mouth-open distance | `src/lib/scoring/index.ts` |
-| `ScoreParams` / `ScoreResult` (interfaces) | Input and output shapes for the scoring engine | `src/lib/scoring/index.ts` |
-| Supabase client helpers | `supabase` (browser client) and `createServerClient()` (server-side) | `src/lib/supabase/client.ts`, `src/lib/supabase/server.ts` |
+| Abstraction                                | Role                                                                                          | File                                                       |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `FaceMeshInstance` (interface)             | Controls face tracking lifecycle: `start()/stop()/isActive()/onResult()`                      | `src/lib/mediapipe/index.ts`                               |
+| `FaceMeshResult` (interface)               | Shape of tracking output: `landmarks`, `mouthOpen`, `hasFace`                                 | `src/lib/mediapipe/index.ts`                               |
+| `initFaceMesh()`                           | Factory function — creates MediaPipe Face Mesh or demo fallback instance                      | `src/lib/mediapipe/index.ts`                               |
+| `SpeechRecognizer` (interface)             | Controls speech recognition lifecycle: `start()/stop()/isAvailable()/onResult()/onError()`    | `src/lib/viseme/index.ts`                                  |
+| `createSpeechRecognizer()`                 | Factory function — creates Web Speech API or demo fallback recognizer                         | `src/lib/viseme/index.ts`                                  |
+| `ScoringStrategy` (interface)              | Strategy pattern for scoring: `score(params) => ScoreResult`                                  | `src/lib/scoring/index.ts`                                 |
+| `DeterministicHeuristicStrategy` (class)   | Default scoring implementation combining audio string similarity + visual mouth-open distance | `src/lib/scoring/index.ts`                                 |
+| `ScoreParams` / `ScoreResult` (interfaces) | Input and output shapes for the scoring engine                                                | `src/lib/scoring/index.ts`                                 |
+| Supabase client helpers                    | `supabase` (browser client) and `createServerClient()` (server-side)                          | `src/lib/supabase/client.ts`, `src/lib/supabase/server.ts` |
 
 ## Directory Structure Rationale
 
@@ -96,7 +88,7 @@ src/
 │   ├── auth/               # Login / sign-up page
 │   ├── dashboard/          # Main dashboard with stats and practice history
 │   ├── home/               # Landing page (redirects to /)
-│   └── practice/           # Practice pages ([word], session)
+│   └── practice/           # Practice pages (session)
 ├── lib/                    # Core business logic and integrations
 │   ├── mediapipe/          # MediaPipe Face Mesh wrapper with demo fallback
 │   ├── viseme/             # Web Speech API wrapper with demo fallback
@@ -117,6 +109,7 @@ src/
 The scoring engine (`src/lib/scoring/index.ts`) implements a strategy pattern via the `ScoringStrategy` interface, with one concrete implementation:
 
 **`DeterministicHeuristicStrategy`**
+
 - **Audio score** (60% weight): String similarity between the spoken transcript and the target word. Exact match → 95, partial overlap → 75, character-level overlap → up to 70, demo/unavailable input → 45 (base).
 - **Visual score** (40% weight): Distance between measured `mouthOpen` (0–100) and an ideal value inferred from the word's viseme category. Wide words (e.g., "รัก", "สาม") → ideal 70, rounded words (e.g., "ดู", "สอง") → ideal 50, closed words (e.g., "แม่", "หนึ่ง") → ideal 30, default → 55.
 - **Total**: `round(visualScore * 0.4 + audioScore * 0.6)`.
@@ -128,27 +121,26 @@ The scoring engine (`src/lib/scoring/index.ts`) implements a strategy pattern vi
 
 Four tables managed via Supabase PostgreSQL with Row-Level Security (RLS):
 
-| Table | Purpose | Key Columns |
-|---|---|---|
-| `words` | Thai practice word bank | `id UUID PK`, `word TEXT`, `viseme_group TEXT`, `difficulty INTEGER` |
-| `practice_logs` | Per-attempt scoring records | `id UUID PK`, `user_id UUID FK(auth.users)`, `word_id UUID FK(words)`, `visual_score`, `audio_score`, `total_score`, `attempt_number` |
-| `word_accuracy` | Per-user per-word aggregated stats | Composite PK `(user_id, word_id)`, `best_score`, `average_score`, `total_attempts`, `last_practiced_at` |
-| `practice_sessions` | Multi-word session summaries | `id UUID PK`, `user_id UUID FK(auth.users)`, `total_attempts`, `passed_count`, `best_score` |
+| Table               | Purpose                            | Key Columns                                                                                                                           |
+| ------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `words`             | Thai practice word bank            | `id UUID PK`, `word TEXT`, `viseme_group TEXT`, `difficulty INTEGER`                                                                  |
+| `practice_logs`     | Per-attempt scoring records        | `id UUID PK`, `user_id UUID FK(auth.users)`, `word_id UUID FK(words)`, `visual_score`, `audio_score`, `total_score`, `attempt_number` |
+| `word_accuracy`     | Per-user per-word aggregated stats | Composite PK `(user_id, word_id)`, `best_score`, `average_score`, `total_attempts`, `last_practiced_at`                               |
+| `practice_sessions` | Multi-word session summaries       | `id UUID PK`, `user_id UUID FK(auth.users)`, `total_attempts`, `passed_count`, `best_score`                                           |
 
 All tables have RLS policies scoped to `auth.uid()` — users can only read/write their own data. The `words` table is readable by all authenticated users.
 
 ## Routing Summary
 
-| Path | Type | Purpose |
-|---|---|---|
-| `/` | Page (client) | Session check → redirect to `/auth` or `/dashboard` |
-| `/auth` | Page (client) | Login / sign-up via Supabase Auth |
-| `/dashboard` | Page (client) | Word list, accuracy stats, practice history, session history |
-| `/practice/[word]` | Page (client) | Single-word practice with camera + mic + scoring |
-| `/practice/session` | Page (client) | Multi-word session with adaptive word rotation |
-| `POST /api/score` | API Route | Compute score and persist to Supabase |
-| `GET /api/words` | API Route | Return word list (auth-protected, filterable by `group` and `search`) |
-| `POST /api/practice-sessions` | API Route | Save session summary to Supabase |
+| Path                          | Type          | Purpose                                                               |
+| ----------------------------- | ------------- | --------------------------------------------------------------------- |
+| `/`                           | Page (client) | Session check → redirect to `/auth` or `/dashboard`                   |
+| `/auth`                       | Page (client) | Login / sign-up via Supabase Auth                                     |
+| `/dashboard`                  | Page (client) | Word list, accuracy stats, practice history, session history          |
+| `/practice/session`           | Page (client) | Multi-word session with adaptive word rotation                        |
+| `POST /api/score`             | API Route     | Compute score and persist to Supabase                                 |
+| `GET /api/words`              | API Route     | Return word list (auth-protected, filterable by `group` and `search`) |
+| `POST /api/practice-sessions` | API Route     | Save session summary to Supabase                                      |
 
 ## Fallback / Demo Mode
 
@@ -161,13 +153,13 @@ This design ensures the entire user flow from camera to mic to scoring is testab
 
 ## Technology Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript 5 (strict mode) |
-| Styling | Tailwind CSS 4 |
-| Face Tracking | MediaPipe Face Mesh (browser, CDN-loaded) |
-| Speech Recognition | Web Speech API (`th-TH`) |
-| Auth & Database | Supabase (PostgreSQL, RLS, Auth) |
-| Font | IBM Plex Sans Thai (variable) |
-| Testing | Vitest (unit), Playwright (E2E) |
+| Layer              | Technology                                |
+| ------------------ | ----------------------------------------- |
+| Framework          | Next.js 16 (App Router)                   |
+| Language           | TypeScript 5 (strict mode)                |
+| Styling            | Tailwind CSS 4                            |
+| Face Tracking      | MediaPipe Face Mesh (browser, CDN-loaded) |
+| Speech Recognition | Web Speech API (`th-TH`)                  |
+| Auth & Database    | Supabase (PostgreSQL, RLS, Auth)          |
+| Font               | IBM Plex Sans Thai (variable)             |
+| Testing            | Vitest (unit), Playwright (E2E)           |

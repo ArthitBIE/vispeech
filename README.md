@@ -83,10 +83,6 @@ Navigate to `/practice/session?group=<lesson>` (click a lesson card on the home/
 4. Speak the word; scoring combines mouth shape and transcript match.
 5. Complete all words to land on `/summary` — per-word scores, accuracy, and star rating.
 
-### Practice an individual word
-
-Navigate to `/practice/<word>` for a single-word practice with the same camera + speech flow.
-
 ### Demo fallback mode
 
 If your browser does not support the Web Speech API or MediaPipe fails to load (e.g., over HTTP), the app falls back to demo mode — mouth openness is simulated with random values and a placeholder transcript is returned. This lets you explore the UI without a camera or supported speech engine.
@@ -110,7 +106,6 @@ src/
 │   │   ├── signin/page.tsx              — Login (email + Google)
 │   │   └── signup/page.tsx              — Sign up
 │   ├── practice/
-│   │   ├── [word]/page.tsx              — Individual word practice
 │   │   └── session/page.tsx             — Lesson-based practice session
 │   ├── summary/page.tsx                 — Session results review
 │   ├── layout.tsx                       — Root layout (IBM Plex Sans Thai)

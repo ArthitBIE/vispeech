@@ -1,5 +1,3 @@
-export const LESSON_SIZE = 5;
-
 export interface LessonItem {
   text: string;
   phonetic?: string;
@@ -270,43 +268,17 @@ export function lessonHref(group: string): string {
   return `/practice/session?group=${encodeURIComponent(group)}`;
 }
 
-// Keep for backward compatibility (used by no other code after this change)
-export interface LessonWord {
-  id: string;
-  text: string;
-  visemeGroup: string;
-  difficulty: number;
-  phonetic: string | null;
-}
-
-export interface LessonChunk {
-  group: string;
-  name: string;
-  position: number;
-  words: LessonWord[];
-}
-
-export function chunkIntoLessons(words: LessonWord[]): LessonChunk[] {
-  const byGroup = new Map<string, LessonWord[]>();
-  for (const w of words) {
-    const arr = byGroup.get(w.visemeGroup) ?? [];
-    arr.push(w);
-    byGroup.set(w.visemeGroup, arr);
-  }
-  const out: LessonChunk[] = [];
-  for (const [group, items] of byGroup) {
-    for (let i = 0; i < items.length; i += LESSON_SIZE) {
-      const slice = items.slice(i, i + LESSON_SIZE);
-      out.push({
-        group,
-        name:
-          items.length > LESSON_SIZE
-            ? `${group} ${i / LESSON_SIZE + 1}`
-            : group,
-        position: i / LESSON_SIZE,
-        words: slice,
-      });
+export function deriveLesson(words: string[]): Lesson | undefined {
+  if (!words.length) return undefined;
+  const wordSet = new Set(words);
+  let bestLesson: Lesson | undefined;
+  let bestCount = 0;
+  for (const lesson of LESSONS) {
+    const count = lesson.items.filter((item) => wordSet.has(item.text)).length;
+    if (count > bestCount) {
+      bestCount = count;
+      bestLesson = lesson;
     }
   }
-  return out.sort((a, b) => a.group.localeCompare(b.group, "th"));
+  return bestLesson;
 }

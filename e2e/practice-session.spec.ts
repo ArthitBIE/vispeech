@@ -52,7 +52,9 @@ async function getCurrentWordVisemeGroup(page: Page) {
 
 async function completeSession(page: Page) {
   for (let i = 0; i < 60; i++) {
-    const skip = page.locator('button:has-text("ข้ามคำ")').first();
+    const skip = page
+      .locator('button:has-text("คำถัดไป"), button:has-text("จบบทเรียน")')
+      .first();
     if (await skip.isVisible().catch(() => false)) {
       await skip.click({ timeout: 3000 }).catch(() => {});
       // Give the async finish flow a moment to navigate.
@@ -183,7 +185,7 @@ test.describe("Practice session page", () => {
     // on the summary page (which reads practice_logs).
     for (let i = 0; i < 2; i++) {
       await page
-        .locator('button:has-text("ข้ามคำ")')
+        .locator('button:has-text("คำถัดไป"), button:has-text("จบบทเรียน")')
         .first()
         .click({ timeout: 3000 });
       await page.waitForTimeout(200);
