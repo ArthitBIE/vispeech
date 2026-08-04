@@ -1,11 +1,18 @@
 import { SCORING_WEIGHTS } from "@/lib/constants";
 
+function applyConfidence(score: number, confidence?: number): number {
+  if (confidence == null || confidence < 0) return score;
+  // Blend: high confidence keeps full score, low confidence penalizes
+  return Math.round(score * (0.5 + Math.min(1, confidence) * 0.5));
+}
+
 export interface ScoreParams {
   wordId: string;
   targetWord: string;
   transcript: string;
   mouthOpen: number;
   visemeGroup?: string;
+  confidence?: number; // ADD THIS — Web Speech API confidence [0,1]
 }
 
 export interface ScoreResult {
@@ -23,7 +30,8 @@ export class DeterministicHeuristicStrategy implements ScoringStrategy {
   score(params: ScoreParams): ScoreResult {
     const audioScore = this.computeAudioScore(
       params.targetWord,
-      params.transcript
+      params.transcript,
+      params.confidence
     );
     const visualScore = this.computeVisualScore(
       params.mouthOpen,
@@ -41,18 +49,41 @@ export class DeterministicHeuristicStrategy implements ScoringStrategy {
     return { visualScore, audioScore, totalScore, feedbackThai };
   }
 
-  private computeAudioScore(target: string, transcript: string): number {
-    if (!transcript || transcript === "demo-transcript") return 45;
+  private computeAudioScore(
+    target: string,
+    transcript: string,
+    confidence?: number
+  ): number {
+    const norm = target.trim(); // No toLowerCase — Thai has no case
+    const transcriptNorm = transcript.trim();
 
-    const norm = transcript.trim().toLowerCase();
-    const targetNorm = target.trim().toLowerCase();
+    if (!transcriptNorm || transcriptNorm === "demo-transcript") return 45;
 
-    if (norm === targetNorm) return 95;
-    if (norm.includes(targetNorm) || targetNorm.includes(norm)) return 75;
+    // Exact match
+    if (transcriptNorm === norm) return 95;
 
-    const overlap = norm.split("").filter((c) => targetNorm.includes(c)).length;
-    const maxLen = Math.max(norm.length, targetNorm.length);
-    return Math.min(70, Math.floor((overlap / maxLen) * 70));
+    // Thai prefix match — e.g. user says "รัก" when target is "รักสด" → decent
+    // partial. Must precede containment: a prefix is always contained, so
+    // checking containment first would make this branch unreachable.
+    if (norm.startsWith(transcriptNorm) || transcriptNorm.startsWith(norm)) {
+      const shorter = Math.min(transcriptNorm.length, norm.length);
+      const longer = Math.max(transcriptNorm.length, norm.length);
+      const prefixScore = Math.round(65 * (shorter / longer));
+      return applyConfidence(prefixScore, confidence);
+    }
+
+    // Containment (either direction)
+    if (transcriptNorm.includes(norm) || norm.includes(transcriptNorm))
+      return 75;
+
+    // Character overlap (fallback for Thai syllabic script)
+    const overlap = transcriptNorm
+      .split("")
+      .filter((c) => norm.includes(c)).length;
+    const maxLen = Math.max(transcriptNorm.length, norm.length);
+    const overlapScore = Math.min(60, Math.floor((overlap / maxLen) * 60));
+
+    return applyConfidence(overlapScore, confidence);
   }
 
   private computeVisualScore(mouthOpen: number, visemeGroup?: string): number {

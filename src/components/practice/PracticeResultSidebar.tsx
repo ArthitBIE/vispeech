@@ -78,10 +78,10 @@ export default function PracticeResultSidebar({
   return (
     <>
       {/* Blurred background overlay */}
-      <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm" />
+      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-md" />
 
       {/* Right sidebar */}
-      <aside className="fixed bottom-2 right-2 top-2 z-50 flex w-full max-w-sm flex-col rounded-3xl bg-white shadow-xl">
+      <aside className="fixed bottom-2 right-2 top-2 z-50 flex w-full max-w-lg flex-col rounded-3xl bg-white shadow-xl">
         <div className="flex-1 overflow-y-auto px-5 py-6">
           <header>
             <h1 className="text-xl font-bold">ผลการฝึกแต่ละคำ</h1>

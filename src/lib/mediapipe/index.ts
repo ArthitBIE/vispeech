@@ -163,17 +163,44 @@ export async function initFaceMesh(
 export function estimateMouthOpen(
   landmarks: { x: number; y: number; z: number }[]
 ): number {
+  // Need landmarks: 13 (upper lip center), 14 (lower lip center),
+  // 61 (left mouth corner), 291 (right mouth corner),
+  // 33 (nose bridge top), 263 (right cheek)
   const upperLip = landmarks[13];
   const lowerLip = landmarks[14];
-  if (!upperLip || !lowerLip) return 0;
+  const leftCorner = landmarks[61];
+  const rightCorner = landmarks[291];
+  const noseBridge = landmarks[33];
+  const rightCheek = landmarks[263];
 
-  const dy = Math.abs(lowerLip.y - upperLip.y);
-  const lipHeight =
-    landmarks[13] && landmarks[14]
-      ? Math.hypot(lowerLip.x - upperLip.x, lowerLip.y - upperLip.y)
-      : 0;
+  if (
+    !upperLip ||
+    !lowerLip ||
+    !leftCorner ||
+    !rightCorner ||
+    !noseBridge ||
+    !rightCheek
+  ) {
+    return 0;
+  }
 
-  return Math.min(100, Math.round(lipHeight * 500));
+  // Vertical gap between upper and lower lip
+  const verticalGap = Math.abs(lowerLip.y - upperLip.y);
+
+  // Horizontal mouth width
+  const mouthWidth = Math.abs(rightCorner.x - leftCorner.x);
+
+  // Face width for normalization (distance between nose bridge and right cheek)
+  const faceWidth = Math.abs(rightCheek.x - noseBridge.x);
+
+  // Guard against degenerate cases
+  if (faceWidth < 0.001 || mouthWidth < 0.001) return 0;
+
+  // MAR = vertical gap / mouth width, normalized by face size
+  const mar = verticalGap / mouthWidth;
+  const normalized = (mar / faceWidth) * 100;
+
+  return Math.min(100, Math.max(0, Math.round(normalized)));
 }
 
 export function createFallbackInstance(): FaceMeshInstance {
