@@ -1,46 +1,30 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { createServerClient } from "@/lib/supabase/server";
 import TitleLogo from "@/components/layout/TitleLogo";
-import { supabase } from "@/lib/supabase/client";
+import { AvatarMenu } from "./AvatarMenu";
+import { MobileNav } from "./MobileNav";
 
-export function Header({
+export async function Header({
   alignToContent = false,
 }: {
   alignToContent?: boolean;
 }) {
-  const router = useRouter();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarLetter, setAvatarLetter] = useState("ก");
+  let avatarLetter = "ก";
+  let avatarUrl: string | null = null;
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (cancelled) return;
-      const user = data.session?.user;
-      const email = user?.email;
-      if (email) setAvatarLetter(email[0].toUpperCase());
-      const url =
-        (user?.user_metadata?.avatar_url as string | undefined) ||
-        (user?.user_metadata?.picture as string | undefined);
-      if (url) setAvatarUrl(url);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const supabase = await createServerClient();
+  if (supabase) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user?.email) {
+      avatarLetter = user.email[0].toUpperCase();
+    }
+    avatarUrl =
+      (user?.user_metadata?.avatar_url as string | undefined) ||
+      (user?.user_metadata?.picture as string | undefined) ||
+      null;
+  }
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background">
@@ -53,36 +37,9 @@ export function Header({
           <TitleLogo />
         </Link>
 
-        <div className="flex items-center gap-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                <Avatar className="h-9 w-9">
-                  {avatarUrl && (
-                    <AvatarImage src={avatarUrl} alt="Profile avatar" />
-                  )}
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {avatarLetter}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>บัญชีของฉัน</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push("/settings")}>
-                โปรไฟล์
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  router.push("/auth/signin");
-                }}
-              >
-                ออกจากระบบ
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <MobileNav />
+          <AvatarMenu avatarUrl={avatarUrl} avatarLetter={avatarLetter} />
         </div>
       </div>
     </header>

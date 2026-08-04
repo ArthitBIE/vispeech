@@ -1,14 +1,8 @@
-"use client";
-
 import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Home, BarChart3, Settings, Flame } from "lucide-react";
+import { createServerClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Flame } from "lucide-react";
 import { STREAK_GOAL } from "@/lib/constants";
-import { supabase } from "@/lib/supabase/client";
 import {
   computeStreak,
   dateKey,
@@ -16,73 +10,39 @@ import {
   thaiFullDate,
   thaiWeekdayShort,
 } from "@/lib/streak";
+import { SidebarNav } from "./SidebarNav";
 
-const NAV = [
-  { href: "/home", label: "หน้าหลัก", icon: Home },
-  { href: "/dashboard", label: "ความก้าวหน้า", icon: BarChart3 },
-  { href: "/settings", label: "การตั้งค่า", icon: Settings },
-];
+export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  let streak = 0;
+  let startDate: Date | null = null;
+  let practicedKeys = new Set<string>();
 
-export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname();
-  const [streak, setStreak] = useState(0);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [practicedKeys, setPracticedKeys] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadStreak() {
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) return;
-        const { data: logs } = await supabase
-          .from("practice_logs")
-          .select("created_at");
-        if (cancelled || !logs) return;
+  const supabase = await createServerClient();
+  if (supabase) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { data: logs } = await supabase
+        .from("practice_logs")
+        .select("created_at");
+      if (logs) {
         const keys = logs.map((l: { created_at: string }) =>
           dateKey(new Date(l.created_at))
         );
-        const { streak: s, startDate: d } = computeStreak(keys);
-        setPracticedKeys(new Set(keys));
-        setStreak(s);
-        setStartDate(d);
-      } catch {
-        // keep defaults
+        const result = computeStreak(keys);
+        streak = result.streak;
+        startDate = result.startDate;
+        practicedKeys = new Set(keys);
       }
     }
-
-    loadStreak();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  }
 
   const days = lastNDays(5);
 
   return (
     <aside className="sticky top-14 flex h-[calc(100vh-3.5rem)] w-[266px] shrink-0 flex-col overflow-y-auto border-r border-border bg-background">
-      <nav className="flex flex-col gap-1 px-4 pt-6">
-        {NAV.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(href + "/");
-          return (
-            <Link
-              key={href}
-              href={href}
-              onClick={onNavigate}
-              className={cn(
-                "flex h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors",
-                active
-                  ? "bg-muted font-semibold text-foreground"
-                  : "font-medium text-foreground hover:bg-muted/50"
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+      <SidebarNav onNavigate={onNavigate} />
 
       <div className="mt-5 border-t border-border px-4 pt-5">
         <Card className="rounded-md border border-orange-300 shadow-none">

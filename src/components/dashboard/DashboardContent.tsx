@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import { PASS_THRESHOLD } from "@/lib/constants";
@@ -207,6 +207,77 @@ export default function DashboardContent({
   const [sidebarAccuracy, setSidebarAccuracy] = useState(0);
   const [sidebarGroup, setSidebarGroup] = useState("");
 
+  // Map raw practice_logs to WordResult[]
+  function mapResultsToWordResults(
+    results: {
+      word: string;
+      phonetic?: string;
+      total_score: number;
+      visual_score?: number;
+      audio_score?: number;
+    }[]
+  ): WordResult[] {
+    const seen = new Set<string>();
+    return results
+      .filter((r) => {
+        if (seen.has(r.word)) return false;
+        seen.add(r.word);
+        return true;
+      })
+      .map((r) => ({
+        word: r.word,
+        phonetic: r.phonetic,
+        score: r.total_score,
+        status:
+          r.total_score >= PASS_THRESHOLD ? "success" : ("warning" as const),
+        expanded: r.total_score < PASS_THRESHOLD,
+        lipFeedback:
+          (r.visual_score ?? 0) >= PASS_THRESHOLD
+            ? "ถูกต้อง"
+            : `ปากกว้างไม่พอ (${r.visual_score ?? 0}%)`,
+        soundFeedback:
+          (r.audio_score ?? 0) >= PASS_THRESHOLD
+            ? "ถูกต้อง"
+            : `ระดับเสียงไม่ถูกต้อง (${r.audio_score ?? 0}%)`,
+        recommendation:
+          r.total_score >= PASS_THRESHOLD
+            ? undefined
+            : "ลองอ้าปากกว้างขึ้นให้เห็นฟันบนเล็กน้อย",
+      }));
+  }
+
+  // Auto-open sidebar with latest practice results on mount
+  useEffect(() => {
+    async function loadLatest() {
+      try {
+        if (!isSupabaseConfigured || !supabase?.auth) return;
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const res = await fetch("/api/practice-sessions", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!res.ok) return;
+
+        const { results } = await res.json();
+        if (!results?.length) return;
+
+        const mapped = mapResultsToWordResults(results);
+        if (!mapped.length) return;
+
+        setSidebarResults(mapped);
+        setSidebarAccuracy(
+          Math.round(mapped.reduce((s, r) => s + r.score, 0) / mapped.length)
+        );
+        setSidebarGroup("");
+        setSidebarOpen(true);
+      } catch {}
+    }
+    loadLatest();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function handleSummaryClick(lessonWords: Word[], group: string) {
     try {
       if (!isSupabaseConfigured || !supabase?.auth) return;
@@ -219,56 +290,19 @@ export default function DashboardContent({
         return;
       }
 
-      const headers: Record<string, string> = {};
-      if (session?.access_token) {
-        headers["Authorization"] = `Bearer ${session.access_token}`;
-      }
-      const res = await fetch("/api/practice-sessions", { headers });
+      const res = await fetch("/api/practice-sessions", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       if (!res.ok) return;
 
       const { results } = await res.json();
 
-      // Filter to lesson words + dedupe by word (keep latest log per word)
       const lessonWordSet = new Set(lessonWords.map((w) => w.word));
-      const seen = new Set<string>();
-      const filtered = (results || []).filter((r: any) => {
-        if (!lessonWordSet.has(r.word)) return false;
-        if (seen.has(r.word)) return false;
-        seen.add(r.word);
-        return true;
-      });
-
-      const mapped: WordResult[] = filtered.map(
-        (r: {
-          word: string;
-          phonetic?: string;
-          total_score: number;
-          visual_score?: number;
-          audio_score?: number;
-          lipFeedback?: string;
-          soundFeedback?: string;
-          recommendation?: string;
-        }) => ({
-          word: r.word,
-          phonetic: r.phonetic,
-          score: r.total_score,
-          status: r.total_score >= PASS_THRESHOLD ? "success" : "warning",
-          expanded: r.total_score < PASS_THRESHOLD,
-          lipFeedback:
-            (r.visual_score ?? 0) >= PASS_THRESHOLD
-              ? "ถูกต้อง"
-              : `ปากกว้างไม่พอ (${r.visual_score ?? 0}%)`,
-          soundFeedback:
-            (r.audio_score ?? 0) >= PASS_THRESHOLD
-              ? "ถูกต้อง"
-              : `ระดับเสียงไม่ถูกต้อง (${r.audio_score ?? 0}%)`,
-          recommendation:
-            r.total_score >= PASS_THRESHOLD
-              ? undefined
-              : "ลองอ้าปากกว้างขึ้นให้เห็นฟันบนเล็กน้อย",
-        })
+      const filtered = (results || []).filter((r: any) =>
+        lessonWordSet.has(r.word)
       );
 
+      const mapped = mapResultsToWordResults(filtered);
       const avgAcc =
         mapped.length > 0
           ? Math.round(mapped.reduce((s, r) => s + r.score, 0) / mapped.length)
