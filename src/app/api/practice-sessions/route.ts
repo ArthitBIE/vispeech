@@ -61,8 +61,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Resolve the session to scope logs to: an explicit sessionId (must be
-    // owned by this user) or, when omitted, the user's latest session.
     const sessionIdParam = req.nextUrl.searchParams.get("sessionId");
     const groupParam = req.nextUrl.searchParams.get("group");
 
@@ -77,6 +75,7 @@ export async function GET(req: NextRequest) {
     } | null = null;
 
     if (sessionIdParam) {
+      // Explicit sessionId — fetch that session (must be owned by this user).
       const { data: owned, error: ownedError } = await supabase
         .from("practice_sessions")
         .select("id, total_attempts, passed_count, best_score, created_at")
@@ -92,26 +91,11 @@ export async function GET(req: NextRequest) {
         );
       }
       session = owned;
-    } else {
-      const { data: latest, error: sessionError } = await supabase
-        .from("practice_sessions")
-        .select("id, total_attempts, passed_count, best_score, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (sessionError) {
-        console.error("Session fetch error:", sessionError);
-        return NextResponse.json({ session: null, results: [] });
-      }
-      session = latest;
     }
 
-    // Scope logs to the resolved session when available; otherwise fall back to
-    // the user's recent 100 logs.
-    // ponytail: hosted DB may predate migration 003 (practice_logs.session_id),
-    // so keep the unscoped recent-logs fallback for that case.
+    // ponytail: fetch recent logs first, then optionally scope to session.
+    // This avoids the old bug where a session-less fetch scoped to a
+    // newly-created session returned empty results.
     let query = supabase
       .from("practice_logs")
       .select(
@@ -121,18 +105,18 @@ export async function GET(req: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (session) {
+    if (sessionIdParam && session) {
       query = query.eq("session_id", session.id);
     }
 
     const { data: logs, error: logsError } = await query;
 
-    // ponytail: hosted DB predates migration 003 (no practice_logs.session_id),
+    // ponytail: hosted DB may predate migration 003 (no practice_logs.session_id),
     // so a scoped query fails (42703: column does not exist; PGRST204: schema
     // cache); fall back to unscoped recent logs.
     if (
       logsError &&
-      session &&
+      sessionIdParam &&
       (logsError.code === "PGRST204" || logsError.code === "42703")
     ) {
       const { data: unscoped, error: unscopedError } = await supabase
