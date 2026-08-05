@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { createServerClient } from "@/lib/supabase/server";
 import TitleLogo from "@/components/layout/TitleLogo";
 import { AvatarMenu } from "./AvatarMenu";
 import { MobileNav } from "./MobileNav";
+import { getCurrentUser } from "@/lib/supabase/auth";
 
 export async function Header({
   alignToContent = false,
@@ -12,19 +12,16 @@ export async function Header({
   let avatarLetter = "ก";
   let avatarUrl: string | null = null;
 
-  const supabase = await createServerClient();
-  if (supabase) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user?.email) {
-      avatarLetter = user.email[0].toUpperCase();
-    }
-    avatarUrl =
-      (user?.user_metadata?.avatar_url as string | undefined) ||
-      (user?.user_metadata?.picture as string | undefined) ||
-      null;
+  // Uses React.cache — shared with Sidebar and page components
+  // in the same request, eliminating redundant getUser() calls.
+  const user = await getCurrentUser();
+  if (user?.email) {
+    avatarLetter = user.email[0].toUpperCase();
   }
+  avatarUrl =
+    (user?.user_metadata?.avatar_url as string | undefined) ||
+    (user?.user_metadata?.picture as string | undefined) ||
+    null;
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background">

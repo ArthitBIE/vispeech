@@ -1,6 +1,13 @@
+import { Suspense } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
+
+function SidebarFallback() {
+  return (
+    <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-[266px] shrink-0 animate-pulse bg-background lg:block" />
+  );
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -8,9 +15,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Header />
 
       <div className="flex flex-1">
-        <div className="hidden lg:block">
-          <Sidebar />
-        </div>
+        <Suspense fallback={<SidebarFallback />}>
+          <div className="hidden lg:block">
+            <Sidebar />
+          </div>
+        </Suspense>
 
         <MobileNav />
 

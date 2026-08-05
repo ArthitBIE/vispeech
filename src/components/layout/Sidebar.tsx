@@ -11,18 +11,19 @@ import {
   thaiWeekdayShort,
 } from "@/lib/streak";
 import { SidebarNav } from "./SidebarNav";
+import { getCurrentUser } from "@/lib/supabase/auth";
 
 export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   let streak = 0;
   let startDate: Date | null = null;
   let practicedKeys = new Set<string>();
 
-  const supabase = await createServerClient();
-  if (supabase) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
+  // Uses React.cache — shared with Header and page components
+  // in the same request, eliminating redundant getUser() calls.
+  const user = await getCurrentUser();
+  if (user) {
+    const supabase = await createServerClient();
+    if (supabase) {
       const { data: logs } = await supabase
         .from("practice_logs")
         .select("created_at");
