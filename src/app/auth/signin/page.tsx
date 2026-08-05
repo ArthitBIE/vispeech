@@ -53,7 +53,7 @@ export default function SignInPage() {
         password,
       });
       if (error) throw error;
-      router.push("/dashboard");
+      router.push("/home");
     } catch (err: any) {
       const messages: Record<string, string> = {
         "Invalid login credentials": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
