@@ -198,7 +198,7 @@ function SummaryContent() {
         <CardContent className="p-0">
           <section className="flex flex-col items-center px-6 pt-10 pb-9 text-center">
             <Image
-              src="/mascot/image 8.png"
+              src="/mascot/image 8.webp"
               alt="Completion mascot"
               width={176}
               height={176}
