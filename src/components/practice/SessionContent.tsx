@@ -7,12 +7,18 @@ import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import {
-  PracticeWord,
-  type WordRow,
-  type ScoreResult,
-  type LiveState,
+import dynamic from "next/dynamic";
+import type {
+  WordRow,
+  ScoreResult,
+  LiveState,
 } from "@/components/practice/PracticeWord";
+
+const PracticeWord = dynamic(
+  () =>
+    import("@/components/practice/PracticeWord").then((m) => m.PracticeWord),
+  { ssr: false }
+);
 import { Bot, ChevronLeft, Info, Smile, Volume2 } from "lucide-react";
 import { AppBreadcrumb } from "@/components/layout/AppBreadcrumb";
 import { LESSONS, findLesson } from "@/lib/lesson";
