@@ -78,13 +78,10 @@ export default function SignInPage() {
 
     setLoading(true);
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
-        ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-        : window.location.origin;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${baseUrl}/auth/callback?next=/home`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/home`,
         },
       });
       if (error) throw error;
