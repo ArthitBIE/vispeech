@@ -169,7 +169,7 @@ export default function SignUpPage() {
                     type="button"
                     aria-label="Toggle password visibility"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-muted-foreground"
+                    className="absolute inset-y-0 right-1 flex items-center p-2 text-muted-foreground hover:text-muted-foreground"
                   >
                     {showPassword ? (
                       <Eye className="h-4 w-4" />
@@ -203,7 +203,7 @@ export default function SignUpPage() {
                     type="button"
                     aria-label="Toggle confirm password visibility"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-muted-foreground"
+                    className="absolute inset-y-0 right-1 flex items-center p-2 text-muted-foreground hover:text-muted-foreground"
                   >
                     {showConfirmPassword ? (
                       <Eye className="h-4 w-4" />
