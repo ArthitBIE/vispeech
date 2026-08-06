@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { createServerClient } from "@/lib/supabase/server";
+import { getSupabaseUser } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Flame } from "lucide-react";
 import { STREAK_GOAL } from "@/lib/constants";
@@ -11,31 +11,31 @@ import {
   thaiWeekdayShort,
 } from "@/lib/streak";
 import { SidebarNav } from "./SidebarNav";
-import { getCurrentUser } from "@/lib/supabase/auth";
 
 export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   let streak = 0;
   let startDate: Date | null = null;
   let practicedKeys = new Set<string>();
 
-  // Uses React.cache — shared with Header and page components
-  // in the same request, eliminating redundant getUser() calls.
-  const user = await getCurrentUser();
-  if (user) {
-    const supabase = await createServerClient();
-    if (supabase) {
-      const { data: logs } = await supabase
-        .from("practice_logs")
-        .select("created_at");
-      if (logs) {
-        const keys = logs.map((l: { created_at: string }) =>
-          dateKey(new Date(l.created_at))
-        );
-        const result = computeStreak(keys);
-        streak = result.streak;
-        startDate = result.startDate;
-        practicedKeys = new Set(keys);
-      }
+  const { supabase, user } = await getSupabaseUser();
+  if (supabase && user) {
+    // Only fetch logs from the last 30 days — streak only needs recent data
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { data: logs } = await supabase
+      .from("practice_logs")
+      .select("created_at")
+      .eq("user_id", user.id)
+      .gte("created_at", thirtyDaysAgo.toISOString());
+    if (logs) {
+      const keys = logs.map((l: { created_at: string }) =>
+        dateKey(new Date(l.created_at))
+      );
+      const result = computeStreak(keys);
+      streak = result.streak;
+      startDate = result.startDate;
+      practicedKeys = new Set(keys);
     }
   }
 
