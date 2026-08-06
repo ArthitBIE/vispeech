@@ -202,6 +202,7 @@ function SummaryContent() {
               alt="Completion mascot"
               width={176}
               height={176}
+              priority
               className="mb-8 h-44 w-44 rounded-full"
             />
 

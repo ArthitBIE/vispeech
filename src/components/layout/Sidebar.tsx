@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { createServerClient } from "@/lib/supabase/server";
+import { getSupabaseUser } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Flame } from "lucide-react";
 import { STREAK_GOAL } from "@/lib/constants";
@@ -17,24 +17,19 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   let startDate: Date | null = null;
   let practicedKeys = new Set<string>();
 
-  const supabase = await createServerClient();
-  if (supabase) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const { data: logs } = await supabase
-        .from("practice_logs")
-        .select("created_at");
-      if (logs) {
-        const keys = logs.map((l: { created_at: string }) =>
-          dateKey(new Date(l.created_at))
-        );
-        const result = computeStreak(keys);
-        streak = result.streak;
-        startDate = result.startDate;
-        practicedKeys = new Set(keys);
-      }
+  const { supabase, user } = await getSupabaseUser();
+  if (supabase && user) {
+    const { data: logs } = await supabase
+      .from("practice_logs")
+      .select("created_at");
+    if (logs) {
+      const keys = logs.map((l: { created_at: string }) =>
+        dateKey(new Date(l.created_at))
+      );
+      const result = computeStreak(keys);
+      streak = result.streak;
+      startDate = result.startDate;
+      practicedKeys = new Set(keys);
     }
   }
 

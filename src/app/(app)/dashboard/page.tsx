@@ -1,4 +1,4 @@
-import { createServerClient } from "@/lib/supabase/server";
+import { getSupabaseUser } from "@/lib/supabase/server";
 import DashboardContent from "@/components/dashboard/DashboardContent";
 
 interface Word {
@@ -17,15 +17,8 @@ interface WordAccuracy {
 }
 
 async function fetchDashboardData() {
-  const supabase = await createServerClient();
-  if (!supabase) {
-    return { words: [], accuracy: {} };
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  const { supabase, user } = await getSupabaseUser();
+  if (!supabase || !user) {
     return { words: [], accuracy: {} };
   }
 

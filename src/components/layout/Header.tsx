@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createServerClient } from "@/lib/supabase/server";
+import { getSupabaseUser } from "@/lib/supabase/server";
 import TitleLogo from "@/components/layout/TitleLogo";
 import { AvatarMenu } from "./AvatarMenu";
 import { MobileNav } from "./MobileNav";
@@ -12,19 +12,14 @@ export async function Header({
   let avatarLetter = "ก";
   let avatarUrl: string | null = null;
 
-  const supabase = await createServerClient();
-  if (supabase) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user?.email) {
-      avatarLetter = user.email[0].toUpperCase();
-    }
-    avatarUrl =
-      (user?.user_metadata?.avatar_url as string | undefined) ||
-      (user?.user_metadata?.picture as string | undefined) ||
-      null;
+  const { user } = await getSupabaseUser();
+  if (user?.email) {
+    avatarLetter = user.email[0].toUpperCase();
   }
+  avatarUrl =
+    (user?.user_metadata?.avatar_url as string | undefined) ||
+    (user?.user_metadata?.picture as string | undefined) ||
+    null;
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background">

@@ -1,4 +1,4 @@
-import { createServerClient } from "@/lib/supabase/server";
+import { getSupabaseUser } from "@/lib/supabase/server";
 import { computeStreak, dateKey } from "@/lib/streak";
 import HomeContent from "@/components/home/HomeContent";
 
@@ -24,20 +24,8 @@ interface StreakInfo {
 }
 
 async function fetchHomeData() {
-  const supabase = await createServerClient();
-  if (!supabase) {
-    return {
-      words: [] as Word[],
-      accuracy: {} as Record<string, WordAccuracy>,
-      streakInfo: { streak: 0, startDate: null as Date | null },
-    };
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const { supabase, user } = await getSupabaseUser();
+  if (!supabase || !user) {
     return {
       words: [] as Word[],
       accuracy: {} as Record<string, WordAccuracy>,
