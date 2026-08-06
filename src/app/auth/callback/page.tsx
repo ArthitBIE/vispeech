@@ -34,7 +34,7 @@ function AuthCallbackContent() {
           data: { session: import("@supabase/supabase-js").Session | null };
         }) => {
           if (session) {
-            router.replace("/dashboard");
+            router.replace("/home");
           } else {
             router.replace(
               "/auth/signin?error=" +

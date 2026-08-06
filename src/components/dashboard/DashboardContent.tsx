@@ -59,9 +59,11 @@ interface DashboardContentProps {
 function LessonCard({
   item,
   onSummaryClick,
+  priority = false,
 }: {
   item: LessonItem;
   onSummaryClick: () => void;
+  priority?: boolean;
 }) {
   const router = useRouter();
 
@@ -187,6 +189,7 @@ function LessonCard({
           alt={item.completed ? "Lesson complete mascot" : "Lesson mascot"}
           width={112}
           height={112}
+          priority={priority}
           className={
             item.highlighted
               ? "absolute bottom-4 right-8 h-28 w-28 rounded-full"
@@ -422,10 +425,11 @@ export default function DashboardContent({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        {realLessonItems.map((item) => (
+        {realLessonItems.map((item, index) => (
           <LessonCard
             key={item.title}
             item={item}
+            priority={index === 0}
             onSummaryClick={() =>
               handleSummaryClick(item.lessonWords, item.group)
             }

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { getSupabaseUser } from "@/lib/supabase/server";
 import TitleLogo from "@/components/layout/TitleLogo";
 import { AvatarMenu } from "./AvatarMenu";
 import { MobileNav } from "./MobileNav";
+import { getCurrentUser } from "@/lib/supabase/auth";
 
 export async function Header({
   alignToContent = false,
@@ -12,7 +12,9 @@ export async function Header({
   let avatarLetter = "ก";
   let avatarUrl: string | null = null;
 
-  const { user } = await getSupabaseUser();
+  // Uses React.cache — shared with Sidebar and page components
+  // in the same request, eliminating redundant getUser() calls.
+  const user = await getCurrentUser();
   if (user?.email) {
     avatarLetter = user.email[0].toUpperCase();
   }

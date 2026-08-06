@@ -1,11 +1,8 @@
 import { redirect } from "next/navigation";
-import { getSupabaseUser } from "@/lib/supabase/server";
 
+// The proxy (src/proxy.ts) already gates unauthenticated users to
+// /auth/signin and redirects authenticated users away from /auth/*.
+// Only authenticated users reach this page, so no auth check needed.
 export default async function RootPage() {
-  const { user } = await getSupabaseUser();
-
-  if (user) {
-    redirect("/home");
-  }
-  redirect("/auth/signin");
+  redirect("/home");
 }
