@@ -45,7 +45,7 @@ export default function SessionContent({ words, group }: SessionContentProps) {
   });
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [totalAttempts, setTotalAttempts] = useState(0);
-  const mascotImage = "/mascot/image 2.png";
+  const mascotImage = "/mascot/image 2.webp";
   // ponytail: swap to "/mascot/image 4.png" when trigger decided
 
   useEffect(() => {

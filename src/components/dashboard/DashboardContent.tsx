@@ -185,7 +185,7 @@ function LessonCard({
 
         {/* Decorative illustration circle */}
         <Image
-          src={item.completed ? "/mascot/image 8.png" : "/mascot/image 9.png"}
+          src={item.completed ? "/mascot/image 8.webp" : "/mascot/image 9.webp"}
           alt={item.completed ? "Lesson complete mascot" : "Lesson mascot"}
           width={112}
           height={112}

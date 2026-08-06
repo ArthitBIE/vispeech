@@ -1,0 +1,32 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e4]:
+      - link "Vispeech home" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - img "Vispeech" [ref=e6]
+      - navigation [ref=e7]:
+        - link "Login" [ref=e8] [cursor=pointer]:
+          - /url: /auth/signup
+        - link "Get started" [ref=e9] [cursor=pointer]:
+          - /url: /auth/signup
+    - generic [ref=e11]:
+      - generic [ref=e13]:
+        - heading "Login to your account" [level=3] [ref=e14]
+        - paragraph [ref=e15]: Enter your email below to login to your account
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: Email
+          - textbox "Email" [ref=e20]:
+            - /placeholder: email@example.com
+        - generic [ref=e21]:
+          - generic [ref=e22]: Password
+          - generic [ref=e23]:
+            - textbox "Password" [ref=e24]
+            - button "Toggle password visibility" [ref=e25]
+        - generic [ref=e32]:
+          - button "Login" [ref=e33]
+          - button "Login with Google" [ref=e34]
+      - link "Don't have an account? Sign Up" [ref=e36] [cursor=pointer]:
+        - /url: /auth/signup
+    - generic [ref=e37]: © 2026 Vispeech. All rights reserved.
+  - alert [ref=e39]

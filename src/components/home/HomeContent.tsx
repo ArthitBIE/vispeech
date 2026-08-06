@@ -194,7 +194,7 @@ export default function HomeContent({
 
             <div className="hidden items-center justify-center md:flex">
               <Image
-                src="/mascot/image 6.png"
+                src="/mascot/image 6.webp"
                 alt="Banner mascot"
                 width={160}
                 height={160}
@@ -264,7 +264,7 @@ export default function HomeContent({
                   <CardContent className="p-4">
                     <div className="relative mb-4 h-32 overflow-hidden rounded-lg bg-muted">
                       <Image
-                        src="/mascot/image 7.png"
+                        src="/mascot/image 7.webp"
                         alt="Lesson mascot"
                         width={64}
                         height={64}

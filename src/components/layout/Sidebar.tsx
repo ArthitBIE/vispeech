@@ -105,7 +105,7 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             </div>
 
             <Image
-              src="/mascot/image 6.png"
+              src="/mascot/image 6.webp"
               alt="Streak mascot"
               width={56}
               height={56}
@@ -120,7 +120,7 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           แพ็คที่รออยู่นะ~ ฝึกกันเถอะ!
         </div>
         <Image
-          src="/mascot/image 5.png"
+          src="/mascot/image 5.webp"
           alt="Pakky mascot"
           width={128}
           height={128}
