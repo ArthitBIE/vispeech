@@ -20,30 +20,42 @@ function AuthCallbackContent() {
     }
 
     if (!supabase) {
-      router.replace("/auth/signin?error=Supabase not configured");
+      console.error("[AuthCallback] supabase client is null — env vars missing?");
+      router.replace("/auth/signin?error=Supabase+not+configured");
       return;
     }
 
     // getSession() triggers the OAuth code exchange and sets session cookies
     const next = searchParams.get("next") || "/home";
+    const code = searchParams.get("code");
+    console.log("[AuthCallback] code:", code ? "present" : "missing", "next:", next);
     supabase.auth
       .getSession()
       .then(
         ({
           data: { session },
+          error,
         }: {
           data: { session: import("@supabase/supabase-js").Session | null };
+          error: import("@supabase/supabase-js").AuthError | null;
         }) => {
+          console.log("[AuthCallback] session:", session ? "found" : "null", "error:", error?.message);
           if (session) {
             router.replace(next);
           } else {
             router.replace(
               "/auth/signin?error=" +
-                encodeURIComponent("Session not found after OAuth")
+                encodeURIComponent(error?.message || "Session not found after OAuth")
             );
           }
         }
-      );
+      )
+      .catch((err) => {
+        console.error("[AuthCallback] getSession failed:", err);
+        router.replace(
+          "/auth/signin?error=" + encodeURIComponent(String(err))
+        );
+      });
   }, [router, searchParams]);
 
   return (
