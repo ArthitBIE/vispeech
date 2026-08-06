@@ -6,8 +6,9 @@ import "./globals.css";
 
 const ibmPlexSansThai = IBM_Plex_Sans_Thai({
   variable: "--font-ibm-plex-sans-thai",
-  subsets: ["thai", "latin"],
-  weight: ["400", "500", "700"],
+  subsets: ["thai"],
+  weight: ["400", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
