@@ -1,6 +1,7 @@
 import { getSupabaseUser } from "@/lib/supabase/server";
 import { computeStreak, dateKey } from "@/lib/streak";
 import HomeContent from "@/components/home/HomeContent";
+import { StreakSection } from "@/components/home/StreakSection";
 
 interface Word {
   id: string;
@@ -90,6 +91,10 @@ export default async function HomePage() {
   const { words, accuracy, streakInfo } = await fetchHomeData();
 
   return (
-    <HomeContent words={words} accuracy={accuracy} streakInfo={streakInfo} />
+    <HomeContent
+      words={words}
+      accuracy={accuracy}
+      streakSection={<StreakSection streakInfo={streakInfo} />}
+    />
   );
 }

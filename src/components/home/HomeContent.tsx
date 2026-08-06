@@ -8,11 +8,8 @@ import {
   Play,
   Volume2,
   Home as HomeIcon,
-  Flame,
-  Sparkles,
 } from "lucide-react";
-import { STREAK_GOAL, PASS_THRESHOLD } from "@/lib/constants";
-import { thaiFullDate } from "@/lib/streak";
+import { PASS_THRESHOLD } from "@/lib/constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,23 +32,18 @@ interface WordAccuracy {
   last_practiced_at: string;
 }
 
-interface StreakInfo {
-  streak: number;
-  startDate: Date | null;
-}
-
 type Filter = "all" | "learning" | "done" | "not-started";
 
 interface HomeContentProps {
   words: Word[];
   accuracy: Record<string, WordAccuracy>;
-  streakInfo: StreakInfo;
+  streakSection: React.ReactNode;
 }
 
 export default function HomeContent({
   words,
   accuracy,
-  streakInfo,
+  streakSection,
 }: HomeContentProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -138,73 +130,7 @@ export default function HomeContent({
           </p>
         </div>
 
-        <section className="mb-7 max-w-3xl rounded-xl border border-orange-300 bg-card p-6">
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="md:col-span-2">
-              <div className="flex items-start gap-4">
-                <div className="text-orange-500">
-                  <Flame className="h-9 w-9 fill-orange-500" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">
-                    ต่อเนื่อง {streakInfo.streak} วันแล้ว!
-                  </h2>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {streakInfo.startDate
-                      ? `เริ่มตั้งแต่ ${thaiFullDate(streakInfo.startDate)}`
-                      : "ยังไม่ได้เริ่มฝึก"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-7 flex items-center gap-4">
-                <div className="h-5 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-orange-400"
-                    style={{
-                      width: `${Math.min(100, (streakInfo.streak / STREAK_GOAL) * 100)}%`,
-                    }}
-                  />
-                </div>
-                <p className="text-base font-medium text-foreground">
-                  {streakInfo.streak}/{STREAK_GOAL}
-                </p>
-              </div>
-
-              <div className="mt-7 flex flex-wrap items-center gap-3">
-                <Sparkles className="h-5 w-5 text-orange-500" />
-                <span className="font-semibold text-foreground">
-                  แนะนำการฝึกวันนี้
-                </span>
-                <span className="text-muted-foreground">·</span>
-                <span className="font-semibold text-foreground">
-                  {LESSONS[0].name} บทที่ 1
-                </span>
-                <Button
-                  asChild
-                  className="h-8 rounded-md bg-foreground px-4 text-xs font-bold text-background hover:bg-foreground/90"
-                >
-                  <Link href={lessonHref(LESSONS[0].id)}>
-                    <Play className="mr-2 h-3 w-3 fill-current" />
-                    เริ่มการฝึก
-                  </Link>
-                </Button>
-              </div>
-            </div>
-
-            <div className="hidden items-center justify-center md:flex">
-              <Image
-                src="/mascot/image 6.webp"
-                alt="Banner mascot"
-                width={160}
-                height={160}
-                className="h-40 w-40 rounded-xl"
-                priority
-                fetchPriority="high"
-              />
-            </div>
-          </div>
-        </section>
+        {streakSection}
 
         <section className="mb-6">
           <div className="flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-center md:justify-between">

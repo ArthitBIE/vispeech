@@ -209,7 +209,7 @@ export function createFallbackInstance(): FaceMeshInstance {
 
   return {
     start: async () => {
-      console.log("MediaPipe not available — running in demo mode");
+      // MediaPipe not available — running in demo mode
       await new Promise((r) => setTimeout(r, 500));
       intervalId = setInterval(() => {
         resultCallbacks.forEach((cb) =>
