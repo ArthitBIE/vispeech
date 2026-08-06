@@ -200,6 +200,7 @@ export default function HomeContent({
                 height={160}
                 className="h-40 w-40 rounded-xl"
                 priority
+                fetchPriority="high"
               />
             </div>
           </div>
