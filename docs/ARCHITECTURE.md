@@ -38,6 +38,10 @@ graph TD
     E --> Q[POST /api/practice-sessions]
     Q --> P
 
+    D --> R[POST /api/tts]
+    R --> S[Edge TTS WebSocket]
+    S --> R
+
     style A fill:#6366F1,color:#fff
     style F fill:#4F46E5,color:#fff
     style G fill:#4F46E5,color:#fff
@@ -138,9 +142,10 @@ All tables have RLS policies scoped to `auth.uid()` — users can only read/writ
 | `/auth`                       | Page (client) | Login / sign-up via Supabase Auth                                     |
 | `/dashboard`                  | Page (client) | Word list, accuracy stats, practice history, session history          |
 | `/practice/session`           | Page (client) | Multi-word session with adaptive word rotation                        |
-| `POST /api/score`             | API Route     | Compute score and persist to Supabase                                 |
+| `POST /api/score`             | API Route     | Compute score and persist to Supabase (parallelized DB queries)       |
 | `GET /api/words`              | API Route     | Return word list (auth-protected, filterable by `group` and `search`) |
 | `POST /api/practice-sessions` | API Route     | Save session summary to Supabase                                      |
+| `POST /api/tts`               | API Route     | Stream Thai TTS audio via Microsoft Edge TTS                          |
 
 ## Fallback / Demo Mode
 

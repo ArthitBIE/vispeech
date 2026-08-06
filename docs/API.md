@@ -23,6 +23,7 @@ The API middleware (`src/middleware.ts`) passes all `/api/*` routes through with
 | GET    | `/api/words`          | Yes           | Fetch practice words with optional filters |
 | POST   | `/api/score`          | No (see note) | Score a single pronunciation attempt     |
 | POST   | `/api/practice-sessions` | Yes        | Save a completed practice session summary |
+| POST   | `/api/tts`           | No            | Synthesize Thai TTS audio (streaming)   |
 
 > **Note on `/api/score` auth:** If a valid Bearer token is provided, the endpoint additionally logs the attempt to the user's history and updates accuracy records. Unauthenticated requests still return a score result but no data is persisted.
 
@@ -123,6 +124,8 @@ When a valid Bearer token is present, the endpoint:
 1. Creates a record in `practice_logs` with the per-word attempt number, visual/audio/total scores.
 2. Upserts a record in `word_accuracy` tracking best score, average score, total attempts, and last practiced timestamp.
 
+**Performance note:** DB queries are parallelized — word lookup and user auth run simultaneously, then attempt count, session ownership, and word accuracy are fetched in parallel, and finally the practice log insert and word accuracy upsert run concurrently.
+
 ---
 
 ### POST /api/practice-sessions
@@ -170,6 +173,40 @@ When `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are not set 
 | 400    | Missing required field `totalAttempts`    |
 | 401    | Missing or invalid Bearer token           |
 | 500    | Database insert error                     |
+
+---
+
+### POST /api/tts
+
+Synthesize Thai speech audio using Microsoft Edge TTS. Returns streaming MP3 audio — chunks are sent as they arrive from the synthesis service, reducing time-to-first-byte.
+
+**Request Body**
+
+```json
+{
+  "text": "สวัสดี"
+}
+```
+
+| Field  | Type   | Required | Description                              |
+| ------ | ------ | -------- | ---------------------------------------- |
+| `text` | string | Yes      | Thai text to synthesize (max 500 chars)  |
+
+**Response `200 OK`**
+
+Returns a streaming `audio/mpeg` response. The client can begin playback before the full audio is synthesized.
+
+```
+Content-Type: audio/mpeg
+Cache-Control: public, max-age=3600
+```
+
+**Error Responses**
+
+| Status | Condition                         |
+| ------ | --------------------------------- |
+| 400    | Invalid or empty text             |
+| 502    | Edge TTS synthesis failed         |
 
 ---
 
