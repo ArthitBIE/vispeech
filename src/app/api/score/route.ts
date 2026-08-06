@@ -44,15 +44,22 @@ export async function POST(req: NextRequest) {
       : null;
 
     // Synthetic ids (lesson item text not in DB) resolve to no row → null.
-    let word: { word: string; viseme_group: string } | null = null;
-    if (supabase && wordId) {
-      const { data } = await supabase
-        .from("words")
-        .select("word, viseme_group")
-        .eq("id", wordId)
-        .single();
-      word = data;
-    }
+    // Fetch word and user in parallel — they are independent.
+    const [wordResult, userResult] = await Promise.all([
+      supabase && wordId
+        ? supabase
+            .from("words")
+            .select("word, viseme_group")
+            .eq("id", wordId)
+            .single()
+        : Promise.resolve({ data: null }),
+      supabase
+        ? supabase.auth.getUser()
+        : Promise.resolve({ data: { user: null } }),
+    ]);
+
+    const word = wordResult.data;
+    const user = userResult.data.user;
 
     const targetWord = word?.word || targetText || "";
     const result = defaultScoringStrategy.score({
@@ -66,96 +73,93 @@ export async function POST(req: NextRequest) {
 
     // Persist only for real DB words; synthetic lesson items are scored
     // without touching practice_logs / word_accuracy.
-    if (supabase && word) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: logs } = await supabase
+    if (supabase && word && user) {
+      // These three reads are independent — run in parallel.
+      const [logsResult, sessionResult, existingResult] = await Promise.all([
+        supabase
           .from("practice_logs")
           .select("attempt_number")
           .eq("word_id", wordId)
           .eq("user_id", user.id)
           .order("attempt_number", { ascending: false })
-          .limit(1);
-
-        const attemptNumber = ((logs && logs[0]?.attempt_number) || 0) + 1;
-
-        // Verify ownership before linking a log to a session.
-        let sessionOwned = false;
-        if (sessionId) {
-          const { data: session } = await supabase
-            .from("practice_sessions")
-            .select("id")
-            .eq("id", sessionId)
-            .eq("user_id", user.id)
-            .maybeSingle();
-          sessionOwned = !!session;
-        }
-
-        const { error: insertError } = await supabase
-          .from("practice_logs")
-          .insert({
-            user_id: user.id,
-            word_id: wordId,
-            visual_score: result.visualScore,
-            audio_score: result.audioScore,
-            total_score: result.totalScore,
-            attempt_number: attemptNumber,
-            // ponytail: session_id included only when the caller's sessionId
-            // belongs to this user; otherwise dropped to keep inserts working.
-            ...(sessionOwned ? { session_id: sessionId } : {}),
-          });
-
-        // ponytail: hosted DB predates migration 003 (no practice_logs.session_id),
-        // so session-linked insert fails with PGRST204; retry without session_id.
-        if (insertError && sessionOwned && insertError.code === "PGRST204") {
-          await supabase.from("practice_logs").insert({
-            user_id: user.id,
-            word_id: wordId,
-            visual_score: result.visualScore,
-            audio_score: result.audioScore,
-            total_score: result.totalScore,
-            attempt_number: attemptNumber,
-          });
-        }
-
-        const { data: existing } = await supabase
+          .limit(1),
+        sessionId
+          ? supabase
+              .from("practice_sessions")
+              .select("id")
+              .eq("id", sessionId)
+              .eq("user_id", user.id)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+        supabase
           .from("word_accuracy")
           .select("*")
           .eq("user_id", user.id)
           .eq("word_id", wordId)
-          .maybeSingle();
+          .maybeSingle(),
+      ]);
 
-        if (existing) {
-          const newAttempts = existing.total_attempts + 1;
-          const newAvg = Math.round(
-            (existing.average_score * existing.total_attempts +
-              result.totalScore) /
-              newAttempts
-          );
-          await supabase
-            .from("word_accuracy")
-            .update({
-              best_score: Math.max(existing.best_score, result.totalScore),
-              average_score: newAvg,
-              total_attempts: newAttempts,
+      const attemptNumber =
+        ((logsResult.data && logsResult.data[0]?.attempt_number) || 0) + 1;
+      const sessionOwned = !!sessionResult.data;
+      const existing = existingResult.data;
+
+      // Insert practice_log and upsert word_accuracy in parallel.
+      await Promise.all([
+        (async () => {
+          const { error: insertError } = await supabase
+            .from("practice_logs")
+            .insert({
+              user_id: user.id,
+              word_id: wordId,
+              visual_score: result.visualScore,
+              audio_score: result.audioScore,
+              total_score: result.totalScore,
+              attempt_number: attemptNumber,
+              ...(sessionOwned ? { session_id: sessionId } : {}),
+            });
+
+          // ponytail: hosted DB predates migration 003 (no practice_logs.session_id),
+          // so session-linked insert fails with PGRST204; retry without session_id.
+          if (insertError && sessionOwned && insertError.code === "PGRST204") {
+            await supabase.from("practice_logs").insert({
+              user_id: user.id,
+              word_id: wordId,
+              visual_score: result.visualScore,
+              audio_score: result.audioScore,
+              total_score: result.totalScore,
+              attempt_number: attemptNumber,
+            });
+          }
+        })(),
+        existing
+          ? (async () => {
+              const newAttempts = existing.total_attempts + 1;
+              const newAvg = Math.round(
+                (existing.average_score * existing.total_attempts +
+                  result.totalScore) /
+                  newAttempts
+              );
+              await supabase
+                .from("word_accuracy")
+                .update({
+                  best_score: Math.max(existing.best_score, result.totalScore),
+                  average_score: newAvg,
+                  total_attempts: newAttempts,
+                  last_practiced_at: new Date().toISOString(),
+                })
+                .eq("user_id", user.id)
+                .eq("word_id", wordId);
+            })()
+          : supabase.from("word_accuracy").insert({
+              user_id: user.id,
+              word_id: wordId,
+              best_score: result.totalScore,
+              average_score: result.totalScore,
+              total_attempts: 1,
               last_practiced_at: new Date().toISOString(),
-            })
-            .eq("user_id", user.id)
-            .eq("word_id", wordId);
-        } else {
-          await supabase.from("word_accuracy").insert({
-            user_id: user.id,
-            word_id: wordId,
-            best_score: result.totalScore,
-            average_score: result.totalScore,
-            total_attempts: 1,
-            last_practiced_at: new Date().toISOString(),
-          });
-        }
-      }
+            }),
+      ]);
     }
 
     return NextResponse.json({
