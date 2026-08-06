@@ -25,6 +25,7 @@ function AuthCallbackContent() {
     }
 
     // getSession() triggers the OAuth code exchange and sets session cookies
+    const next = searchParams.get("next") || "/home";
     supabase.auth
       .getSession()
       .then(
@@ -34,7 +35,7 @@ function AuthCallbackContent() {
           data: { session: import("@supabase/supabase-js").Session | null };
         }) => {
           if (session) {
-            router.replace("/home");
+            router.replace(next);
           } else {
             router.replace(
               "/auth/signin?error=" +
