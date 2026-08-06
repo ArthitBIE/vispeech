@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
       sessionId,
       targetText,
       visemeGroup,
+      confidence,
     } = await req.json();
 
     if (!wordId && !targetText) {
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
       transcript: transcript || "",
       mouthOpen: mouthOpen || 0,
       visemeGroup: word?.viseme_group || visemeGroup || undefined,
+      confidence: confidence != null ? Number(confidence) : undefined,
     });
 
     // Persist only for real DB words; synthetic lesson items are scored

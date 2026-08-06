@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -8,10 +9,14 @@ import { PASS_THRESHOLD } from "@/lib/constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import PracticeResultSidebar from "@/components/practice/PracticeResultSidebar";
 import type { WordResult } from "@/components/practice/PracticeResultSidebar";
 import { BarChart3, Play, RotateCcw, Star, AlertTriangle } from "lucide-react";
 import { LESSONS, lessonHref } from "@/lib/lesson";
+
+const PracticeResultSidebar = dynamic(
+  () => import("@/components/practice/PracticeResultSidebar"),
+  { ssr: false }
+);
 
 // ── Types ──────────────────────────────────────────────
 

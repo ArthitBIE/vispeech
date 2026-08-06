@@ -84,6 +84,36 @@ describe("DeterministicHeuristicStrategy", () => {
       });
       expect(result.audioScore).toBe(0);
     });
+
+    it("returns ~65 for Thai prefix match", () => {
+      const result = strategy.score({
+        wordId: "1",
+        targetWord: "รักสด",
+        transcript: "รัก",
+        mouthOpen: 50,
+      });
+      // Prefix match with 2/4 chars → ~65 * (2/4) = ~32
+      expect(result.audioScore).toBeGreaterThan(0);
+      expect(result.audioScore).toBeLessThan(75);
+    });
+
+    it("applies confidence multiplier to audio score", () => {
+      const high = strategy.score({
+        wordId: "1",
+        targetWord: "สวัสดี",
+        transcript: "สวัส", // prefix match
+        mouthOpen: 50,
+        confidence: 1.0,
+      });
+      const low = strategy.score({
+        wordId: "1",
+        targetWord: "สวัสดี",
+        transcript: "สวัส", // same prefix match
+        mouthOpen: 50,
+        confidence: 0.3,
+      });
+      expect(high.audioScore).toBeGreaterThan(low.audioScore);
+    });
   });
 
   describe("computeVisualScore (via score().visualScore)", () => {

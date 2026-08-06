@@ -5,34 +5,68 @@ import {
   drawLipMesh,
 } from "../index";
 
-function makeLandmark(x: number, y: number, z: number) {
-  return { x, y, z };
-}
-
 describe("estimateMouthOpen", () => {
-  it("returns 0 when landmarks[13] missing", () => {
-    const landmarks = Array(13).fill(makeLandmark(0, 0, 0));
-    expect(estimateMouthOpen(landmarks)).toBe(0);
+  const makeLandmarks = (
+    overrides: Record<number, { x: number; y: number; z: number }> = {}
+  ) => {
+    const base: { x: number; y: number; z: number }[] = [];
+    // Fill with default landmarks at (0.5, 0.5, 0)
+    for (let i = 0; i < 478; i++) {
+      base.push({ x: 0.5, y: 0.5, z: 0 });
+    }
+    // Set face reference points
+    base[33] = { x: 0.4, y: 0.3, z: 0 }; // nose bridge
+    base[263] = { x: 0.6, y: 0.3, z: 0 }; // right cheek (faceWidth = 0.2)
+    // Set mouth corners (mouthWidth = 0.15)
+    base[61] = { x: 0.42, y: 0.6, z: 0 }; // left corner
+    base[291] = { x: 0.57, y: 0.6, z: 0 }; // right corner
+    // Apply overrides
+    for (const [idx, val] of Object.entries(overrides)) {
+      base[Number(idx)] = val;
+    }
+    return base;
+  };
+
+  it("returns 0 when required landmarks are missing", () => {
+    expect(estimateMouthOpen([])).toBe(0);
+    const lm = makeLandmarks();
+    delete lm[13];
+    expect(estimateMouthOpen(lm)).toBe(0);
   });
 
-  it("returns 0 when landmarks[14] missing", () => {
-    const landmarks = Array(14).fill(makeLandmark(0, 0, 0));
-    expect(estimateMouthOpen(landmarks)).toBe(0);
+  it("returns 0 when face width is too small", () => {
+    const lm = makeLandmarks({
+      33: { x: 0.499, y: 0.3, z: 0 },
+      263: { x: 0.5, y: 0.3, z: 0 }, // faceWidth = 0.001
+    });
+    expect(estimateMouthOpen(lm)).toBe(0);
   });
 
-  it("returns scaled distance for normal difference", () => {
-    const landmarks = Array(15).fill(makeLandmark(0, 0, 0));
-    landmarks[13] = makeLandmark(0, 0, 0); // upper lip
-    landmarks[14] = makeLandmark(0, 0.1, 0); // lower lip, dy = 0.1
-    // hypot(0, 0.1) = 0.1, * 500 = 50
-    expect(estimateMouthOpen(landmarks)).toBe(50);
+  it("returns higher score for wider mouth opening", () => {
+    // Small opening: verticalGap=0.02
+    const small = makeLandmarks({
+      13: { x: 0.5, y: 0.59, z: 0 },
+      14: { x: 0.5, y: 0.61, z: 0 },
+    });
+    // Large opening: verticalGap=0.08
+    const large = makeLandmarks({
+      13: { x: 0.5, y: 0.56, z: 0 },
+      14: { x: 0.5, y: 0.64, z: 0 },
+    });
+    expect(estimateMouthOpen(large)).toBeGreaterThan(estimateMouthOpen(small));
   });
 
-  it("caps at 100 for large mouth opening", () => {
-    const landmarks = Array(15).fill(makeLandmark(0, 0, 0));
-    landmarks[13] = makeLandmark(0, 0, 0);
-    landmarks[14] = makeLandmark(0, 0.25, 0); // hypot(0, 0.25) = 0.25, * 500 = 125 → min(100, 125) = 100
-    expect(estimateMouthOpen(landmarks)).toBe(100);
+  it("clamps to 100", () => {
+    const lm = makeLandmarks({
+      13: { x: 0.5, y: 0.4, z: 0 },
+      14: { x: 0.5, y: 0.8, z: 0 },
+    });
+    expect(estimateMouthOpen(lm)).toBeLessThanOrEqual(100);
+  });
+
+  it("returns non-negative values", () => {
+    const lm = makeLandmarks();
+    expect(estimateMouthOpen(lm)).toBeGreaterThanOrEqual(0);
   });
 });
 

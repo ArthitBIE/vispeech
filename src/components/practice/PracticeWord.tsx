@@ -9,8 +9,7 @@ import type { SpeechRecognizer } from "@/lib/viseme";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LipExample } from "@/components/practice/LipExample";
-import { speakThai, stopSpeaking } from "@/lib/tts";
-import { Camera, ChevronRight, Play, Smile, Volume2 } from "lucide-react";
+import { Camera, ChevronRight, Play, Smile } from "lucide-react";
 
 export interface WordRow {
   id: string;
@@ -59,7 +58,8 @@ export function PracticeWord({
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const rafRef = useRef<number | null>(null);
-  const fallbackAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const listeningStartedRef = useRef(false);
   const recognizerRef = useRef<SpeechRecognizer | null>(null);
   // Latest handleStopCamera, so the unmount cleanup stops the current
   // face-mesh instance (state would be stale inside the [] effect).
@@ -73,13 +73,16 @@ export function PracticeWord({
   const [recognizer, setRecognizer] = useState<SpeechRecognizer | null>(null);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [confidence, setConfidence] = useState(0.8); // default for fallback/demo
   const [speechError, setSpeechError] = useState<string | null>(null);
 
   const [practicing, setPracticing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [, setError] = useState<string | null>(null);
-  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioPlayed, setAudioPlayed] = useState(false);
 
   useEffect(() => {
     mouthOpenRef.current = mouthOpen;
@@ -99,12 +102,8 @@ export function PracticeWord({
       demoCameraCleanupRef.current?.();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       audioCtxRef.current?.close();
-      stopSpeaking();
-      fallbackAudioRef.current?.pause();
-      if (fallbackAudioRef.current?.src)
-        URL.revokeObjectURL(fallbackAudioRef.current.src);
-      // Stop the active recognizer and camera (face-mesh + stream tracks)
-      // so nothing keeps capturing after unmount/word change.
+      audioRef.current?.pause();
+      if (audioRef.current?.src) URL.revokeObjectURL(audioRef.current.src);
       recognizerRef.current?.stop();
       stopCameraRef.current();
     };
@@ -114,51 +113,49 @@ export function PracticeWord({
     onLive?.({ mouthOpen, audioLevel, transcript });
   }, [mouthOpen, audioLevel, transcript, onLive]);
 
+  // Fetch TTS audio when word changes
   useEffect(() => {
-    // Reset playback meter when the word changes (component is not remounted)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAudioProgress(0);
-  }, [word.id]);
+    setAudioSrc(null);
+    setIsPlaying(false);
+    setAudioPlayed(false);
+    listeningStartedRef.current = false;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: word.word }),
+        });
+        if (!res.ok || cancelled) return;
+        const blob = await res.blob();
+        if (!cancelled) setAudioSrc(URL.createObjectURL(blob));
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [word.id, word.word]);
 
-  async function playFallback(text: string) {
-    try {
-      const res = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) return;
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      fallbackAudioRef.current?.pause();
-      if (fallbackAudioRef.current?.src)
-        URL.revokeObjectURL(fallbackAudioRef.current.src);
-      fallbackAudioRef.current = audio;
-      audio.addEventListener("timeupdate", () => {
-        if (audio.duration) {
-          setAudioProgress(Math.min(1, audio.currentTime / audio.duration));
-        }
-      });
-      audio.addEventListener("ended", () => {
-        setAudioProgress(0);
-        URL.revokeObjectURL(url);
-        if (fallbackAudioRef.current === audio) fallbackAudioRef.current = null;
-      });
-      await audio.play();
-    } catch {
-      // ignore: nothing else to fall back to
+  // Start STT after audio finishes playing during practice
+  useEffect(() => {
+    if (
+      practicing &&
+      audioPlayed &&
+      !listening &&
+      !listeningStartedRef.current
+    ) {
+      listeningStartedRef.current = true;
+      handleStartListening();
     }
-  }
+  }, [practicing, audioPlayed, listening]);
 
   function playWordSound() {
-    speakThai(word.word, {
-      onProgress: setAudioProgress,
-      onEnd: () => setAudioProgress(0),
-      onError: () => {
-        playFallback(word.word);
-      },
-    });
+    if (!audioRef.current || !audioSrc) return;
+    audioRef.current.currentTime = 0;
+    audioRef.current.play().catch(() => {});
   }
 
   async function handleStartCamera() {
@@ -171,8 +168,18 @@ export function PracticeWord({
     demoCameraCleanupRef.current?.();
 
     const instance = await initFaceMesh(videoRef.current, canvasRef.current);
+    let rafPending = false;
     instance.onResult((res) => {
-      setMouthOpen(res.mouthOpen);
+      // Throttle state updates to one per animation frame — prevents
+      // "Maximum update depth exceeded" from ~30fps camera callbacks.
+      mouthOpenRef.current = res.mouthOpen;
+      if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(() => {
+          setMouthOpen(mouthOpenRef.current);
+          rafPending = false;
+        });
+      }
     });
     // Arm the demo fallback immediately — if no face data within 5s (e.g.
     // headless/no camera/models still loading), feed a simulated value so
@@ -260,6 +267,7 @@ export function PracticeWord({
     const sr = createSpeechRecognizer("th-TH");
     sr.onResult((res) => {
       setTranscript(res.transcript);
+      setConfidence(res.confidence ?? 0.8);
     });
     sr.onError((msg) => {
       setSpeechError(msg);
@@ -282,8 +290,10 @@ export function PracticeWord({
 
   function handleStartPractice() {
     handleStartCamera();
-    handleStartListening();
     setPracticing(true);
+    setAudioPlayed(false);
+    listeningStartedRef.current = false;
+    // ponytail: no autoplay — user must press play on the audio element.
     // Safety fallback: if camera/face-mesh never produces a value (headless,
     // no device, slow model load), ensure a non-zero mouth-open so the user
     // can still submit.
@@ -314,6 +324,7 @@ export function PracticeWord({
         sessionId,
         targetText: word.word,
         visemeGroup: word.viseme_group,
+        confidence,
       };
 
       const res = await fetch("/api/score", {
@@ -341,7 +352,13 @@ export function PracticeWord({
     setTranscript("");
     setMouthOpen(0);
     setPracticing(false);
-    playWordSound();
+    setAudioPlayed(false);
+    listeningStartedRef.current = false;
+    // Replay audio — STT starts after audio ends via useEffect
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
+    }
     handleStopCamera();
     handleStopListening();
   }
@@ -363,23 +380,21 @@ export function PracticeWord({
             Good / {word.word}
           </p>
 
-          <div className="mx-auto mt-4 flex w-44 items-center gap-2">
-            <button
-              type="button"
-              onClick={playWordSound}
-              aria-label="ฟังเสียงคำ"
-              className="text-black hover:text-primary"
-            >
-              <Play className="h-3 w-3 fill-black" />
-            </button>
-            <div className="h-1 flex-1 rounded-full bg-neutral-200">
-              <div
-                className="h-1 rounded-full bg-black"
-                style={{ width: `${audioProgress * 100}%` }}
-              />
-            </div>
-            <Volume2 className="h-3 w-3 text-black" />
-          </div>
+          {audioSrc && (
+            <audio
+              ref={audioRef}
+              controls
+              muted
+              src={audioSrc}
+              className="mx-auto mt-4 h-9 w-56"
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onEnded={() => {
+                setIsPlaying(false);
+                setAudioPlayed(true);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 

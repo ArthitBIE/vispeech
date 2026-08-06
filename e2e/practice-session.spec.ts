@@ -272,90 +272,26 @@ test.describe("Practice session page", () => {
     expect(dotCount).toBe(wordCount);
   });
 
-  test("audio button exists and click does not throw", async ({ page }) => {
+  test("audio player exists with controls", async ({ page }) => {
     await startPracticeSession(page);
 
-    // Play button should exist (replaced the decorative Volume2-only bar)
-    const playBtn = page.locator('button[aria-label="ฟังเสียงคำ"]').first();
-    await expect(playBtn).toBeVisible({ timeout: 3000 });
-
-    // Click should not throw (no audible verification in CI)
-    await playBtn.click({ timeout: 3000 });
-
-    // Also test the length meter bar appears
-    const progressBar = page
-      .locator("div.h-1.flex-1.rounded-full.bg-neutral-200")
-      .first();
-    await expect(progressBar).toBeAttached({ timeout: 2000 });
+    // Native <audio controls> replaces the old custom play button
+    const audio = page.locator("audio[controls]").first();
+    await expect(audio).toBeAttached({ timeout: 5000 });
   });
 
-  test("no auto-play on start; sound only on play button click", async ({
+  test("no auto-play on start; audio only plays on user interaction", async ({
     page,
   }) => {
-    // Stub speechSynthesis so speak() calls are countable and a Thai voice
-    // exists (avoids the no-voice fallback path to /api/tts).
-    await page.addInitScript(() => {
-      const calls = { speak: 0 };
-      Object.defineProperty(window, "__speakCalls", { value: calls });
-      Object.defineProperty(window, "speechSynthesis", {
-        value: {
-          speak: () => {
-            calls.speak++;
-          },
-          cancel: () => {},
-          pause: () => {},
-          resume: () => {},
-          speaking: false,
-          pending: false,
-          paused: false,
-          getVoices: () => [{ lang: "th-TH", name: "Test Thai Voice" }],
-        },
-        configurable: true,
-      });
-      // speakThai() constructs a SpeechSynthesisUtterance — without this
-      // constructor the page throws ReferenceError before speak() is called.
-      Object.defineProperty(window, "SpeechSynthesisUtterance", {
-        value: class SpeechSynthesisUtterance {
-          text: string;
-          onstart: unknown = null;
-          onend: unknown = null;
-          onerror: unknown = null;
-          onboundary: unknown = null;
-          voice: unknown = null;
-          lang = "";
-          rate = 1;
-          constructor(text: string) {
-            this.text = text;
-          }
-        },
-        configurable: true,
-      });
-    });
-    // Reload so the stub applies.
-    await page.goto("/practice/session");
-    await expect(page.locator("h1").first()).toBeVisible({ timeout: 15000 });
+    await startPracticeSession(page);
 
-    const speakCount = () =>
-      page.evaluate(
-        () =>
-          (window as unknown as { __speakCalls: { speak: number } })
-            .__speakCalls.speak
-      );
-
-    // Start practice — must NOT auto-play the word sound.
-    const cameraBtn = page.getByTestId("practice-camera-btn");
-    await expect(cameraBtn).toBeVisible({ timeout: 3000 });
-    await cameraBtn.click();
-    await expect(page.getByTestId("practice-mouth-open")).toContainText(
-      /การเปิดปาก: [1-9]\d*%/,
-      { timeout: 8000 }
+    // <audio controls> exists but should not have played yet (autoplay=false)
+    const audio = page.locator("audio[controls]").first();
+    await expect(audio).toBeAttached({ timeout: 5000 });
+    const currentTime = await audio.evaluate(
+      (el) => (el as HTMLAudioElement).currentTime
     );
-    expect(await speakCount()).toBe(0);
-
-    // Clicking the explicit play button plays the word.
-    const playBtn = page.locator('button[aria-label="ฟังเสียงคำ"]').first();
-    await playBtn.click();
-    await expect.poll(speakCount, { timeout: 3000 }).toBeGreaterThan(0);
+    expect(currentTime).toBe(0);
   });
 
   test("mascot image is stable (image 2.png) across re-renders", async ({

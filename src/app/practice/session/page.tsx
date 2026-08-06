@@ -1,4 +1,4 @@
-import { createServerClient } from "@/lib/supabase/server";
+import { getSupabaseUser } from "@/lib/supabase/server";
 import { LESSONS, findLesson } from "@/lib/lesson";
 import SessionContent from "@/components/practice/SessionContent";
 import type { WordRow } from "@/components/practice/PracticeWord";
@@ -19,7 +19,7 @@ export default async function PracticeSessionPage({
   const { group } = await searchParams;
 
   const lesson = findLesson(group ?? "") ?? LESSONS[0];
-  const supabase = await createServerClient();
+  const { supabase } = await getSupabaseUser();
 
   let words: WordRow[] = [];
   if (supabase) {
