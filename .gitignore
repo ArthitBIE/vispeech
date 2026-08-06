@@ -66,6 +66,9 @@ workflows/
 /docs/*.pdf
 /design-example/
 
+# lighthouse reports
+lighthouse-report*.json
+
 # scratch / generated
 /.slim/
 /HANDOFF.json
