@@ -6,7 +6,17 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  // One retry locally, not zero. The pre-commit hook runs this suite while
+  // lint-staged is still competing for CPU, and the slowest steps already take
+  // ~14.5s under that load against budgets in the 10-30s range. A single
+  // timing blip there fails the commit on a test that passes on its own -- as
+  // happened once, and did not reproduce in 4 consecutive clean runs.
+  //
+  // One retry, deliberately, not two: enough to absorb a load spike, not
+  // enough to hide a test that fails half the time. Retried-but-passed is
+  // reported by the list reporter as "flaky", so it stays visible rather than
+  // becoming silently green.
+  retries: process.env.CI ? 2 : 1,
   workers: process.env.CI ? 1 : undefined,
   reporter: "list",
   use: {
