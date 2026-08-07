@@ -91,36 +91,53 @@ uses a wildcard.
 
 ```
 http://localhost:3000/auth/callback
-https://<your-production-domain>/auth/callback
+https://vispeech-pi.vercel.app/auth/callback
 ```
 
 ### Vercel preview deployments
 
-Preview URLs are generated per branch and per build
-(`https://<project>-git-<branch>-<team>.vercel.app`,
-`https://<project>-<hash>-<team>.vercel.app`), so they can never be listed
-individually ahead of time. Without a wildcard entry, OAuth from a preview
-deployment silently lands on the Site URL (production) instead of the preview,
-identically to a URL that is not allow-listed at all.
-
-To support previews, add a wildcard entry:
+Preview URLs are generated per branch and per build, so they cannot be listed
+individually ahead of time. They are covered by wildcard entries:
 
 ```
-https://<project>-*-<team>.vercel.app/auth/callback
+https://vispeech-*-arthitbies-projects.vercel.app
+https://vispeech-*-arthitbies-projects.vercel.app/**
 ```
 
-Verify a change by starting the OAuth flow and inspecting where the browser
-actually lands:
+Note the Vercel team slug is `arthitbies-projects`. A URL built with the wrong
+slug is simply not allow-listed and silently falls back to the Site URL.
+
+### Never add a bare `https://*.vercel.app` entry
+
+Such an entry allow-lists **every** site on `vercel.app`, including ones owned
+by other people. Because Supabase returns the session in the URL fragment,
+anyone who can deploy any project to `vercel.app` can send a victim a link to
+the authorize endpoint with their own domain as `redirect_to` and receive that
+user's `access_token`, `refresh_token`, and Google `provider_token`. That is a
+full account takeover needing no interaction beyond clicking a link.
+
+This entry was present on the project and has been removed. Keep wildcards
+anchored to a project-and-team-specific prefix, as above, so they cannot match
+a third-party host.
+
+### Verifying an allow-list change
+
+Drive the flow and check where the browser actually lands:
 
 ```
-https://<project-ref>.supabase.co/auth/v1/authorize?provider=google&redirect_to=<url-encoded-callback>
+https://PROJECT_REF.supabase.co/auth/v1/authorize?provider=google&redirect_to=ENCODED_CALLBACK
 ```
 
-If the final URL host is the Site URL rather than the host you requested, the
-entry is not matching. Note that the `redirect_to` echoed in the redirect to
-Google is **not** a validation signal: it is echoed back verbatim even for
-values that are not allow-listed, and the allow-list is only applied on the
-final hop back from Supabase.
+If the final host is the Site URL rather than the host requested, the entry is
+not matching. The `redirect_to` echoed in the redirect to Google is **not** a
+validation signal: it is echoed back verbatim even for values that are not
+allow-listed, because the allow-list is applied only on the final hop back
+from Supabase. Always assert on the final landing host.
+
+The live configuration can be read with the Management API using
+`SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF`, via
+`GET /v1/projects/PROJECT_REF/config/auth` on `api.supabase.com`, reading the
+`uri_allow_list` and `site_url` fields.
 
 ## Config Files
 

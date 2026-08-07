@@ -74,6 +74,20 @@ async function completeSession(page: Page) {
   }
   // Finishing the session now routes to /summary
   await page.waitForURL(/\/summary/, { timeout: 10000 });
+  await waitForSummaryLoaded(page);
+}
+
+/**
+ * The summary page fetches practice logs from Supabase on mount and renders
+ * only "กำลังโหลดผลการฝึก..." until that resolves, with no heading in the DOM.
+ * Callers must wait for the load to settle before asserting on content,
+ * otherwise a short assertion timeout races the network round-trip -- which
+ * fails only under parallel worker load.
+ */
+async function waitForSummaryLoaded(page: Page) {
+  await expect(page.locator("text=กำลังโหลดผลการฝึก")).toBeHidden({
+    timeout: 15000,
+  });
 }
 
 test.describe("Practice session page", () => {
@@ -179,10 +193,13 @@ test.describe("Practice session page", () => {
     await completeSession(page);
 
     // Should show summary page (empty state or with results)
+    // Scope to the heading. A bare text locator also matches Next.js's route
+    // announcer (#__next-route-announcer__), which mirrors the page title and
+    // causes a strict-mode violation once it is populated.
     await expect(
       page
-        .locator("text=ยังไม่มีผลการฝึก")
-        .or(page.locator("text=เยี่ยมมากเลย!"))
+        .locator("h1:has-text('ยังไม่มีผลการฝึก')")
+        .or(page.locator("h1:has-text('เยี่ยมมากเลย')"))
     ).toBeVisible({
       timeout: 3000,
     });
@@ -193,10 +210,15 @@ test.describe("Practice session page", () => {
     // are scored but intentionally not persisted, so they never appear
     // on the summary page (which reads practice_logs).
     for (let i = 0; i < 2; i++) {
-      await page
+      // PracticeWord is dynamically imported, so the skip button is absent on
+      // first paint. Wait for it each iteration rather than assuming it is
+      // already mounted; under full-suite load the chunk can resolve slower
+      // than the click timeout.
+      const skip = page
         .locator('button:has-text("คำถัดไป"), button:has-text("จบบทเรียน")')
-        .first()
-        .click({ timeout: 3000 });
+        .first();
+      await expect(skip).toBeVisible({ timeout: 15000 });
+      await skip.click({ timeout: 3000 });
       await page.waitForTimeout(200);
     }
 
