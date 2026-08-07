@@ -206,12 +206,30 @@ Because the allow-list is recorded here by hand, it can drift from the live
 project. To compare the two:
 
 ```bash
-pnpm check:allowlist
+pnpm check:auth
 ```
 
-It exits non-zero if the live list and the entries above disagree, or if a bare
-wildcard entry reappears. It skips cleanly when the Supabase credentials are
-absent, so it is safe to run without project access.
+That runs two complementary checks, and both matter:
+
+`pnpm check:allowlist` compares the live entries against the list above and
+exits non-zero if they disagree, or if any entry has a wildcard in the host
+position. It skips cleanly when the Supabase credentials are absent, so it is
+safe to run without project access.
+
+`pnpm check:redirects` goes further and probes what Supabase actually _does_
+with those entries, asserting that every legitimate sign-in host is honoured
+and every attacker-shaped host falls back to the Site URL. String comparison
+alone would not have caught either real defect found on this project: the
+localhost entry that was present but not honoured, or the preview wildcard
+whose match semantics were wider than they read. It needs no credentials, only
+`NEXT_PUBLIC_SUPABASE_URL`.
+
+The behaviour probe takes about 70 seconds because the verify endpoint rate
+limits after roughly two rapid requests, so it paces itself. If it does get
+rate limited it reports `INCONCLUSIVE` and exits non-zero rather than scoring
+the unanswered cases: a 429 has no `Location` header, and reading that absence
+as "the host was refused" would mark every deny case as passing while testing
+nothing at all.
 
 ## Config Files
 
