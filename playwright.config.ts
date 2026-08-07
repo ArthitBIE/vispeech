@@ -20,7 +20,11 @@ export default defineConfig({
     },
     {
       name: "unauthenticated",
-      testMatch: ["auth.spec.ts", "auth-signin.spec.ts"],
+      testMatch: [
+        "auth.spec.ts",
+        "auth-signin.spec.ts",
+        "oauth-redirect.spec.ts",
+      ],
       dependencies: [],
     },
     {
@@ -30,6 +34,7 @@ export default defineConfig({
         "practice.spec.ts",
         "navigation.spec.ts",
         "dashboard-progress.spec.ts",
+        "dashboard-sidebar-race.spec.ts",
         "practice-session.spec.ts",
         "summary.spec.ts",
         "settings.spec.ts",

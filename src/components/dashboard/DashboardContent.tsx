@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import { PASS_THRESHOLD } from "@/lib/constants";
@@ -254,8 +254,19 @@ export default function DashboardContent({
       }));
   }
 
-  // Auto-open sidebar with latest practice results on mount
+  // Auto-open sidebar with latest practice results on mount.
+  //
+  // Both this effect and handleSummaryClick open the sidebar *after* an await,
+  // so either can land after the user has already closed it and reopen it on
+  // its own. A boolean "user touched it" flag is not enough: the summary fetch
+  // is itself user-initiated, so it would set the flag and still reopen.
+  //
+  // Instead every user action bumps a sequence number, and an async open only
+  // applies if no newer action happened while it was in flight.
+  const sidebarSeq = useRef(0);
+
   useEffect(() => {
+    const token = sidebarSeq.current;
     async function loadLatest() {
       try {
         if (!isSupabaseConfigured || !supabase?.auth) return;
@@ -275,6 +286,9 @@ export default function DashboardContent({
         const mapped = mapResultsToWordResults(results);
         if (!mapped.length) return;
 
+        // A user action superseded this background load.
+        if (sidebarSeq.current !== token) return;
+
         setSidebarResults(mapped);
         setSidebarAccuracy(
           Math.round(mapped.reduce((s, r) => s + r.score, 0) / mapped.length)
@@ -287,6 +301,9 @@ export default function DashboardContent({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSummaryClick(lessonWords: Word[], group: string) {
+    // Claim the sidebar at click time, so a later close can invalidate this
+    // in-flight open rather than being undone by it.
+    const token = ++sidebarSeq.current;
     try {
       if (!isSupabaseConfigured || !supabase?.auth) return;
 
@@ -315,6 +332,10 @@ export default function DashboardContent({
         mapped.length > 0
           ? Math.round(mapped.reduce((s, r) => s + r.score, 0) / mapped.length)
           : 0;
+
+      // The user closed the sidebar (or clicked another summary) while this
+      // request was in flight — do not resurrect it.
+      if (sidebarSeq.current !== token) return;
 
       setSidebarResults(mapped);
       setSidebarAccuracy(avgAcc);
@@ -442,7 +463,11 @@ export default function DashboardContent({
         results={sidebarResults}
         totalAccuracy={sidebarAccuracy}
         open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+        onClose={() => {
+          // Invalidate any in-flight open so it cannot reopen the sidebar.
+          sidebarSeq.current += 1;
+          setSidebarOpen(false);
+        }}
         onRestart={(group) => router.push(lessonHref(group))}
         group={sidebarGroup}
       />
