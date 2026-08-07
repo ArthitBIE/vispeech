@@ -42,7 +42,17 @@ jobs:
 
       # Probes what Supabase actually does with those entries. Needs no
       # credentials, only the public project URL.
+      #
+      # always() because the two checks are independent and catch different
+      # things: the step above compares config against the docs, this one
+      # probes live behaviour and is the one that actually catches a wildcard
+      # being honoured. Without this, a missing SUPABASE_ACCESS_TOKEN fails
+      # the first step and fail-fast silently skips this one -- so the check
+      # that needs no credentials at all would stop running for want of a
+      # credential. The job still goes red; this only stops one failure from
+      # hiding the other's result.
       - name: Allow-list behaves correctly
+        if: always()
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           STRICT: "1"

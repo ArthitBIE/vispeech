@@ -8,4 +8,13 @@
 # this never blocks a push for a reason unrelated to the change being pushed.
 # That means it is a safety net and not a guarantee: the scheduled workflow in
 # .github/workflows/auth-config.yml is the layer that always has credentials.
-pnpm check:auth
+#
+# Run the two separately rather than via `pnpm check:auth`, which chains them
+# with `&&`. They are independent checks, and the behaviour probe needs no
+# credentials at all -- chaining means an expired token would stop the
+# credential-free wildcard check from running. Same reason the workflow marks
+# its second step always().
+status=0
+pnpm check:allowlist || status=1
+pnpm check:redirects || status=1
+exit $status
