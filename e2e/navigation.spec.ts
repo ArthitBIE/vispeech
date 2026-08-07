@@ -9,7 +9,9 @@ test.describe("Sidebar navigation", () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.locator("h1")).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole("heading", { level: 1, name: "ความก้าวหน้าทั้งหมด" })
+    ).toBeVisible({ timeout: 10000 });
   });
 
   for (const { label, href } of SIDEBAR_LINKS) {

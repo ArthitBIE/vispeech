@@ -1,14 +1,21 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 test.describe("Dashboard progress page", () => {
+  // Scope to the page heading by name. A bare locator("h1") is ambiguous:
+  // PracticeResultSidebar renders its own <h1>, and the dashboard opens that
+  // sidebar automatically once the latest-session fetch resolves, so an
+  // unqualified h1 intermittently matches two elements and trips strict mode.
+  const pageHeading = (page: Page) =>
+    page.getByRole("heading", { level: 1, name: "ความก้าวหน้าทั้งหมด" });
+
   test.beforeEach(async ({ page }) => {
     await page.goto("/dashboard");
     // Wait for page to load (might show skeleton first)
-    await expect(page.locator("h1")).toBeVisible({ timeout: 15000 });
+    await expect(pageHeading(page)).toBeVisible({ timeout: 15000 });
   });
 
   test("shows heading and layout", async ({ page }) => {
-    await expect(page.locator("h1")).toHaveText("ความก้าวหน้าทั้งหมด");
+    await expect(pageHeading(page)).toHaveText("ความก้าวหน้าทั้งหมด");
   });
 
   test("renders at least one lesson card with title", async ({ page }) => {

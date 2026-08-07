@@ -101,8 +101,6 @@ https://vispeech-pi.vercel.app/auth/callback
 https://vispeech-arthitbies-projects.vercel.app/
 https://vispeech-arthitbies-projects.vercel.app/**
 https://vispeech-git-develop-arthitbies-projects.vercel.app/auth/callback
-https://vispeech-*-arthitbies-projects.vercel.app
-https://vispeech-*-arthitbies-projects.vercel.app/**
 ```
 
 Site URL is `https://vispeech-pi.vercel.app/auth/callback`.
@@ -112,8 +110,20 @@ production). The rest cover preview deployments.
 
 ### Vercel preview deployments
 
-Preview URLs are generated per branch and per build, so they cannot be listed
-individually ahead of time. They are covered by the two wildcard entries above.
+Per-build preview URLs contain a build hash, so they cannot be listed ahead of
+time, and they are **not** allow-listed. This is deliberate: the wildcards that
+used to cover them were a session-handoff vector (see below).
+
+OAuth on a preview does not need the per-build URL. Vercel also publishes a
+stable per-branch alias:
+
+```
+https://vispeech-git-<branch>-arthitbies-projects.vercel.app
+```
+
+That alias is what belongs in the allow-list, one exact entry per branch that
+needs to exercise sign-in, as already present for `develop`. Testing OAuth on a
+new long-lived branch therefore costs one line, not one line per build.
 
 Note the Vercel team slug is `arthitbies-projects`. A URL built with the wrong
 slug is simply not allow-listed and silently falls back to the Site URL.
@@ -127,32 +137,46 @@ the authorize endpoint with their own domain as `redirect_to` and receive that
 user's `access_token`, `refresh_token`, and Google `provider_token`. That is a
 full account takeover needing no interaction beyond clicking a link.
 
-This entry was present on the project and has been removed. Keep wildcards
-anchored to a project-and-team-specific prefix, as above, so they cannot match
-an arbitrary third-party host.
+This entry was present on the project and has been removed.
 
-### Residual risk in the preview wildcards
+### Never use a wildcard in the host at all
 
-The anchored preview wildcards are a large improvement on a bare
-`https://*.vercel.app`, but they are not airtight, and the difference is worth
-understanding before treating them as safe.
+The project also carried two team-anchored preview wildcards, which looked far
+safer than the bare one:
 
-Vercel assigns `<project-name>.vercel.app` from a single global namespace on a
-first-come basis, and a project's name is chosen freely by whoever creates it.
-The `*` in `vispeech-*-arthitbies-projects.vercel.app` is matched by Supabase
-as a plain string wildcard: it is **not** restricted to build hashes, nor to
-deployments actually owned by this team. Someone who creates a project named
-so that its host lands on that shape would satisfy the wildcard.
+```
+https://vispeech-*-arthitbies-projects.vercel.app
+https://vispeech-*-arthitbies-projects.vercel.app/**
+```
 
-That such hostnames are still unclaimed was confirmed directly: an
-attacker-shaped host fitting the wildcard currently returns 404, meaning the
-name is available rather than reserved by this team.
+They were removed too, because the anchoring does not do what it appears to.
 
-Exploiting this is meaningfully harder than the bare wildcard was, because it
-requires winning a specific name rather than any name at all. It is recorded
-here as a known, accepted residual risk rather than a resolved one. To remove
-it, replace the wildcards with the exact preview hosts that are actually in use
-and drop the wildcard entries.
+The intuition that saves them is that `*` cannot cross a dot, so the pattern
+can only match hosts inside this team's namespace. The first half is true and
+was verified. The second half does not follow, and this was the error: the
+team slug is not a DNS label here. `vercel.app` project hosts are a single
+**flat, global, first-come** namespace, and a project's name is free text
+chosen by whoever creates the project. Nothing stops an outsider from naming a
+project `vispeech-login-arthitbies-projects`, which yields exactly
+`vispeech-login-arthitbies-projects.vercel.app`, one label, no dot crossed, a
+clean match. Owning the team slug as a _substring_ confers no control.
+
+This was confirmed against the live project rather than reasoned about. Three
+unclaimed hosts of that shape were both honored by Supabase as redirect targets
+and returned 404, meaning the names were free for anyone to register. The
+consequence is identical to the bare wildcard: register the name, send a link,
+receive the victim's `access_token`, `refresh_token`, and Google
+`provider_token` from the URL fragment.
+
+The rule is therefore the simple one, not the nuanced one: **the host portion
+of an allow-list entry must be spelled out in full.** A `/**` path wildcard on
+an exact host is fine and is still in use above; a `*` anywhere in the host is
+not, however well anchored it looks.
+
+Removing these cost almost nothing, which is what made the earlier
+"accepted residual risk" framing a bad trade: preview OAuth runs on the stable
+per-branch alias described above, so no per-build maintenance was being bought
+by keeping them.
 
 ### Verifying an allow-list change
 

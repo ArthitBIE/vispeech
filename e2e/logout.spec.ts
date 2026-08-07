@@ -6,7 +6,9 @@ import { test, expect } from "@playwright/test";
 test.describe("Logout", () => {
   test("signs out via header dropdown", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.locator("h1")).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole("heading", { level: 1, name: "ความก้าวหน้าทั้งหมด" })
+    ).toBeVisible({ timeout: 10000 });
 
     // Retry in case the header re-renders (element detached) during client nav
     // Avatar letter = first letter of the signed-in email (unknown a-priori)

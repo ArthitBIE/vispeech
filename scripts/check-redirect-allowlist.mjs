@@ -63,16 +63,24 @@ const documented = [
 
 const onlyLive = live.filter((e) => !documented.includes(e));
 const onlyDoc = documented.filter((e) => !live.includes(e));
-// Bare wildcard in the host position, e.g. https://*.vercel.app
-const bare = live.filter((e) => /^https?:\/\/\*\./.test(e));
+// Any wildcard in the HOST position, e.g. https://*.vercel.app or
+// https://app-*-team.vercel.app. Anchoring the wildcard to a project-and-team
+// prefix looks safe but is not: vercel.app project hosts are one flat,
+// first-come namespace and a project name is free text, so an outsider can
+// register a name that matches the pattern without crossing a dot. A `*` in
+// the path (https://exact.host/**) is fine and is not flagged.
+const hostWildcard = live.filter((e) =>
+  e
+    .replace(/^https?:\/\//, "")
+    .split("/")[0]
+    .includes("*")
+);
 
 let failed = false;
 
-if (bare.length) {
-  console.error(
-    "FAIL: bare wildcard entr(ies) present, account-takeover risk:"
-  );
-  bare.forEach((e) => console.error("  " + e));
+if (hostWildcard.length) {
+  console.error("FAIL: wildcard in host position, account-takeover risk:");
+  hostWildcard.forEach((e) => console.error("  " + e));
   failed = true;
 }
 if (onlyLive.length) {
