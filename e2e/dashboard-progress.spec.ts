@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { settleDashboardAutoSidebar } from "./helpers/dashboard";
 
 test.describe("Dashboard progress page", () => {
   // Scope to the page heading by name. A bare locator("h1") is ambiguous:
@@ -12,6 +13,9 @@ test.describe("Dashboard progress page", () => {
     await page.goto("/dashboard");
     // Wait for page to load (might show skeleton first)
     await expect(pageHeading(page)).toBeVisible({ timeout: 15000 });
+    // Same auto-open sidebar the comment above describes: its z-40 overlay
+    // also intercepts the lesson-card clicks below.
+    await settleDashboardAutoSidebar(page);
   });
 
   test("shows heading and layout", async ({ page }) => {

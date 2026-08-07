@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { settleDashboardAutoSidebar } from "./helpers/dashboard";
 
 test.describe("Sidebar navigation", () => {
   const SIDEBAR_LINKS = [
@@ -12,6 +13,9 @@ test.describe("Sidebar navigation", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "ความก้าวหน้าทั้งหมด" })
     ).toBeVisible({ timeout: 10000 });
+    // The auto-opened results sidebar puts a z-40 overlay over the whole page,
+    // including the z-30 nav sidebar these tests click.
+    await settleDashboardAutoSidebar(page);
   });
 
   for (const { label, href } of SIDEBAR_LINKS) {

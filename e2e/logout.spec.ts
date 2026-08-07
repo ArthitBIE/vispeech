@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { settleDashboardAutoSidebar } from "./helpers/dashboard";
 
 // Runs in its own project AFTER all shared-session tests:
 // signOut() revokes the Supabase server session, so it must be the last
@@ -9,6 +10,10 @@ test.describe("Logout", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "ความก้าวหน้าทั้งหมด" })
     ).toBeVisible({ timeout: 10000 });
+
+    // The results sidebar auto-opens with a z-40 overlay; the header is z-30,
+    // so the avatar button below is unclickable while it is up.
+    await settleDashboardAutoSidebar(page);
 
     // Retry in case the header re-renders (element detached) during client nav
     // Avatar letter = first letter of the signed-in email (unknown a-priori)
