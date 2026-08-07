@@ -11,6 +11,13 @@ on:
   schedule:
     # 07:00 UTC daily. Drift is silent, so the clock is the only trigger that
     # correlates with when it actually happens.
+    #
+    # IMPORTANT: GitHub only runs `schedule` from the repository's DEFAULT
+    # branch. This repo's default is `main`, and this file was added on
+    # `develop`, so until it is merged to `main` the cron does not exist as far
+    # as GitHub is concerned -- the one trigger this workflow was written for
+    # would silently never fire, with no error anywhere to say so. Merging to
+    # `main` is what turns the schedule on.
     - cron: "0 7 * * *"
   push:
     branches: [main, develop]
@@ -57,3 +64,27 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           STRICT: "1"
         run: node scripts/check-redirect-behaviour.mjs
+
+      # The schedule is the only trigger that catches dashboard-side drift, and
+      # GitHub runs `schedule` from the default branch only. If this file is
+      # live on some other branch the cron silently does not exist, which looks
+      # identical to "configured correctly and nothing has drifted".
+      #
+      # Fail loudly instead. Skipped for pull_request so a PR from a feature
+      # branch is not red for a condition that only applies once merged.
+      #
+      # Deliberately LAST, and always(): this is a meta-check about whether
+      # the workflow is wired up, not a security check. Putting it first
+      # would let a not-yet-merged workflow fail-fast and skip the actual
+      # allow-list checks -- the same mistake this file already fixed once.
+      - name: Schedule can actually fire
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          if [ "${{ github.ref_name }}" != "${{ github.event.repository.default_branch }}" ]; then
+            echo "This workflow is running on '${{ github.ref_name }}' but the default"
+            echo "branch is '${{ github.event.repository.default_branch }}'."
+            echo "GitHub only schedules cron from the default branch, so the daily"
+            echo "run does not exist yet. Merge this workflow to the default branch."
+            exit 1
+          fi
+          echo "OK: on the default branch, so the daily schedule is live."
