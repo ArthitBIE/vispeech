@@ -1,0 +1,49 @@
+name: Auth config
+
+# The Supabase redirect allow-list is not in this repo. It is edited in the
+# Supabase dashboard, so it can be broken by someone who never opens a pull
+# request -- which is exactly how both real defects on this project happened:
+# the localhost entry that stopped being honoured, and the preview wildcard
+# that let anyone register a matching Vercel project and receive a victim's
+# tokens. A push-triggered job alone would never see either. Hence the
+# schedule.
+on:
+  schedule:
+    # 07:00 UTC daily. Drift is silent, so the clock is the only trigger that
+    # correlates with when it actually happens.
+    - cron: "0 7 * * *"
+  push:
+    branches: [main, develop]
+    paths:
+      - "scripts/check-redirect-*.mjs"
+      - "docs/CONFIGURATION.md"
+      - ".github/workflows/auth-config.yml"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Compares live project config against docs/CONFIGURATION.md and
+      # rejects any wildcard in the host position.
+      - name: Allow-list matches the docs
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          # Without this, an unconfigured secret makes the job pass while
+          # checking nothing -- the exact failure this workflow exists to stop.
+          STRICT: "1"
+        run: node scripts/check-redirect-allowlist.mjs
+
+      # Probes what Supabase actually does with those entries. Needs no
+      # credentials, only the public project URL.
+      - name: Allow-list behaves correctly
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          STRICT: "1"
+        run: node scripts/check-redirect-behaviour.mjs

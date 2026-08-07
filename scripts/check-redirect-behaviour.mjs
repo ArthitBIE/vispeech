@@ -54,11 +54,18 @@ function supabaseUrl() {
   return null;
 }
 
+// See check-redirect-allowlist.mjs: skipping is right locally and wrong in a
+// scheduled job, where a missing variable would make this green forever.
+const STRICT = process.env.STRICT === "1";
+
 const SUPA = supabaseUrl();
 if (!SUPA) {
-  console.log(
-    "SKIP: NEXT_PUBLIC_SUPABASE_URL not set and not found in .env.local."
-  );
+  const msg = "NEXT_PUBLIC_SUPABASE_URL not set and not found in .env.local.";
+  if (STRICT) {
+    console.error(`FAIL: ${msg}\nSTRICT=1 is set, so this is an error.`);
+    process.exit(1);
+  }
+  console.log(`SKIP: ${msg}`);
   process.exit(0);
 }
 
@@ -88,10 +95,17 @@ async function landingHost(redirectTo, attempt = 0) {
     type: "magiclink",
     redirect_to: redirectTo,
   });
-  const res = await fetch(`${SUPA}/auth/v1/verify?${qs}`, {
-    redirect: "manual",
-    headers: { "User-Agent": UA },
-  });
+  let res;
+  try {
+    res = await fetch(`${SUPA}/auth/v1/verify?${qs}`, {
+      redirect: "manual",
+      headers: { "User-Agent": UA },
+    });
+  } catch (err) {
+    // No network is not evidence either way. Flagged distinctly from a 429 so
+    // the caller can skip rather than report a security verdict it never got.
+    return { offline: true, error: `network error: ${err.message}` };
+  }
 
   if (res.status === 429) {
     if (attempt >= 5) return { error: "rate limited (429) after 5 retries" };
@@ -169,7 +183,19 @@ for (const [label, redirectTo, expectHonoured] of CASES) {
   if (!first) await sleep(PACE_MS);
   first = false;
 
-  const { host, error } = await landingHost(redirectTo);
+  const { host, error, offline } = await landingHost(redirectTo);
+  if (offline) {
+    // Distinct from a 429: the endpoint was never reached, so there is no
+    // verdict to report and nothing to be suspicious about. Skipping keeps
+    // this usable from a git hook on a train, but in CI an unreachable
+    // endpoint is a real failure and must not pass silently.
+    if (STRICT) {
+      console.error(`\nFAIL: no network (${error}). STRICT=1 is set.`);
+      process.exit(1);
+    }
+    console.log(`\nSKIP: no network (${error}).`);
+    process.exit(0);
+  }
   if (error) {
     errors.push([label, error]);
     console.log(

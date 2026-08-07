@@ -224,12 +224,36 @@ localhost entry that was present but not honoured, or the preview wildcard
 whose match semantics were wider than they read. It needs no credentials, only
 `NEXT_PUBLIC_SUPABASE_URL`.
 
-The behaviour probe takes about 70 seconds because the verify endpoint rate
+The behaviour probe takes about 15 seconds because the verify endpoint rate
 limits after roughly two rapid requests, so it paces itself. If it does get
 rate limited it reports `INCONCLUSIVE` and exits non-zero rather than scoring
 the unanswered cases: a 429 has no `Location` header, and reading that absence
 as "the host was refused" would mark every deny case as passing while testing
 nothing at all.
+
+### What actually runs these checks
+
+Neither check is useful if it only runs when someone remembers it, and the
+allow-list is edited in the Supabase dashboard, so the change that breaks it
+never appears in a commit. There are two layers, deliberately different:
+
+| Layer                               | Trigger          | Catches                                                                         |
+| ----------------------------------- | ---------------- | ------------------------------------------------------------------------------- |
+| `.husky/pre-push`                   | every `git push` | a stale docs table or a reintroduced host wildcard, at the moment you caused it |
+| `.github/workflows/auth-config.yml` | daily 07:00 UTC  | dashboard-side drift by someone who never pushed                                |
+
+The hook is only a safety net. Both scripts exit 0 when they cannot run -- no
+credentials, no network -- so a push is never blocked for a reason unrelated to
+the change being pushed. The consequence is that the hook cannot be relied on
+alone, which is why the scheduled workflow exists.
+
+The workflow sets `STRICT=1`, which turns those same skips into failures. A
+scheduled job whose secrets were never configured would otherwise report green
+forever while checking nothing, which is the specific failure mode this whole
+section exists to prevent. It needs `SUPABASE_ACCESS_TOKEN` and
+`SUPABASE_PROJECT_REF` as repository secrets, and `NEXT_PUBLIC_SUPABASE_URL`
+as a repository variable; until those are set the daily run fails loudly
+rather than passing quietly.
 
 ## Config Files
 

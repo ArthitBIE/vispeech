@@ -16,25 +16,46 @@ import { readFileSync } from "node:fs";
 const token = process.env.SUPABASE_ACCESS_TOKEN;
 const ref = process.env.SUPABASE_PROJECT_REF;
 
+// Skipping is right on a contributor's laptop and wrong in CI: a scheduled
+// job whose secrets were never configured would report green forever while
+// checking nothing. STRICT=1 turns the skip into a failure.
+const STRICT = process.env.STRICT === "1";
+
 if (!token || !ref) {
-  console.log(
-    "SKIP: SUPABASE_ACCESS_TOKEN / SUPABASE_PROJECT_REF not set. " +
-      "This check is intended for maintainers with project access."
-  );
+  const msg =
+    "SUPABASE_ACCESS_TOKEN / SUPABASE_PROJECT_REF not set. " +
+    "This check is intended for maintainers with project access.";
+  if (STRICT) {
+    console.error(`FAIL: ${msg}\nSTRICT=1 is set, so this is an error.`);
+    process.exit(1);
+  }
+  console.log(`SKIP: ${msg}`);
   process.exit(0);
 }
 
-const res = await fetch(
-  `https://api.supabase.com/v1/projects/${ref}/config/auth`,
-  {
+let res;
+try {
+  res = await fetch(`https://api.supabase.com/v1/projects/${ref}/config/auth`, {
     headers: {
       Authorization: `Bearer ${token}`,
       // The default agent string trips Cloudflare with "error code: 1010".
       "User-Agent":
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
     },
+  });
+} catch (err) {
+  // Unreachable network is not evidence of a misconfiguration. This runs in a
+  // git hook, so failing closed here would block an offline commit for a
+  // reason that has nothing to do with the change being made.
+  if (STRICT) {
+    console.error(
+      `FAIL: cannot reach the Management API (${err.message}). STRICT=1 is set.`
+    );
+    process.exit(1);
   }
-);
+  console.log(`SKIP: cannot reach the Management API (${err.message}).`);
+  process.exit(0);
+}
 
 if (!res.ok) {
   console.error(`FAIL: Management API returned ${res.status}`);

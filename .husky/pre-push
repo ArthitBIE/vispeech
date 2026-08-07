@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+# The redirect allow-list lives only in Supabase project config, so a commit
+# can never contain the change that breaks it. Push time is the last local
+# moment where a stale docs/CONFIGURATION.md or a reintroduced host wildcard
+# can still be caught by the person who caused it.
+#
+# Both checks exit 0 when they cannot run (no credentials, no network), so
+# this never blocks a push for a reason unrelated to the change being pushed.
+# That means it is a safety net and not a guarantee: the scheduled workflow in
+# .github/workflows/auth-config.yml is the layer that always has credentials.
+pnpm check:auth
