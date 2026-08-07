@@ -61,10 +61,12 @@ test.describe("Dashboard results sidebar", () => {
       .getByRole("button", { name: "เริ่มการฝึกซ้ำ" })
       .click();
 
-    // Should navigate to practice session
-    await page.waitForURL(/\/practice\/session/, { timeout: 5000 });
+    // Should navigate to practice session. PracticeWord is dynamically
+    // imported (SessionContent.tsx), so the camera button waits on a chunk
+    // fetch after navigation; 3s races that under parallel load.
+    await page.waitForURL(/\/practice\/session/, { timeout: 10000 });
     await expect(page.getByTestId("practice-camera-btn")).toBeVisible({
-      timeout: 3000,
+      timeout: 15000,
     });
   });
 

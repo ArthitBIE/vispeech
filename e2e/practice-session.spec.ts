@@ -51,27 +51,36 @@ async function getCurrentWordVisemeGroup(page: Page) {
 }
 
 async function completeSession(page: Page) {
+  const skipButton = () =>
+    page
+      .locator('button:has-text("คำถัดไป"), button:has-text("จบบทเรียน")')
+      .first();
+
   // PracticeWord is dynamically imported, so the skip button is not in the
   // DOM on first paint. Wait for it before looping, otherwise the loop below
   // breaks on iteration 0 and we never advance past the first word.
-  await expect(
-    page
-      .locator('button:has-text("คำถัดไป"), button:has-text("จบบทเรียน")')
-      .first()
-  ).toBeVisible({ timeout: 15000 });
+  await expect(skipButton()).toBeVisible({ timeout: 15000 });
 
-  for (let i = 0; i < 60; i++) {
-    const skip = page
-      .locator('button:has-text("คำถัดไป"), button:has-text("จบบทเรียน")')
-      .first();
-    if (await skip.isVisible().catch(() => false)) {
-      await skip.click({ timeout: 3000 }).catch(() => {});
-      // Give the async finish flow a moment to navigate.
-      await page.waitForTimeout(300);
-    } else {
-      break;
-    }
+  // Bounded by the longest lesson rather than an arbitrary 60. Each iteration
+  // stops as soon as the session finishes, instead of paying a fixed sleep per
+  // word: the old loop spent up to 18s sleeping, which pushed these tests near
+  // the 30s test timeout once workers contended for the dev server.
+  for (let i = 0; i < 40; i++) {
+    if (/\/summary/.test(page.url())) break;
+
+    const skip = skipButton();
+    if (!(await skip.isVisible().catch(() => false))) break;
+
+    await skip.click({ timeout: 3000 }).catch(() => {});
+
+    // Wait for the click to take effect -- either the word advances (button
+    // detaches and remounts) or the session finishes and we navigate.
+    await Promise.race([
+      page.waitForURL(/\/summary/, { timeout: 1500 }).catch(() => {}),
+      skip.waitFor({ state: "detached", timeout: 1500 }).catch(() => {}),
+    ]);
   }
+
   // Finishing the session now routes to /summary
   await page.waitForURL(/\/summary/, { timeout: 10000 });
   await waitForSummaryLoaded(page);
@@ -247,10 +256,11 @@ test.describe("Practice session page", () => {
     // Click "เริ่มการฝึกซ้ำ" on summary page
     await page.locator('button:has-text("เริ่มการฝึก")').first().click();
 
-    // Should navigate back to practice session
-    await page.waitForURL(/\/practice\/session/, { timeout: 5000 });
+    // Should navigate back to practice session. PracticeWord is dynamically
+    // imported, so the camera button waits on a chunk fetch after navigation.
+    await page.waitForURL(/\/practice\/session/, { timeout: 10000 });
     await expect(page.getByTestId("practice-camera-btn")).toBeVisible({
-      timeout: 3000,
+      timeout: 15000,
     });
   });
 

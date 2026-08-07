@@ -87,22 +87,33 @@ production. The callback page already defaults `next` to `/home`, so the
 parameter is unnecessary. Do not reintroduce it unless the allow-list entry
 uses a wildcard.
 
-### Required allow-list entries
+### Current allow-list entries
+
+This is the full contents of `uri_allow_list` as read from the live project.
+It is recorded here because the allow-list lives only in Supabase project
+config: it is not in this repo, is not covered by any migration, and would not
+survive recreating the project from scratch.
 
 ```
 http://localhost:3000/auth/callback
+https://vispeech-pi.vercel.app
 https://vispeech-pi.vercel.app/auth/callback
+https://vispeech-arthitbies-projects.vercel.app/
+https://vispeech-arthitbies-projects.vercel.app/**
+https://vispeech-git-develop-arthitbies-projects.vercel.app/auth/callback
+https://vispeech-*-arthitbies-projects.vercel.app
+https://vispeech-*-arthitbies-projects.vercel.app/**
 ```
+
+Site URL is `https://vispeech-pi.vercel.app/auth/callback`.
+
+Only the first two lines are strictly required (local development and
+production). The rest cover preview deployments.
 
 ### Vercel preview deployments
 
 Preview URLs are generated per branch and per build, so they cannot be listed
-individually ahead of time. They are covered by wildcard entries:
-
-```
-https://vispeech-*-arthitbies-projects.vercel.app
-https://vispeech-*-arthitbies-projects.vercel.app/**
-```
+individually ahead of time. They are covered by the two wildcard entries above.
 
 Note the Vercel team slug is `arthitbies-projects`. A URL built with the wrong
 slug is simply not allow-listed and silently falls back to the Site URL.
@@ -118,7 +129,30 @@ full account takeover needing no interaction beyond clicking a link.
 
 This entry was present on the project and has been removed. Keep wildcards
 anchored to a project-and-team-specific prefix, as above, so they cannot match
-a third-party host.
+an arbitrary third-party host.
+
+### Residual risk in the preview wildcards
+
+The anchored preview wildcards are a large improvement on a bare
+`https://*.vercel.app`, but they are not airtight, and the difference is worth
+understanding before treating them as safe.
+
+Vercel assigns `<project-name>.vercel.app` from a single global namespace on a
+first-come basis, and a project's name is chosen freely by whoever creates it.
+The `*` in `vispeech-*-arthitbies-projects.vercel.app` is matched by Supabase
+as a plain string wildcard: it is **not** restricted to build hashes, nor to
+deployments actually owned by this team. Someone who creates a project named
+so that its host lands on that shape would satisfy the wildcard.
+
+That such hostnames are still unclaimed was confirmed directly: an
+attacker-shaped host fitting the wildcard currently returns 404, meaning the
+name is available rather than reserved by this team.
+
+Exploiting this is meaningfully harder than the bare wildcard was, because it
+requires winning a specific name rather than any name at all. It is recorded
+here as a known, accepted residual risk rather than a resolved one. To remove
+it, replace the wildcards with the exact preview hosts that are actually in use
+and drop the wildcard entries.
 
 ### Verifying an allow-list change
 
@@ -138,6 +172,22 @@ The live configuration can be read with the Management API using
 `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF`, via
 `GET /v1/projects/PROJECT_REF/config/auth` on `api.supabase.com`, reading the
 `uri_allow_list` and `site_url` fields.
+
+Note that the default request agent string is rejected by Cloudflare with
+`error code: 1010`; send a normal browser user-agent.
+
+### Keeping this page honest
+
+Because the allow-list is recorded here by hand, it can drift from the live
+project. To compare the two:
+
+```bash
+pnpm check:allowlist
+```
+
+It exits non-zero if the live list and the entries above disagree, or if a bare
+wildcard entry reappears. It skips cleanly when the Supabase credentials are
+absent, so it is safe to run without project access.
 
 ## Config Files
 
