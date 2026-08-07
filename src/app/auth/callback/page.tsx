@@ -21,28 +21,7 @@ function AuthCallbackContent() {
     const code = searchParams.get("code");
     const next = searchParams.get("next") || "/home";
 
-    console.log("[AuthCallback] === OAuth callback fired ===");
-    console.log("[AuthCallback] full URL:", window.location.href);
-    console.log("[AuthCallback] error:", error);
-    console.log("[AuthCallback] error_description:", errorDescription);
-    console.log(
-      "[AuthCallback] code:",
-      code ? `${code.slice(0, 10)}... (truncated)` : "MISSING"
-    );
-    console.log("[AuthCallback] next:", next);
-    console.log(
-      "[AuthCallback] supabase client:",
-      supabase ? "present" : "NULL"
-    );
-    console.log(
-      "[AuthCallback] supabase.auth:",
-      supabase?.auth ? "present" : "NULL"
-    );
-
     if (error) {
-      console.log(
-        "[AuthCallback] error path — redirecting to signin with error"
-      );
       const msg = errorDescription || error;
       router.replace(`/auth/signin?error=${encodeURIComponent(msg)}`);
       return;
@@ -54,49 +33,81 @@ function AuthCallbackContent() {
       return;
     }
 
-    // PKCE flow: exchange the authorization code for a session
+    // PKCE flow.
+    //
+    // `createBrowserClient` (@supabase/ssr) sets `detectSessionInUrl: true` by
+    // default, so the SDK exchanges the `?code=` itself on load and consumes the
+    // one-time PKCE verifier. Calling `exchangeCodeForSession` here as well loses
+    // that race and fails with "PKCE code verifier not found in storage" even
+    // though sign-in actually succeeded.
+    //
+    // So: wait for the SDK's exchange to land instead of competing with it, and
+    // only fall back to a manual exchange if the SDK never picked the code up.
     if (code) {
-      console.log(
-        "[AuthCallback] PKCE code found — calling exchangeCodeForSession()"
+      let settled = false;
+
+      const finish = (session: unknown) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        subscription?.unsubscribe();
+
+        if (session) {
+          router.replace(next);
+        } else {
+          console.error("[AuthCallback] no session after PKCE exchange");
+          router.replace(
+            "/auth/signin?error=" +
+              encodeURIComponent("OAuth code exchange failed")
+          );
+        }
+      };
+
+      // The SDK fires SIGNED_IN once its internal exchange completes.
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange(
+        (_event: string, session: unknown) => {
+          if (session) finish(session);
+        }
       );
+
+      // It may also have completed before this effect ran.
       supabase.auth
-        .exchangeCodeForSession(code)
+        .getSession()
         .then(
           ({
-            error,
+            data: { session },
           }: {
-            error: import("@supabase/supabase-js").AuthError | null;
+            data: { session: import("@supabase/supabase-js").Session | null };
           }) => {
-            if (error) {
-              console.error(
-                "[AuthCallback] exchangeCodeForSession FAILED:",
-                error.message
-              );
-              router.replace(
-                "/auth/signin?error=" +
-                  encodeURIComponent(
-                    error.message || "OAuth code exchange failed"
-                  )
-              );
-            } else {
-              console.log(
-                "[AuthCallback] exchangeCodeForSession SUCCESS — redirecting to",
-                next
-              );
-              router.replace(next);
-            }
+            if (session) finish(session);
           }
-        )
-        .catch((err: unknown) => {
-          console.error("[AuthCallback] exchangeCodeForSession threw:", err);
-          router.replace(
-            "/auth/signin?error=" + encodeURIComponent(String(err))
-          );
-        });
+        );
+
+      // Fallback: SDK never consumed the code, so do the exchange ourselves.
+      const timeoutId = setTimeout(async () => {
+        if (settled) return;
+        try {
+          const { data, error: exchangeError } =
+            await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            const { data: retry } = await supabase.auth.getSession();
+            finish(retry.session);
+          } else {
+            finish(data.session);
+          }
+        } catch {
+          const { data: retry } = await supabase.auth.getSession();
+          finish(retry.session);
+        }
+      }, 2000);
+
+      return () => {
+        clearTimeout(timeoutId);
+        subscription?.unsubscribe();
+      };
     } else {
-      console.log(
-        "[AuthCallback] no PKCE code — checking for existing session"
-      );
       supabase.auth
         .getSession()
         .then(
@@ -107,12 +118,6 @@ function AuthCallbackContent() {
             data: { session: import("@supabase/supabase-js").Session | null };
             error: import("@supabase/supabase-js").AuthError | null;
           }) => {
-            console.log(
-              "[AuthCallback] getSession result:",
-              session ? "found" : "null",
-              "error:",
-              error?.message
-            );
             if (session) {
               router.replace(next);
             } else {

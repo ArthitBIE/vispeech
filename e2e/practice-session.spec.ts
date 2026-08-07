@@ -51,6 +51,15 @@ async function getCurrentWordVisemeGroup(page: Page) {
 }
 
 async function completeSession(page: Page) {
+  // PracticeWord is dynamically imported, so the skip button is not in the
+  // DOM on first paint. Wait for it before looping, otherwise the loop below
+  // breaks on iteration 0 and we never advance past the first word.
+  await expect(
+    page
+      .locator('button:has-text("คำถัดไป"), button:has-text("จบบทเรียน")')
+      .first()
+  ).toBeVisible({ timeout: 15000 });
+
   for (let i = 0; i < 60; i++) {
     const skip = page
       .locator('button:has-text("คำถัดไป"), button:has-text("จบบทเรียน")')
@@ -294,7 +303,7 @@ test.describe("Practice session page", () => {
     expect(currentTime).toBe(0);
   });
 
-  test("mascot image is stable (image 2.png) across re-renders", async ({
+  test("mascot image is stable (image 2) across re-renders", async ({
     page,
   }) => {
     await page.goto("/practice/session");
@@ -316,11 +325,13 @@ test.describe("Practice session page", () => {
     await page.waitForTimeout(500);
     srcs.push(await mascot.getAttribute("src"));
 
-    // Every observed src must be the default mascot (image 2.png), never 4.png.
+    // Every observed src must be the default mascot (image 2), never image 4.
+    // Match without the file extension: assets are served as WebP via
+    // next/image, so the src is URL-encoded and no longer ends in ".png".
     for (const src of srcs) {
       expect(src).toBeTruthy();
-      expect(src).toContain("2.png");
-      expect(src).not.toContain("4.png");
+      expect(decodeURIComponent(src!)).toMatch(/image 2\.(png|webp)/);
+      expect(decodeURIComponent(src!)).not.toMatch(/image 4\.(png|webp)/);
     }
   });
 });
