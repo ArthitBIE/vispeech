@@ -78,14 +78,33 @@ export default function SignInPage() {
 
     setLoading(true);
     try {
+      const redirectTo = `${window.location.origin}/auth/callback?next=/home`;
+      console.log("[SignIn] === Google OAuth initiated ===");
+      console.log("[SignIn] window.location.origin:", window.location.origin);
+      console.log("[SignIn] redirectTo:", redirectTo);
+      console.log(
+        "[SignIn] NEXT_PUBLIC_SUPABASE_URL:",
+        process.env.NEXT_PUBLIC_SUPABASE_URL
+      );
+      console.log("[SignIn] isSupabaseConfigured:", isSupabaseConfigured);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/home`,
+          redirectTo,
         },
       });
-      if (error) throw error;
+      if (error) {
+        console.error(
+          "[SignIn] signInWithOAuth returned error:",
+          error.message
+        );
+        throw error;
+      }
+      console.log(
+        "[SignIn] signInWithOAuth returned no error — browser should redirect to Google"
+      );
     } catch (err: any) {
+      console.error("[SignIn] handleGoogleLogin threw:", err.message);
       setError(err.message);
     } finally {
       setLoading(false);
