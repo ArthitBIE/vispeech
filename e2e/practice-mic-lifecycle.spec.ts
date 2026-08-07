@@ -83,7 +83,11 @@ test.describe("Practice microphone lifecycle", () => {
 
     // Client-side navigation, so the page context (and the track list) lives on.
     await page.getByRole("button", { name: "ยกเลิกการฝึก" }).first().click();
-    await expect(page).not.toHaveURL(/practice/, { timeout: 10000 });
+    // The dashboard route is compiled on demand by the dev server, so this
+    // client-side navigation was measured at 6-7.5s on a warm machine and is
+    // slower under parallel workers. The old 10s budget was close enough to
+    // that to fail intermittently. The navigation itself always completed.
+    await expect(page).not.toHaveURL(/practice/, { timeout: 30000 });
     await page.waitForTimeout(1000);
 
     expect(

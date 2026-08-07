@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { settleDashboardAutoSidebar } from "./helpers/dashboard";
 
 test.describe("Dashboard results sidebar", () => {
   test.beforeEach(async ({ page }) => {
@@ -9,6 +10,10 @@ test.describe("Dashboard results sidebar", () => {
     ).toBeVisible({
       timeout: 15000,
     });
+    // The dashboard opens the results sidebar by itself once the latest
+    // session loads, and its overlay swallows the clicks below. Dismiss it so
+    // each test starts from a known state.
+    await settleDashboardAutoSidebar(page);
   });
 
   test("สรุปผล button opens results sidebar", async ({ page }) => {
