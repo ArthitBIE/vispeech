@@ -1,18 +1,19 @@
 <!-- generated-by: gsd-doc-writer -->
+
 # Configuration
 
 ViSpeech uses environment variables for secrets and runtime settings, and standard configuration files for tooling. All environment variables are loaded from `.env.local` at the project root.
 
 ## Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | — | Supabase project URL from Project Settings → API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | — | Supabase anon/public (client-safe) API key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Scripts | — | Supabase service_role key; required only for `scripts/create-test-user.ts` |
-| `E2E_TEST_EMAIL` | Tests | `test@vispeech.com` | Test user email for Playwright E2E tests |
-| `E2E_TEST_PASSWORD` | Tests | `test123456` | Test user password for Playwright E2E tests |
-| `CI` | No | — | When set, Playwright uses 2 retries, 1 worker, and starts a fresh dev server |
+| Variable                        | Required | Default             | Description                                                                  |
+| ------------------------------- | -------- | ------------------- | ---------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Yes      | —                   | Supabase project URL from Project Settings → API                             |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes      | —                   | Supabase anon/public (client-safe) API key                                   |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Scripts  | —                   | Supabase service_role key; required only for `scripts/create-test-user.ts`   |
+| `E2E_TEST_EMAIL`                | Tests    | `test@vispeech.com` | Test user email for Playwright E2E tests                                     |
+| `E2E_TEST_PASSWORD`             | Tests    | `test123456`        | Test user password for Playwright E2E tests                                  |
+| `CI`                            | No       | —                   | When set, Playwright uses 2 retries, 1 worker, and starts a fresh dev server |
 
 ### Required (startup failure if missing)
 
@@ -60,9 +61,71 @@ cp .env.local.example .env.local
 
 <!-- VERIFY: SUPABASE_SERVICE_ROLE_KEY is not in .env.local.example but is required by scripts/create-test-user.ts. Add it manually if you need to run that script. -->
 
+## Supabase Auth Redirect URLs (OAuth)
+
+Google OAuth is configured in the Supabase Dashboard, not in this repo. Two
+settings there decide where a user lands after signing in:
+
+| Setting           | Where                              | Effect                                                                                   |
+| ----------------- | ---------------------------------- | ---------------------------------------------------------------------------------------- |
+| **Site URL**      | Authentication → URL Configuration | Fallback destination. Used whenever the requested `redirect_to` is **not** allow-listed. |
+| **Redirect URLs** | Authentication → URL Configuration | Allow-list of permitted `redirect_to` values.                                            |
+
+### Matching is exact, and failure is silent
+
+Supabase compares `redirect_to` against the allow-list **exactly** unless the
+entry contains a `**` wildcard. A non-matching value is not rejected with an
+error: it is silently replaced by the Site URL, and sign-in continues. The
+symptom is "login works but sends me to the wrong environment", which looks
+like a code bug and is not.
+
+This is why `src/app/auth/signin/page.tsx` and `signup/page.tsx` request a
+bare `${window.location.origin}/auth/callback` with **no query string**. Adding
+`?next=/home` makes the value stop matching the allow-listed
+`http://localhost:3000/auth/callback`, so local sign-in silently redirects to
+production. The callback page already defaults `next` to `/home`, so the
+parameter is unnecessary. Do not reintroduce it unless the allow-list entry
+uses a wildcard.
+
+### Required allow-list entries
+
+```
+http://localhost:3000/auth/callback
+https://<your-production-domain>/auth/callback
+```
+
+### Vercel preview deployments
+
+Preview URLs are generated per branch and per build
+(`https://<project>-git-<branch>-<team>.vercel.app`,
+`https://<project>-<hash>-<team>.vercel.app`), so they can never be listed
+individually ahead of time. Without a wildcard entry, OAuth from a preview
+deployment silently lands on the Site URL (production) instead of the preview,
+identically to a URL that is not allow-listed at all.
+
+To support previews, add a wildcard entry:
+
+```
+https://<project>-*-<team>.vercel.app/auth/callback
+```
+
+Verify a change by starting the OAuth flow and inspecting where the browser
+actually lands:
+
+```
+https://<project-ref>.supabase.co/auth/v1/authorize?provider=google&redirect_to=<url-encoded-callback>
+```
+
+If the final URL host is the Site URL rather than the host you requested, the
+entry is not matching. Note that the `redirect_to` echoed in the redirect to
+Google is **not** a validation signal: it is echoed back verbatim even for
+values that are not allow-listed, and the allow-list is only applied on the
+final hop back from Supabase.
+
 ## Config Files
 
 ### `next.config.ts`
+
 **Location:** `/next.config.ts`
 
 Standard Next.js configuration. The only customization is `serverExternalPackages` which forces `@mediapipe/face_mesh` and `@mediapipe/camera_utils` to load as CommonJS on the server:
@@ -77,6 +140,7 @@ serverExternalPackages: [
 This prevents Next.js from trying to bundle these native Node.js packages with the client bundle.
 
 ### `tsconfig.json`
+
 **Location:** `/tsconfig.json`
 
 Standard Next.js TypeScript configuration with strict mode enabled. Path alias:
@@ -86,19 +150,23 @@ Standard Next.js TypeScript configuration with strict mode enabled. Path alias:
 ```
 
 ### `eslint.config.mjs`
+
 **Location:** `/eslint.config.mjs`
 
 Uses `eslint-config-next` with Flat Config format (ESLint v9). Run with `npm run lint`.
 
 ### `postcss.config.mjs`
+
 **Location:** `/postcss.config.mjs`
 
 PostCSS pipeline using `@tailwindcss/postcss` (Tailwind CSS v4 PostCSS plugin).
 
 ### `vitest.config.ts`
+
 **Location:** `/vitest.config.ts`
 
 Unit test configuration:
+
 - **Environment:** `jsdom` (simulates browser DOM)
 - **Globals:** enabled
 - **Excludes:** `e2e/`, `.opencode/`, `node_modules/`
@@ -106,9 +174,11 @@ Unit test configuration:
 - Run with: `npm run test:unit`
 
 ### `playwright.config.ts`
+
 **Location:** `/playwright.config.ts`
 
 E2E test configuration:
+
 - **Test directory:** `./e2e`
 - **Base URL:** `http://localhost:3000`
 - **Projects:** `setup`, `unauthenticated`, `authenticated`
@@ -127,10 +197,10 @@ The only environment-aware behavior is the `CI` variable, which adjusts Playwrig
 
 Database schema is defined in two migration files under `supabase/migrations/`:
 
-| File | Contents |
-|------|----------|
-| `001_schema.sql` | Core tables: `words`, `word_accuracy`, `practice_logs` |
-| `002_practice_sessions.sql` | `practice_sessions` table |
+| File                        | Contents                                               |
+| --------------------------- | ------------------------------------------------------ |
+| `001_schema.sql`            | Core tables: `words`, `word_accuracy`, `practice_logs` |
+| `002_practice_sessions.sql` | `practice_sessions` table                              |
 
 Seed data (`supabase/seed.sql`) inserts 32 Thai practice words across 7 viseme groups.
 
