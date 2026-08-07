@@ -60,6 +60,9 @@ export function PracticeWord({
   const rafRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const listeningStartedRef = useRef(false);
+  // The live capture stream, held so it can be stopped. The AudioContext and
+  // analyser are not enough: closing them leaves the device open.
+  const micStreamRef = useRef<MediaStream | null>(null);
   const recognizerRef = useRef<SpeechRecognizer | null>(null);
   // Latest handleStopCamera, so the unmount cleanup stops the current
   // face-mesh instance (state would be stale inside the [] effect).
@@ -106,6 +109,10 @@ export function PracticeWord({
       if (audioRef.current?.src) URL.revokeObjectURL(audioRef.current.src);
       recognizerRef.current?.stop();
       stopCameraRef.current();
+      // Release the mic explicitly: unmount can happen mid-attempt, with no
+      // stopAudioLevel on the way out.
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = null;
     };
   }, []);
 
@@ -221,6 +228,10 @@ export function PracticeWord({
   stopCameraRef.current = handleStopCamera;
 
   function startAudioLevel(stream: MediaStream) {
+    // Keep the stream itself, not just the analyser graph. Closing the
+    // AudioContext does not release the capture device; only stopping the
+    // tracks turns the microphone (and its recording indicator) off.
+    micStreamRef.current = stream;
     const AudioCtx =
       window.AudioContext ||
       (window as unknown as { webkitAudioContext: typeof AudioContext })
@@ -250,6 +261,8 @@ export function PracticeWord({
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     analyserRef.current = null;
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    micStreamRef.current = null;
     audioCtxRef.current?.close();
     audioCtxRef.current = null;
     setAudioLevel(0);
@@ -306,6 +319,11 @@ export function PracticeWord({
 
   async function handleSubmit() {
     setSubmitting(true);
+
+    // The attempt is over: release the mic before scoring rather than leaving
+    // it open across the network round-trip and the whole results screen.
+    if (listening) await handleStopListening();
+    else stopAudioLevel();
 
     try {
       const {

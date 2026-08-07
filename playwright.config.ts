@@ -45,11 +45,33 @@ export default defineConfig({
       },
     },
     {
+      // Capture-device lifecycle tests need a synthetic mic/camera so
+      // getUserMedia resolves headlessly. These flags are scoped to this
+      // project on purpose: a fake camera feeds a synthetic pattern with no
+      // face in it, which would break the face-mesh assertions in the main
+      // practice specs.
+      name: "media",
+      testMatch: [
+        "settings-mic-lifecycle.spec.ts",
+        "practice-mic-lifecycle.spec.ts",
+      ],
+      dependencies: ["setup"],
+      use: {
+        storageState: "e2e/.auth/user.json",
+        launchOptions: {
+          args: [
+            "--use-fake-ui-for-media-stream",
+            "--use-fake-device-for-media-stream",
+          ],
+        },
+      },
+    },
+    {
       // Runs last: signOut() revokes the server session, so this project must
       // not run in parallel with tests that need the shared session.
       name: "logout",
       testMatch: ["logout.spec.ts"],
-      dependencies: ["setup", "authenticated"],
+      dependencies: ["setup", "authenticated", "media"],
       use: {
         storageState: "e2e/.auth/user.json",
       },
