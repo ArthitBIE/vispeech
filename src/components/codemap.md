@@ -18,7 +18,7 @@ UI component layer for the Vispeech client app. Three groups: presentational pri
 3. `Sidebar` on mount → `supabase.auth.getSession()` → `supabase.from("practice_logs").select("created_at")` → `computeStreak(keys)` from `@/lib/streak` → renders streak card + 5-day flame grid + progress vs `STREAK_GOAL`.
 4. `PracticeWord` start → `handleStartPractice` → `initFaceMesh(video, canvas)` (`@/lib/mediapipe`) + `createSpeechRecognizer("th-TH")` (`@/lib/viseme`) + `getUserMedia` → mouthOpen (face-mesh `onResult`) and audioLevel (AnalyserNode rAF loop) + transcript (recognizer `onResult`); every change pushed via `onLive`.
 5. Submit → `handleSubmit` → `supabase.auth.getSession()` for bearer token → `POST /api/score` `{wordId, transcript, mouthOpen, sessionId, targetText, visemeGroup}` → `ScoreResult` → `onScored(result)` → parent advances word/session.
-6. TTS: `playWordSound` → `speakThai(word.word)` (`@/lib/tts`); on error falls back to `fetch("/api/tts")` → blob → `Audio` element; progress via `onProgress`/`timeupdate`.
+6. TTS: a `useEffect` keyed on `word.id`/`word.word` fetches `POST /api/tts` → blob → `URL.createObjectURL` → `audioSrc` → `<audio controls>`. Playback is user-initiated (no autoplay); `onEnded` sets `audioPlayed`, which is what triggers STT. `speakThai` (`@/lib/tts`) exists and is unit-tested but is not used by this component.
 7. Unmount/word-change cleanup: single `useEffect([])` cleanup stops recognizer, face-mesh (`stopCameraRef`), audio ctx, rAF, TTS, revokes blob URLs.
 8. `SupabaseNotConfigured` renders when env check fails in auth routes; `ctaHref` links to sign-in.
 

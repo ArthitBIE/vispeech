@@ -84,7 +84,9 @@ export function PracticeWord({
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [, setError] = useState<string | null>(null);
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  // Only ever written, never read: the audio element owns its own play state
+  // and we just mirror the transitions we care about into audioPlayed.
+  const [, setIsPlaying] = useState(false);
   const [audioPlayed, setAudioPlayed] = useState(false);
 
   useEffect(() => {
@@ -106,6 +108,10 @@ export function PracticeWord({
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       audioCtxRef.current?.close();
       audioRef.current?.pause();
+      // Read through the ref at cleanup time on purpose. This effect mounts
+      // before the TTS fetch resolves, so audioRef.current is still null then;
+      // copying it into a local up top (what exhaustive-deps suggests) would
+      // capture null and silently skip the revoke, leaking the blob URL.
       if (audioRef.current?.src) URL.revokeObjectURL(audioRef.current.src);
       recognizerRef.current?.stop();
       stopCameraRef.current();
@@ -122,9 +128,10 @@ export function PracticeWord({
 
   // Fetch TTS audio when word changes
   useEffect(() => {
-    setAudioSrc(null);
-    setIsPlaying(false);
-    setAudioPlayed(false);
+    // No state reset here on purpose. SessionContent mounts this component
+    // with key={word.id}, so a new word is a fresh instance and every piece
+    // of audio state is already at its initial value. Resetting in the effect
+    // body was a no-op that cost a second render pass on every mount.
     listeningStartedRef.current = false;
     let cancelled = false;
     (async () => {
@@ -146,24 +153,9 @@ export function PracticeWord({
     };
   }, [word.id, word.word]);
 
-  // Start STT after audio finishes playing during practice
-  useEffect(() => {
-    if (
-      practicing &&
-      audioPlayed &&
-      !listening &&
-      !listeningStartedRef.current
-    ) {
-      listeningStartedRef.current = true;
-      handleStartListening();
-    }
-  }, [practicing, audioPlayed, listening]);
-
-  function playWordSound() {
-    if (!audioRef.current || !audioSrc) return;
-    audioRef.current.currentTime = 0;
-    audioRef.current.play().catch(() => {});
-  }
+  // Start STT after audio finishes playing during practice.
+  // Declared below handleStartListening so the effect closes over the current
+  // render's copy rather than reaching backwards to a hoisted binding.
 
   async function handleStartCamera() {
     if (!videoRef.current || !canvasRef.current) {
@@ -225,7 +217,12 @@ export function PracticeWord({
     setCameraActive(false);
     setFaceMesh(null);
   }
-  stopCameraRef.current = handleStopCamera;
+  // Keep the unmount cleanup pointed at the latest closure. Assigning during
+  // render would make the ref disagree with the committed tree if React
+  // rendered without committing.
+  useEffect(() => {
+    stopCameraRef.current = handleStopCamera;
+  });
 
   function startAudioLevel(stream: MediaStream) {
     // Keep the stream itself, not just the analyser graph. Closing the
@@ -292,6 +289,25 @@ export function PracticeWord({
     recognizerRef.current = sr;
     setListening(true);
   }
+
+  // Start STT once the prompt audio has finished playing during practice.
+  // listeningStartedRef guards against re-entry: `listening` only flips true
+  // after handleStartListening awaits getUserMedia, so this effect can re-run
+  // before the flag it checks has been set.
+  useEffect(() => {
+    if (
+      practicing &&
+      audioPlayed &&
+      !listening &&
+      !listeningStartedRef.current
+    ) {
+      listeningStartedRef.current = true;
+      handleStartListening();
+    }
+    // handleStartListening is redeclared every render and is intentionally
+    // omitted; the ref guard, not the dep array, controls when it fires.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [practicing, audioPlayed, listening]);
 
   async function handleStopListening() {
     if (!recognizer) return;

@@ -95,18 +95,33 @@ config: it is not in this repo, is not covered by any migration, and would not
 survive recreating the project from scratch.
 
 ```
+https://vispeech-pi.vercel.app/auth/callback
 http://localhost:3000/auth/callback
 https://vispeech-pi.vercel.app
-https://vispeech-pi.vercel.app/auth/callback
-https://vispeech-arthitbies-projects.vercel.app/
-https://vispeech-arthitbies-projects.vercel.app/**
 https://vispeech-git-develop-arthitbies-projects.vercel.app/auth/callback
 ```
 
 Site URL is `https://vispeech-pi.vercel.app/auth/callback`.
 
-Only the first two lines are strictly required (local development and
-production). The rest cover preview deployments.
+This is the fallback destination: where a user lands whenever the requested
+`redirect_to` is **not** allow-listed.
+
+Only the host is load-bearing for the checks in `scripts/`. Two values must
+agree with the host recorded here, and both fail loudly if they drift:
+
+- `SITE_URL_HOST` in `scripts/check-redirect-behaviour.mjs`, which asserts
+  that denied cases land on the Site URL rather than merely failing to be
+  honoured.
+- The `Site URL is` line above, which `scripts/check-redirect-allowlist.mjs`
+  parses and compares against the live project.
+
+A mismatch between these is **not** a security finding on its own. It means
+the fallback moved, not that a denied host was accepted. The allow-list is
+what governs acceptance, and it is checked separately.
+
+The first three entries are required (local dev and production). The fourth
+covers the develop branch preview deployment. For other long-lived branches,
+add one entry per branch using the stable per-branch alias.
 
 ### Vercel preview deployments
 
