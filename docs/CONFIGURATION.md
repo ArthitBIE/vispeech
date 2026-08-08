@@ -97,7 +97,6 @@ survive recreating the project from scratch.
 ```
 https://vispeech-pi.vercel.app/auth/callback
 http://localhost:3000/auth/callback
-https://vispeech-pi.vercel.app
 https://vispeech-git-develop-arthitbies-projects.vercel.app/auth/callback
 ```
 
@@ -119,7 +118,7 @@ A mismatch between these is **not** a security finding on its own. It means
 the fallback moved, not that a denied host was accepted. The allow-list is
 what governs acceptance, and it is checked separately.
 
-The first three entries are required (local dev and production). The fourth
+The first entry is the production URL. The second is for local dev. The third
 covers the develop branch preview deployment. For other long-lived branches,
 add one entry per branch using the stable per-branch alias.
 
