@@ -335,6 +335,37 @@ test.describe("Practice session page", () => {
     expect(currentTime).toBe(0);
   });
 
+  test("advancing to the next word resets practice state", async ({ page }) => {
+    // Regression guard for the PracticeWord effect cleanup. The TTS effect
+    // used to reset audio state in its body, which was a no-op that cost an
+    // extra render because SessionContent mounts the component with
+    // key={word.id}. Removing those setState calls is only safe while that
+    // key holds, so this asserts the remount itself.
+    //
+    // The assertion is on `practicing`, not on the audio src: nothing in the
+    // skip path resets `practicing`, so it is the state that actually leaks
+    // if the key is ever dropped. (The audio src changes either way, because
+    // the TTS effect re-fetches on word.id, which makes it useless as a
+    // remount probe. Verified by deleting the key and watching an earlier
+    // src-based version of this test still pass.)
+    await startPracticeSession(page);
+
+    // startPracticeSession clicks the start button, so we are mid-practice:
+    // the start button is gone and the submit/skip controls are showing.
+    const startButton = page.getByTestId("practice-camera-btn");
+    await expect(startButton).toBeHidden();
+
+    await page
+      .locator('button:has-text("คำถัดไป"), button:has-text("จบบทเรียน")')
+      .first()
+      .click();
+
+    // A fresh instance means practicing === false again, so the start button
+    // must come back. If the component were reused, it would stay hidden and
+    // the next word would open already "in progress" with a stale camera.
+    await expect(startButton).toBeVisible({ timeout: 10000 });
+  });
+
   test("mascot image is stable (image 2) across re-renders", async ({
     page,
   }) => {

@@ -22,5 +22,5 @@ Server-side TTS (Text-to-Speech) endpoint. Converts Thai text into an MP3 audio 
 
 ## Integration
 
-- Consumed by: `src/components/practice/PracticeWord.tsx` (`playWordSound` fallback — `fetch("/api/tts")` → blob → `Audio`, after `speakThai` from `@/lib/tts` fails); referenced in `src/components/codemap.md` and `src/app/api/codemap.md` (POST /api/tts entry).
+- Consumed by: `src/components/practice/PracticeWord.tsx` (a `useEffect` keyed on the word fetches `/api/tts` → blob → object URL → `<audio controls>`; there is no `speakThai` fallback in this component); referenced in `src/components/codemap.md` and `src/app/api/codemap.md` (POST /api/tts entry).
 - Depends on: `edge-tts-universal` (`EdgeTTS` class), Next.js `NextResponse`/`Request`, Node `Buffer` (nodejs runtime). No Supabase auth — open endpoint (no `Authorization` check, unlike `/api/score` and `/api/practice-sessions`).
