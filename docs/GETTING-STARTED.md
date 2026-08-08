@@ -22,7 +22,7 @@ Follow these steps to get ViSpeech running locally for development or evaluation
 2. **Install dependencies**:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 ## Environment Setup
@@ -53,8 +53,19 @@ Follow these steps to get ViSpeech running locally for development or evaluation
 
 ## Database Setup
 
-1. Open the Supabase **SQL Editor** in your project dashboard.
-2. Run the migration files **in order**: first `supabase/migrations/001_schema.sql` (creates `words`, `practice_logs`, `word_accuracy`), then `supabase/migrations/002_practice_sessions.sql` (creates `practice_sessions`), then `supabase/migrations/003_session_results.sql` (adds `session_id` to logs, adds `phonetic` to words), then `supabase/migrations/004_lesson_words.sql` (seeds vowels + conversation words), then `supabase/migrations/005_seed_demo_words.sql` (seeds the original 30 demo words). All five apply Row Level Security and all are idempotent — re-running any of them is safe.
+Link the Supabase CLI to your project once, then apply every migration:
+
+```bash
+# The project ref is the subdomain of your Supabase project URL.
+npx supabase link --project-ref YOUR_PROJECT_REF
+npx supabase db push
+```
+
+This applies, in order: `001_schema.sql` (creates `words`, `practice_logs`, `word_accuracy`), `002_practice_sessions.sql` (creates `practice_sessions`), `003_session_results.sql` (adds `session_id` to logs, adds `phonetic` to words), `004_lesson_words.sql` (seeds 40 vowel + conversation words), and `005_seed_demo_words.sql` (seeds the 32 original demo words). All five apply Row Level Security and all are idempotent — re-running any of them is safe.
+
+If `db push` reports "remote migration versions not found in local migrations directory", the remote database has history entries with no matching local file, which happens when migrations were previously pasted into the dashboard by hand. The CLI prints the exact `supabase migration repair` commands needed; run those, then re-run `db push`.
+
+You can also paste each file into the Supabase **SQL Editor** in order if you prefer not to use the CLI.
 
 The app needs these rows — without words in the `words` table, the home page shows no lessons and practice cannot start.
 
@@ -63,7 +74,7 @@ The app needs these rows — without words in the `words` table, the home page s
 Start the Next.js development server:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser. The app redirects to `/auth` for login or signup. After authenticating, the dashboard shows available practice words.
@@ -91,7 +102,7 @@ ViSpeech requires webcam access for face tracking (MediaPipe Face Mesh) and micr
 The Next.js dev server uses port 3000 by default. If port 3000 is already in use, run:
 
 ```bash
-npm run dev -- -p 3001
+pnpm dev -p 3001
 ```
 
 Then open [http://localhost:3001](http://localhost:3001).

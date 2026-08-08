@@ -10,7 +10,7 @@ git clone <repository-url>
 cd vispeech
 
 # Install dependencies
-npm install
+pnpm install
 
 # Set up environment variables
 cp .env.local.example .env.local
@@ -26,20 +26,30 @@ Edit `.env.local` with your Supabase project credentials:
 | `E2E_TEST_PASSWORD`             | For E2E     | Password of the test user                          |
 | `SUPABASE_SERVICE_ROLE_KEY`     | For scripts | Service role key (for `create-test-user.ts`)       |
 
-**Supabase setup:** Create a project on [supabase.com](https://supabase.com), then run all migrations in order:
+**Supabase setup:** Create a project on [supabase.com](https://supabase.com), then link the CLI to it and apply the migrations:
 
 ```bash
+# One-time: link this checkout to your Supabase project.
+# The project ref is the subdomain of your project URL.
+npx supabase link --project-ref YOUR_PROJECT_REF
+
 # Apply all migrations (schema + seed data)
 npx supabase db push
 ```
+
+If `db push` reports "remote migration versions not found in local migrations
+directory", the remote database has history entries that do not correspond to
+files in `supabase/migrations/` — usually because migrations were applied by
+hand through the dashboard. The CLI prints the exact `supabase migration repair`
+commands to run; follow them, then re-run `db push`.
 
 Or run them manually via the Supabase SQL editor, in order:
 
 - `supabase/migrations/001_schema.sql` — core tables + RLS
 - `supabase/migrations/002_practice_sessions.sql` — sessions table + RLS
 - `supabase/migrations/003_session_results.sql` — session_id + phonetic
-- `supabase/migrations/004_lesson_words.sql` — vowels + conversation (idempotent)
-- `supabase/migrations/005_seed_demo_words.sql` — 30 demo words (idempotent)
+- `supabase/migrations/004_lesson_words.sql` — vowels + conversation, 40 rows (idempotent)
+- `supabase/migrations/005_seed_demo_words.sql` — demo words, 32 rows (idempotent)
 
 All five migrations are idempotent — re-running any is safe.
 
@@ -48,20 +58,20 @@ All five migrations are idempotent — re-running any is safe.
 ```bash
 export NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 export SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-npm run create-test-user
+pnpm create-test-user
 ```
 
 ## Build Commands
 
-| Command             | Description                                                     |
-| ------------------- | --------------------------------------------------------------- |
-| `npm run dev`       | Start the Next.js development server on `http://localhost:3000` |
-| `npm run build`     | Production build (compiles and optimizes for deployment)        |
-| `npm start`         | Start the production server (requires `build` first)            |
-| `npm run lint`      | Run ESLint across the codebase                                  |
-| `npm run test:unit` | Run Vitest unit tests (co-located in `__tests__` directories)   |
-| `npm run test:e2e`  | Run Playwright E2E tests (in `e2e/`)                            |
-| `npm test`          | Run all tests (unit + E2E)                                      |
+| Command          | Description                                                     |
+| ---------------- | --------------------------------------------------------------- |
+| `pnpm dev`       | Start the Next.js development server on `http://localhost:3000` |
+| `pnpm build`     | Production build (compiles and optimizes for deployment)        |
+| `npm start`      | Start the production server (requires `build` first)            |
+| `pnpm lint`      | Run ESLint across the codebase                                  |
+| `pnpm test:unit` | Run Vitest unit tests (co-located in `__tests__` directories)   |
+| `pnpm test:e2e`  | Run Playwright E2E tests (in `e2e/`)                            |
+| `pnpm test`      | Run all tests (unit + E2E)                                      |
 
 **Type checking:** The project uses TypeScript `strict` mode. Run type checks with:
 
@@ -103,10 +113,13 @@ src/
     └── mediapipe.d.ts                  MediaPipe module declarations (face_mesh, camera_utils)
 
 supabase/
-├── migrations/            Versioned SQL migrations (applied in order)
-│   ├── 001_schema.sql     Core tables: words, practice_logs, word_accuracy
-│   └── 002_practice_sessions.sql   Session table and RLS policies
-└── seed.sql               30 Thai practice words in 7 viseme groups
+├── config.toml            Supabase CLI project config (project_id + defaults)
+└── migrations/            Versioned SQL migrations (applied in order)
+    ├── 001_schema.sql             Core tables: words, practice_logs, word_accuracy
+    ├── 002_practice_sessions.sql  Session table and RLS policies
+    ├── 003_session_results.sql    session_id on logs, phonetic on words
+    ├── 004_lesson_words.sql       40 vowel + conversation words (idempotent)
+    └── 005_seed_demo_words.sql    32 original demo words (idempotent)
 
 e2e/                        Playwright E2E tests
 ├── global.setup.ts         Auth setup (logs in via /auth, saves storage state)
@@ -149,18 +162,18 @@ scripts/
 
 - **ESLint 9** with `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`.
 - Config: `eslint.config.mjs` at project root.
-- Run: `npm run lint`.
+- Run: `pnpm lint`.
 - No Prettier or other formatter is configured.
 
 ### Testing
 
 - **Unit tests**: Vitest with `jsdom` environment, co-located in `__tests__/` directories next to the module under test:
   ```bash
-  npm run test:unit
+  pnpm test:unit
   ```
 - **E2E tests**: Playwright in `e2e/`, split into `unauthenticated` (auth spec) and `authenticated` (dashboard + practice specs) projects:
   ```bash
-  npm run test:e2e
+  pnpm test:e2e
   ```
 - E2E tests require a running dev server (Playwright's `webServer` config handles this automatically).
 - E2E auth depends on `E2E_TEST_EMAIL` and `E2E_TEST_PASSWORD` environment variables.
@@ -187,8 +200,8 @@ Schema changes go in `supabase/migrations/` as versioned SQL files:
 | `001_schema.sql`            | `words`, `practice_logs`, `word_accuracy` tables with RLS |
 | `002_practice_sessions.sql` | `practice_sessions` table with RLS                        |
 | `003_session_results.sql`   | `session_id` on logs, `phonetic` on words                 |
-| `004_lesson_words.sql`      | Vowels + conversation words (37 rows, idempotent)         |
-| `005_seed_demo_words.sql`   | Original 30 demo words (idempotent)                       |
+| `004_lesson_words.sql`      | Vowels + conversation words (40 rows, idempotent)         |
+| `005_seed_demo_words.sql`   | Original demo words (32 rows, idempotent)                 |
 
 ## Adding New Practice Word Types
 
@@ -202,7 +215,7 @@ The `words` table stores practice words with a `viseme_group` column that maps t
      ('เก่า', 'ริมฝีปากปิด', 1);
    ```
 
-2. **Update `supabase/seed.sql`** to keep the seed data in sync with new additions.
+2. **Put the INSERT in a new migration file** with `WHERE NOT EXISTS` guards so it stays idempotent (see `004_lesson_words.sql` and `005_seed_demo_words.sql` for the pattern). There is no separate seed file — seed data lives in the migrations.
 
 3. **If adding a new viseme group**, check whether the scoring engine in `src/lib/scoring/index.ts` handles it. The `DeterministicHeuristicStrategy.idealMouthOpen()` method maps specific words to ideal mouth-open values. If the group needs new scoring logic, update the `wideWords`, `roundedWords`, or `closedWords` arrays, or add a new category.
 
@@ -215,7 +228,7 @@ The `words` table stores practice words with a `viseme_group` column that maps t
 ```bash
 export NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 export SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-npm run create-test-user
+pnpm create-test-user
 ```
 
 Creates a user via the Supabase Admin API with `email_confirm: true`. The email and password default to `test@vispeech.com` / `test123456` if the environment variables `E2E_TEST_EMAIL` and `E2E_TEST_PASSWORD` are not set. Outputs the credentials needed for E2E tests.
@@ -228,7 +241,7 @@ No branch naming convention is formally documented. The default branch is `main`
 
 No formal pull request template or checklist is configured. When submitting a PR:
 
-1. Ensure `npm run lint` and `npm test` pass.
+1. Ensure `pnpm lint` and `pnpm test` pass.
 2. Write a concise description of the change and why it was made.
 3. If the change adds or modifies UI, include `data-testid` attributes for future E2E test coverage.
 4. If the change modifies the database schema, include the migration file and update seed data.

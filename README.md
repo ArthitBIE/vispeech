@@ -48,7 +48,14 @@ cp .env.local.example .env.local
 
 ## Quick Start
 
-1. **Configure Supabase** — Create a project on [supabase.com](https://supabase.com). In the Supabase SQL editor, run the migration files **in order**: `supabase/migrations/001_schema.sql` → `002_practice_sessions.sql` → `003_session_results.sql` → `004_lesson_words.sql` → `005_seed_demo_words.sql`. All five are idempotent and apply Row Level Security. The app needs these rows — without words in the `words` table, the home page shows no lessons and practice cannot start.
+1. **Configure Supabase** — Create a project on [supabase.com](https://supabase.com), then link the CLI and apply every migration:
+
+   ```bash
+   npx supabase link --project-ref YOUR_PROJECT_REF
+   npx supabase db push
+   ```
+
+   This applies `001_schema.sql` → `002_practice_sessions.sql` → `003_session_results.sql` → `004_lesson_words.sql` → `005_seed_demo_words.sql`. All five are idempotent and apply Row Level Security. You can paste them into the Supabase SQL editor in the same order instead if you prefer. The app needs these rows — without words in the `words` table, the home page shows no lessons and practice cannot start.
 
 2. **Set environment variables** — Add your Supabase URL and anon key to `.env.local`:
 

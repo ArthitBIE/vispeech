@@ -286,7 +286,7 @@ Standard Next.js TypeScript configuration with strict mode enabled. Path alias:
 
 **Location:** `/eslint.config.mjs`
 
-Uses `eslint-config-next` with Flat Config format (ESLint v9). Run with `npm run lint`.
+Uses `eslint-config-next` with Flat Config format (ESLint v9). Run with `pnpm lint`.
 
 ### `postcss.config.mjs`
 
@@ -304,7 +304,7 @@ Unit test configuration:
 - **Globals:** enabled
 - **Excludes:** `e2e/`, `.opencode/`, `node_modules/`
 - **Path alias:** `@/*` → `./src/*`
-- Run with: `npm run test:unit`
+- Run with: `pnpm test:unit`
 
 ### `playwright.config.ts`
 
@@ -315,8 +315,8 @@ E2E test configuration:
 - **Test directory:** `./e2e`
 - **Base URL:** `http://localhost:3000`
 - **Projects:** `setup`, `unauthenticated`, `authenticated`
-- **Web server:** auto-starts `npm run dev`; reuses existing server locally
-- Run with: `npm run test:e2e`
+- **Web server:** auto-starts `pnpm dev`; reuses existing server locally
+- Run with: `pnpm test:e2e`
 
 ## Per-Environment Overrides
 
@@ -335,8 +335,8 @@ Database schema and seed data are defined in migration files under `supabase/mig
 | `001_schema.sql`            | Core tables: `words`, `word_accuracy`, `practice_logs` + RLS |
 | `002_practice_sessions.sql` | `practice_sessions` table + RLS                              |
 | `003_session_results.sql`   | `session_id` on logs, `phonetic` on words + RLS              |
-| `004_lesson_words.sql`      | Vowels + conversation words (37 rows, idempotent)            |
-| `005_seed_demo_words.sql`   | Original 30 demo words (idempotent)                          |
+| `004_lesson_words.sql`      | Vowels + conversation words (40 rows, idempotent)            |
+| `005_seed_demo_words.sql`   | Original demo words (32 rows, idempotent)                    |
 
 All migrations are idempotent — re-running any of them is safe. Run them in order via the Supabase SQL editor or CLI:
 

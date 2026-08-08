@@ -14,7 +14,7 @@ ViSpeech uses **Vitest** for unit tests and **Playwright** for end-to-end (E2E) 
 Install all dependencies before running tests:
 
 ```bash
-npm install
+pnpm install
 ```
 
 For Playwright, install browsers (required for first-time setup):
@@ -28,7 +28,7 @@ npx playwright install
 ### Full Test Suite
 
 ```bash
-npm test
+pnpm test
 ```
 
 Runs Vitest unit tests first, then Playwright E2E tests sequentially.
@@ -36,7 +36,7 @@ Runs Vitest unit tests first, then Playwright E2E tests sequentially.
 ### Unit Tests Only
 
 ```bash
-npm run test:unit
+pnpm test:unit
 ```
 
 Equivalent to `vitest run`. Runs all `*.test.ts` files inside `src/` (e2e/ and .opencode/ directories are excluded).
@@ -44,10 +44,10 @@ Equivalent to `vitest run`. Runs all `*.test.ts` files inside `src/` (e2e/ and .
 ### E2E Tests Only
 
 ```bash
-npm run test:e2e
+pnpm test:e2e
 ```
 
-Equivalent to `npx playwright test`. Runs tests from the `e2e/` directory. The Playwright config auto-starts the Next.js dev server (`npm run dev`) before tests and reuses an existing server if one is already running locally.
+Equivalent to `npx playwright test`. Runs tests from the `e2e/` directory. The Playwright config auto-starts the Next.js dev server (`pnpm dev`) before tests and reuses an existing server if one is already running locally.
 
 ### Running a Single Test File
 
@@ -91,7 +91,7 @@ supabase/
     002_practice_sessions.sql     # Sessions table + RLS
     003_session_results.sql       # session_id + phonetic
     004_lesson_words.sql          # Vowels + conversation (idempotent)
-    005_seed_demo_words.sql       # 30 demo words (idempotent)
+    005_seed_demo_words.sql       # 32 demo words (idempotent)
 ```
 
 All migrations are idempotent — re-running any is safe.
@@ -238,7 +238,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
+    command: "pnpm dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
   },
