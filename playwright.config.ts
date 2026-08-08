@@ -33,6 +33,7 @@ export default defineConfig({
       testMatch: [
         "auth.spec.ts",
         "auth-signin.spec.ts",
+        "auth-protected-routes.spec.ts",
         "oauth-redirect.spec.ts",
       ],
       dependencies: [],
