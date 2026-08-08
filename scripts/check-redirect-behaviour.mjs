@@ -75,7 +75,7 @@ if (!SUPA) {
 // not a security finding: the hosts were still refused, they simply landed
 // somewhere this constant did not expect. check-redirect-allowlist.mjs now
 // asserts the Site URL against the docs so that drift is reported directly.
-const SITE_URL_HOST = "vispeech-arthitbies-projects.vercel.app";
+const SITE_URL_HOST = "vispeech-pi.vercel.app";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -138,7 +138,7 @@ const CASES = [
     true,
   ],
   ["production callback", "https://vispeech-pi.vercel.app/auth/callback", true],
-  ["production root", "https://vispeech-pi.vercel.app", true],
+  ["production bare", "https://vispeech-pi.vercel.app", true],
   [
     "branch preview callback",
     "https://vispeech-git-develop-arthitbies-projects.vercel.app/auth/callback",

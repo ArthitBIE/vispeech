@@ -13,10 +13,12 @@ const ibmPlexSansThai = IBM_Plex_Sans_Thai({
 
 export const metadata: Metadata = {
   title: "vispeech - ฝึกออกเสียงภาษาไทย",
-  description: "ฝึกออกเสียงภาษาไทยด้วยการวิเคราะห์รูปปากและเสียงพูด Real-time lip tracking + Thai speech recognition",
+  description:
+    "ฝึกออกเสียงภาษาไทยด้วยการวิเคราะห์รูปปากและเสียงพูด Real-time lip tracking + Thai speech recognition",
   openGraph: {
     title: "vispeech - ฝึกออกเสียงภาษาไทย",
-    description: "ฝึกออกเสียงภาษาไทยด้วยการวิเคราะห์รูปปากและเสียงพูด Real-time lip tracking + Thai speech recognition",
+    description:
+      "ฝึกออกเสียงภาษาไทยด้วยการวิเคราะห์รูปปากและเสียงพูด Real-time lip tracking + Thai speech recognition",
     locale: "th_TH",
     type: "website",
     siteName: "vispeech",
@@ -31,7 +33,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: "/favicon.png",
   },
 };
 

@@ -95,15 +95,13 @@ config: it is not in this repo, is not covered by any migration, and would not
 survive recreating the project from scratch.
 
 ```
+https://vispeech-pi.vercel.app/auth/callback
 http://localhost:3000/auth/callback
 https://vispeech-pi.vercel.app
-https://vispeech-pi.vercel.app/auth/callback
-https://vispeech-arthitbies-projects.vercel.app/
-https://vispeech-arthitbies-projects.vercel.app/**
 https://vispeech-git-develop-arthitbies-projects.vercel.app/auth/callback
 ```
 
-Site URL is `https://vispeech-arthitbies-projects.vercel.app/auth/callback`.
+Site URL is `https://vispeech-pi.vercel.app/auth/callback`.
 
 This is the fallback destination: where a user lands whenever the requested
 `redirect_to` is **not** allow-listed.
@@ -121,8 +119,9 @@ A mismatch between these is **not** a security finding on its own. It means
 the fallback moved, not that a denied host was accepted. The allow-list is
 what governs acceptance, and it is checked separately.
 
-Only the first two lines are strictly required (local development and
-production). The rest cover preview deployments.
+The first three entries are required (local dev and production). The fourth
+covers the develop branch preview deployment. For other long-lived branches,
+add one entry per branch using the stable per-branch alias.
 
 ### Vercel preview deployments
 
