@@ -19,15 +19,10 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   const { supabase, user } = await getSupabaseUser();
   if (supabase && user) {
-    // Only fetch logs from the last 30 days — streak only needs recent data
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
     const { data: logs } = await supabase
       .from("practice_logs")
       .select("created_at")
-      .eq("user_id", user.id)
-      .gte("created_at", thirtyDaysAgo.toISOString());
+      .eq("user_id", user.id);
     if (logs) {
       const keys = logs.map((l: { created_at: string }) =>
         dateKey(new Date(l.created_at))
