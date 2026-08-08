@@ -328,20 +328,20 @@ The only environment-aware behavior is the `CI` variable, which adjusts Playwrig
 
 ## Supabase Database Configuration
 
-Database schema is defined in two migration files under `supabase/migrations/`:
+Database schema and seed data are defined in migration files under `supabase/migrations/`:
 
-| File                        | Contents                                               |
-| --------------------------- | ------------------------------------------------------ |
-| `001_schema.sql`            | Core tables: `words`, `word_accuracy`, `practice_logs` |
-| `002_practice_sessions.sql` | `practice_sessions` table                              |
+| File                        | Contents                                                     |
+| --------------------------- | ------------------------------------------------------------ |
+| `001_schema.sql`            | Core tables: `words`, `word_accuracy`, `practice_logs` + RLS |
+| `002_practice_sessions.sql` | `practice_sessions` table + RLS                              |
+| `003_session_results.sql`   | `session_id` on logs, `phonetic` on words + RLS              |
+| `004_lesson_words.sql`      | Vowels + conversation words (37 rows, idempotent)            |
+| `005_seed_demo_words.sql`   | Original 30 demo words (idempotent)                          |
 
-Seed data (`supabase/seed.sql`) inserts 32 Thai practice words across 7 viseme groups.
-
-Apply migrations and seed data via the Supabase CLI:
+All migrations are idempotent — re-running any of them is safe. Run them in order via the Supabase SQL editor or CLI:
 
 ```bash
 npx supabase db push
-npx supabase db seed
 ```
 
 See [GETTING-STARTED.md](GETTING-STARTED.md) for step-by-step database setup instructions.

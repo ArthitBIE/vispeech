@@ -54,8 +54,9 @@ Follow these steps to get ViSpeech running locally for development or evaluation
 ## Database Setup
 
 1. Open the Supabase **SQL Editor** in your project dashboard.
-2. Run the migration files in order: first `supabase/migrations/001_schema.sql` (creates `words`, `practice_logs`, `word_accuracy`), then `supabase/migrations/002_practice_sessions.sql` (creates `practice_sessions`). Both apply Row Level Security policies.
-3. Run `supabase/seed.sql` to populate the `words` table with Thai practice words across multiple difficulty tiers.
+2. Run the migration files **in order**: first `supabase/migrations/001_schema.sql` (creates `words`, `practice_logs`, `word_accuracy`), then `supabase/migrations/002_practice_sessions.sql` (creates `practice_sessions`), then `supabase/migrations/003_session_results.sql` (adds `session_id` to logs, adds `phonetic` to words), then `supabase/migrations/004_lesson_words.sql` (seeds vowels + conversation words), then `supabase/migrations/005_seed_demo_words.sql` (seeds the original 30 demo words). All five apply Row Level Security and all are idempotent — re-running any of them is safe.
+
+The app needs these rows — without words in the `words` table, the home page shows no lessons and practice cannot start.
 
 ## First Run
 

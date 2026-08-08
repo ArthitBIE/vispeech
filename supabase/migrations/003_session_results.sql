@@ -9,7 +9,7 @@ CREATE INDEX idx_practice_logs_session_id ON practice_logs(session_id);
 ALTER TABLE words
 ADD COLUMN phonetic TEXT;
 
--- Update seed words with phonetic values
+-- Update demo words with phonetic values
 UPDATE words SET phonetic = '/ja:/' WHERE word = 'ยา';
 UPDATE words SET phonetic = '/fa:/' WHERE word = 'ฝา';
 UPDATE words SET phonetic = '/di:/' WHERE word = 'ดี';

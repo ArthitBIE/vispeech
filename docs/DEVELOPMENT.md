@@ -26,17 +26,22 @@ Edit `.env.local` with your Supabase project credentials:
 | `E2E_TEST_PASSWORD`             | For E2E     | Password of the test user                          |
 | `SUPABASE_SERVICE_ROLE_KEY`     | For scripts | Service role key (for `create-test-user.ts`)       |
 
-**Supabase setup:** Create a project on [supabase.com](https://supabase.com), then run the migrations and seed data:
+**Supabase setup:** Create a project on [supabase.com](https://supabase.com), then run all migrations in order:
 
 ```bash
-# Apply migrations in order
+# Apply all migrations (schema + seed data)
 npx supabase db push
-# Or run them manually via the Supabase SQL editor:
-#   supabase/migrations/001_schema.sql
-#   supabase/migrations/002_practice_sessions.sql
-# Then seed practice words:
-#   supabase/seed.sql
 ```
+
+Or run them manually via the Supabase SQL editor, in order:
+
+- `supabase/migrations/001_schema.sql` — core tables + RLS
+- `supabase/migrations/002_practice_sessions.sql` — sessions table + RLS
+- `supabase/migrations/003_session_results.sql` — session_id + phonetic
+- `supabase/migrations/004_lesson_words.sql` — vowels + conversation (idempotent)
+- `supabase/migrations/005_seed_demo_words.sql` — 30 demo words (idempotent)
+
+All five migrations are idempotent — re-running any is safe.
 
 **Create a test user (for E2E):**
 
@@ -164,7 +169,7 @@ scripts/
 
 Schema changes go in `supabase/migrations/` as versioned SQL files:
 
-1. **Create a new migration file** named sequentially (e.g., `003_feature_name.sql`).
+1. **Create a new migration file** named sequentially (e.g., `006_feature_name.sql`).
 2. Add the SQL statements inside — table creation, column additions, index creation, or new RLS policies.
 3. Apply the migration via the Supabase SQL editor or the Supabase CLI:
 
@@ -172,7 +177,7 @@ Schema changes go in `supabase/migrations/` as versioned SQL files:
    npx supabase db push
    ```
 
-4. If the migration adds seed data, update `supabase/seed.sql` as well.
+4. If the migration adds seed data, add it to the same migration file with `WHERE NOT EXISTS` guards (see `004_lesson_words.sql` and `005_seed_demo_words.sql` for the pattern).
 5. Update `docs/ARCHITECTURE.md` and `docs/CONFIGURATION.md` if the schema change affects documented structures or environment variables.
 
 **Current migration order:**
@@ -181,6 +186,9 @@ Schema changes go in `supabase/migrations/` as versioned SQL files:
 | --------------------------- | --------------------------------------------------------- |
 | `001_schema.sql`            | `words`, `practice_logs`, `word_accuracy` tables with RLS |
 | `002_practice_sessions.sql` | `practice_sessions` table with RLS                        |
+| `003_session_results.sql`   | `session_id` on logs, `phonetic` on words                 |
+| `004_lesson_words.sql`      | Vowels + conversation words (37 rows, idempotent)         |
+| `005_seed_demo_words.sql`   | Original 30 demo words (idempotent)                       |
 
 ## Adding New Practice Word Types
 
