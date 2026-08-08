@@ -97,7 +97,34 @@ const hostWildcard = live.filter((e) =>
     .includes("*")
 );
 
+// The Site URL was previously printed but never asserted, so when it changed
+// this check still reported OK and the failure surfaced two steps later in
+// check-redirect-behaviour.mjs as six alarming-looking deny failures. That is
+// a misleading place to learn about a config edit, so compare it here where
+// the diagnosis is obvious.
+const docSiteUrl = doc.match(/^Site URL is `([^`]+)`\./m)?.[1];
+const liveSiteUrl = cfg.site_url;
+
 let failed = false;
+
+if (!docSiteUrl) {
+  console.error(
+    "FAIL: could not find the Site URL line in docs/CONFIGURATION.md.\n" +
+      "Expected a line of the form: Site URL is `https://...`."
+  );
+  failed = true;
+} else if (docSiteUrl.replace(/\/+$/, "") !== liveSiteUrl.replace(/\/+$/, "")) {
+  console.error("FAIL: Site URL has drifted from docs/CONFIGURATION.md:");
+  console.error(`  documented: ${docSiteUrl}`);
+  console.error(`  live:       ${liveSiteUrl}`);
+  console.error(
+    "\nThe Site URL is the fallback for any redirect_to that is not\n" +
+      "allow-listed. Changing it is not itself a security problem, but it\n" +
+      "must stay in step with SITE_URL_HOST in check-redirect-behaviour.mjs,\n" +
+      "or every deny case in that script will fail for the wrong reason."
+  );
+  failed = true;
+}
 
 if (hostWildcard.length) {
   console.error("FAIL: wildcard in host position, account-takeover risk:");
