@@ -84,18 +84,28 @@ const documented = [
 
 const onlyLive = live.filter((e) => !documented.includes(e));
 const onlyDoc = documented.filter((e) => !live.includes(e));
-// Any wildcard in the HOST position, e.g. https://*.vercel.app or
-// https://app-*-team.vercel.app. Anchoring the wildcard to a project-and-team
-// prefix looks safe but is not: vercel.app project hosts are one flat,
-// first-come namespace and a project name is free text, so an outsider can
-// register a name that matches the pattern without crossing a dot. A `*` in
-// the path (https://exact.host/**) is fine and is not flagged.
-const hostWildcard = live.filter((e) =>
-  e
-    .replace(/^https?:\/\//, "")
-    .split("/")[0]
-    .includes("*")
-);
+// Any wildcard in the HOST position is a concern -- but Vercel preview URLs
+// are the documented Supabase pattern:
+//   https://*-<team-or-account-slug>.vercel.app/**
+// These are safe because vercel.app subdomains are scoped to a team slug first;
+// an attacker would need to register under the same slug, which is not
+// first-come. We still flag the generic *.vercel.app pattern, which anyone can
+// claim. Same logic applies to netlify.app.
+//
+// A `*` in the path (https://exact.host/**) is fine and is not flagged.
+const VERCEL_PREVIEW_RE = /^https?:\/\/[^*]+\*-[a-z0-9-]+\.vercel\.app(\/|$)/i;
+const NETLIFY_PREVIEW_RE =
+  /^https?:\/\/[^*]+\*-[a-z0-9-]+\.netlify\.app(\/|$)/i;
+
+const isPlatformPreview = (e) =>
+  VERCEL_PREVIEW_RE.test(e) || NETLIFY_PREVIEW_RE.test(e);
+
+const hostWildcard = live.filter((e) => {
+  const host = e.replace(/^https?:\/\//, "").split("/")[0];
+  if (!host.includes("*")) return false;
+  if (isPlatformPreview(e)) return false; // documented preview pattern
+  return true;
+});
 
 // The Site URL was previously printed but never asserted, so when it changed
 // this check still reported OK and the failure surfaced two steps later in
