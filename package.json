@@ -12,6 +12,9 @@
     "test:unit": "vitest run",
     "test": "vitest run && playwright test",
     "create-test-user": "npx tsx scripts/create-test-user.ts",
+    "check:allowlist": "node scripts/check-redirect-allowlist.mjs",
+    "check:redirects": "node scripts/check-redirect-behaviour.mjs",
+    "check:auth": "npm run check:allowlist && npm run check:redirects",
     "prepare": "husky"
   },
   "dependencies": {

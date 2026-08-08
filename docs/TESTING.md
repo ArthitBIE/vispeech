@@ -1,19 +1,20 @@
 <!-- generated-by: gsd-doc-writer -->
+
 # Testing
 
 ViSpeech uses **Vitest** for unit tests and **Playwright** for end-to-end (E2E) tests. Unit tests validate speech recognition logic in a jsdom environment; E2E tests exercise the full Next.js application against a Supabase backend.
 
 ## Test Framework and Setup
 
-| Framework | Package | Version | Config File |
-|-----------|---------|---------|-------------|
-| Vitest | `vitest` | ^4.1.10 | `vitest.config.ts` |
+| Framework  | Package            | Version | Config File            |
+| ---------- | ------------------ | ------- | ---------------------- |
+| Vitest     | `vitest`           | ^4.1.10 | `vitest.config.ts`     |
 | Playwright | `@playwright/test` | ^1.61.1 | `playwright.config.ts` |
 
 Install all dependencies before running tests:
 
 ```bash
-npm install
+pnpm install
 ```
 
 For Playwright, install browsers (required for first-time setup):
@@ -27,7 +28,7 @@ npx playwright install
 ### Full Test Suite
 
 ```bash
-npm test
+pnpm test
 ```
 
 Runs Vitest unit tests first, then Playwright E2E tests sequentially.
@@ -35,7 +36,7 @@ Runs Vitest unit tests first, then Playwright E2E tests sequentially.
 ### Unit Tests Only
 
 ```bash
-npm run test:unit
+pnpm test:unit
 ```
 
 Equivalent to `vitest run`. Runs all `*.test.ts` files inside `src/` (e2e/ and .opencode/ directories are excluded).
@@ -43,19 +44,21 @@ Equivalent to `vitest run`. Runs all `*.test.ts` files inside `src/` (e2e/ and .
 ### E2E Tests Only
 
 ```bash
-npm run test:e2e
+pnpm test:e2e
 ```
 
-Equivalent to `npx playwright test`. Runs tests from the `e2e/` directory. The Playwright config auto-starts the Next.js dev server (`npm run dev`) before tests and reuses an existing server if one is already running locally.
+Equivalent to `npx playwright test`. Runs tests from the `e2e/` directory. The Playwright config auto-starts the Next.js dev server (`pnpm dev`) before tests and reuses an existing server if one is already running locally.
 
 ### Running a Single Test File
 
 **Unit test:**
+
 ```bash
 npx vitest run src/lib/viseme/__tests__/fallback.test.ts
 ```
 
 **E2E test:**
+
 ```bash
 npx playwright test e2e/auth.spec.ts
 ```
@@ -83,8 +86,15 @@ e2e/
   .auth/
     user.json                  # Storage state saved by global setup
 supabase/
-  seed.sql                     # Database seed data for test environment
+  migrations/
+    001_schema.sql               # Schema + RLS
+    002_practice_sessions.sql     # Sessions table + RLS
+    003_session_results.sql       # session_id + phonetic
+    004_lesson_words.sql          # Vowels + conversation (idempotent)
+    005_seed_demo_words.sql       # 32 demo words (idempotent)
 ```
+
+All migrations are idempotent — re-running any is safe.
 
 ### Unit Test Pattern
 
@@ -106,11 +116,11 @@ describe("createFallbackRecognizer", () => {
 
 The Playwright config defines three projects:
 
-| Project | Spec Files | Dependencies | Storage State |
-|---------|-----------|-------------|---------------|
-| `setup` | `global.setup.ts` | — | Writes `e2e/.auth/user.json` |
-| `unauthenticated` | `auth.spec.ts` | — | None |
-| `authenticated` | `dashboard.spec.ts`, `practice.spec.ts` | `setup` | `e2e/.auth/user.json` |
+| Project           | Spec Files                              | Dependencies | Storage State                |
+| ----------------- | --------------------------------------- | ------------ | ---------------------------- |
+| `setup`           | `global.setup.ts`                       | —            | Writes `e2e/.auth/user.json` |
+| `unauthenticated` | `auth.spec.ts`                          | —            | None                         |
+| `authenticated`   | `dashboard.spec.ts`, `practice.spec.ts` | `setup`      | `e2e/.auth/user.json`        |
 
 The `authenticated` project depends on `setup`, ensuring Playwright runs the global authentication setup first.
 
@@ -133,22 +143,22 @@ test.skip(!email || !password, "E2E_TEST_EMAIL / E2E_TEST_PASSWORD not set");
 
 ## Database Test Fixtures
 
-The `supabase/seed.sql` file initializes the database with 32 Thai practice words across 7 viseme groups for test environments:
+The `supabase/migrations/` directory contains all seed data for test environments:
 
-| Viseme Group | Example Words | Count |
-|-------------|---------------|-------|
-| ริมฝีปากปิด (Lip closure) | แม่, ไป, มา, พ่อ, นอน | 5 |
-| ปากเปิดกว้าง (Wide open mouth) | รัก, ฝาก, หมา, ตา | 4 |
-| ปากห่อกลม (Rounded mouth) | ดู, รู้, วิ่ง | 3 |
-| ฟันแตะริมฝีปาก (Teeth on lip) | ฝัน, ฟัน, ฟ้า | 3 |
-| ปากเปิดกลาง (Mid-open mouth) | เก่ง, แดง, เด็ก, กิน | 4 |
-| ทักทาย (Greetings) | สวัสดี, ขอบคุณ, ดี, โชคดี, ขอโทษ | 5 |
-| ตัวเลข (Numbers) | หนึ่ง, สอง, สาม, สี่, ห้า, หก, เจ็ด, แปด | 8 |
+| Viseme Group                   | Example Words                            | Count |
+| ------------------------------ | ---------------------------------------- | ----- |
+| ริมฝีปากปิด (Lip closure)      | แม่, ไป, มา, พ่อ, นอน                    | 5     |
+| ปากเปิดกว้าง (Wide open mouth) | รัก, ฝาก, หมา, ตา                        | 4     |
+| ปากห่อกลม (Rounded mouth)      | ดู, รู้, วิ่ง                            | 3     |
+| ฟันแตะริมฝีปาก (Teeth on lip)  | ฝัน, ฟัน, ฟ้า                            | 3     |
+| ปากเปิดกลาง (Mid-open mouth)   | เก่ง, แดง, เด็ก, กิน                     | 4     |
+| ทักทาย (Greetings)             | สวัสดี, ขอบคุณ, ดี, โชคดี, ขอโทษ         | 5     |
+| ตัวเลข (Numbers)               | หนึ่ง, สอง, สาม, สี่, ห้า, หก, เจ็ด, แปด | 8     |
 
-Apply the seed data with:
+Apply all migrations in order:
 
 ```bash
-npx supabase db reset
+npx supabase db push
 ```
 
 ## CI Integration
@@ -184,21 +194,21 @@ coverage: {
 ### `vitest.config.ts`
 
 ```typescript
-import { defineConfig } from 'vitest/config'
-import path from 'path'
+import { defineConfig } from "vitest/config";
+import path from "path";
 
 export default defineConfig({
   test: {
-    environment: 'jsdom',
+    environment: "jsdom",
     globals: true,
-    exclude: ['e2e/**', '.opencode/**', 'node_modules/**'],
+    exclude: ["e2e/**", ".opencode/**", "node_modules/**"],
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
-})
+});
 ```
 
 ### `playwright.config.ts`
@@ -228,7 +238,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
+    command: "pnpm dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
   },

@@ -1,5 +1,5 @@
 -- Seed all lesson words that are missing from the words table
--- Idempotent: uses WHERE NOT EXISTS guards to avoid duplicates with seed.sql
+-- Idempotent: uses WHERE NOT EXISTS guards to avoid duplicates
 
 -- easy (คำศัพท์ง่าย) — missing 3 of 5
 INSERT INTO words (word, viseme_group, difficulty)

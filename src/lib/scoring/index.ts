@@ -97,7 +97,7 @@ export class DeterministicHeuristicStrategy implements ScoringStrategy {
   }
 
   private idealMouthOpen(visemeGroup?: string): number {
-    // Ideal mouth-open % per DB viseme_group taxonomy (seed.sql).
+    // Ideal mouth-open % per DB viseme_group taxonomy (supabase/migrations/).
     const groupMap: Record<string, number> = {
       ริมฝีปากปิด: 30,
       ปากเปิดกว้าง: 70,

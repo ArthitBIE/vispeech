@@ -78,10 +78,14 @@ export default function SignInPage() {
 
     setLoading(true);
     try {
+      // No query string: Supabase matches allow-listed redirect URLs exactly,
+      // so `?next=...` causes a silent fallback to Site URL. The callback page
+      // defaults to /home when `next` is absent.
+      const redirectTo = `${window.location.origin}/auth/callback`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/home`,
+          redirectTo,
         },
       });
       if (error) throw error;

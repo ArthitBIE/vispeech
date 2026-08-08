@@ -48,7 +48,11 @@ test-results/
 .agents/**/node_modules/
 
 # ai tooling
+# Unanchored, so this matches a `workflows/` directory at any depth. It was
+# meant for an agent tool's scratch directory, but it also swallowed
+# .github/workflows -- CI files looked committed and were never tracked.
 workflows/
+!.github/workflows/
 /NOTES.md
 
 # personal tooling (not project code)

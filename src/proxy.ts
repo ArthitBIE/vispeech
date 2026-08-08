@@ -1,19 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
-// Lightweight JWT payload decode (no verification — presence check only)
-function getUserId(cookies: ReturnType<NextRequest["cookies"]["getAll"]>): string | null {
-  for (const { name, value } of cookies) {
-    if (!name.endsWith("-auth-token") || !value) continue;
-    try {
-      const payload = JSON.parse(atob(value.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-      return payload.sub ?? null;
-    } catch {
-      // malformed token — treat as unauthenticated
-    }
-  }
-  return null;
-}
+import { getUserIdFromCookies } from "@/lib/auth/session-cookie";
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request });
@@ -29,7 +16,7 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  const userId = getUserId(request.cookies.getAll());
+  const userId = getUserIdFromCookies(request.cookies.getAll());
 
   if (!userId) {
     return NextResponse.redirect(new URL("/auth/signin", request.url));

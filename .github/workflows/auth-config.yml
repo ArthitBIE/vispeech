@@ -1,0 +1,90 @@
+name: Auth config
+
+# The Supabase redirect allow-list is not in this repo. It is edited in the
+# Supabase dashboard, so it can be broken by someone who never opens a pull
+# request -- which is exactly how both real defects on this project happened:
+# the localhost entry that stopped being honoured, and the preview wildcard
+# that let anyone register a matching Vercel project and receive a victim's
+# tokens. A push-triggered job alone would never see either. Hence the
+# schedule.
+on:
+  schedule:
+    # 07:00 UTC daily. Drift is silent, so the clock is the only trigger that
+    # correlates with when it actually happens.
+    #
+    # IMPORTANT: GitHub only runs `schedule` from the repository's DEFAULT
+    # branch. This repo's default is `main`, and this file was added on
+    # `develop`, so until it is merged to `main` the cron does not exist as far
+    # as GitHub is concerned -- the one trigger this workflow was written for
+    # would silently never fire, with no error anywhere to say so. Merging to
+    # `main` is what turns the schedule on.
+    - cron: "0 7 * * *"
+  push:
+    branches: [main, develop]
+    paths:
+      - "scripts/check-redirect-*.mjs"
+      - "docs/CONFIGURATION.md"
+      - ".github/workflows/auth-config.yml"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Compares live project config against docs/CONFIGURATION.md and
+      # rejects any wildcard in the host position.
+      - name: Allow-list matches the docs
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          # Without this, an unconfigured secret makes the job pass while
+          # checking nothing -- the exact failure this workflow exists to stop.
+          STRICT: "1"
+        run: node scripts/check-redirect-allowlist.mjs
+
+      # Probes what Supabase actually does with those entries. Needs no
+      # credentials, only the public project URL.
+      #
+      # always() because the two checks are independent and catch different
+      # things: the step above compares config against the docs, this one
+      # probes live behaviour and is the one that actually catches a wildcard
+      # being honoured. Without this, a missing SUPABASE_ACCESS_TOKEN fails
+      # the first step and fail-fast silently skips this one -- so the check
+      # that needs no credentials at all would stop running for want of a
+      # credential. The job still goes red; this only stops one failure from
+      # hiding the other's result.
+      - name: Allow-list behaves correctly
+        if: always()
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          STRICT: "1"
+        run: node scripts/check-redirect-behaviour.mjs
+
+      # The schedule is the only trigger that catches dashboard-side drift, and
+      # GitHub runs `schedule` from the default branch only. If this file is
+      # live on some other branch the cron silently does not exist, which looks
+      # identical to "configured correctly and nothing has drifted".
+      #
+      # Fail loudly instead. Skipped for pull_request so a PR from a feature
+      # branch is not red for a condition that only applies once merged.
+      #
+      # Deliberately LAST, and always(): this is a meta-check about whether
+      # the workflow is wired up, not a security check. Putting it first
+      # would let a not-yet-merged workflow fail-fast and skip the actual
+      # allow-list checks -- the same mistake this file already fixed once.
+      - name: Schedule can actually fire
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          if [ "${{ github.ref_name }}" != "${{ github.event.repository.default_branch }}" ]; then
+            echo "This workflow is running on '${{ github.ref_name }}' but the default"
+            echo "branch is '${{ github.event.repository.default_branch }}'."
+            echo "GitHub only schedules cron from the default branch, so the daily"
+            echo "run does not exist yet. Merge this workflow to the default branch."
+            exit 1
+          fi
+          echo "OK: on the default branch, so the daily schedule is live."

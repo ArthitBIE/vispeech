@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { settleDashboardAutoSidebar } from "./helpers/dashboard";
 
 test.describe("Dashboard results sidebar", () => {
   test.beforeEach(async ({ page }) => {
@@ -9,6 +10,10 @@ test.describe("Dashboard results sidebar", () => {
     ).toBeVisible({
       timeout: 15000,
     });
+    // The dashboard opens the results sidebar by itself once the latest
+    // session loads, and its overlay swallows the clicks below. Dismiss it so
+    // each test starts from a known state.
+    await settleDashboardAutoSidebar(page);
   });
 
   test("สรุปผล button opens results sidebar", async ({ page }) => {
@@ -61,10 +66,12 @@ test.describe("Dashboard results sidebar", () => {
       .getByRole("button", { name: "เริ่มการฝึกซ้ำ" })
       .click();
 
-    // Should navigate to practice session
-    await page.waitForURL(/\/practice\/session/, { timeout: 5000 });
+    // Should navigate to practice session. PracticeWord is dynamically
+    // imported (SessionContent.tsx), so the camera button waits on a chunk
+    // fetch after navigation; 3s races that under parallel load.
+    await page.waitForURL(/\/practice\/session/, { timeout: 10000 });
     await expect(page.getByTestId("practice-camera-btn")).toBeVisible({
-      timeout: 3000,
+      timeout: 15000,
     });
   });
 

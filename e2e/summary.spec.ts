@@ -127,7 +127,9 @@ test.describe("Summary page - empty state", () => {
   });
 
   test("shows empty state with CTA", async ({ page }) => {
-    await expect(page.locator("text=ยังไม่มีผลการฝึก")).toBeVisible();
+    // Scope to the heading; a bare text locator also matches the Next.js
+    // route announcer, which mirrors the page title.
+    await expect(page.locator("h1:has-text('ยังไม่มีผลการฝึก')")).toBeVisible();
     await expect(
       page.locator("text=เริ่มฝึกคำศัพท์เพื่อดูผลลัพธ์และความคืบหน้าของคุณ")
     ).toBeVisible();

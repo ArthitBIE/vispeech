@@ -48,7 +48,14 @@ cp .env.local.example .env.local
 
 ## Quick Start
 
-1. **Configure Supabase** — Create a project on [supabase.com](https://supabase.com), run the migrations in `supabase/migrations/` (001 → 002 → 003), and seed the practice words with `supabase/seed.sql`. Enable Google OAuth in Authentication → Providers if you want social login.
+1. **Configure Supabase** — Create a project on [supabase.com](https://supabase.com), then link the CLI and apply every migration:
+
+   ```bash
+   npx supabase link --project-ref YOUR_PROJECT_REF
+   npx supabase db push
+   ```
+
+   This applies `001_schema.sql` → `002_practice_sessions.sql` → `003_session_results.sql` → `004_lesson_words.sql` → `005_seed_demo_words.sql`. All five are idempotent and apply Row Level Security. You can paste them into the Supabase SQL editor in the same order instead if you prefer. The app needs these rows — without words in the `words` table, the home page shows no lessons and practice cannot start.
 
 2. **Set environment variables** — Add your Supabase URL and anon key to `.env.local`:
 
@@ -150,7 +157,7 @@ The Supabase schema includes four tables:
 | `word_accuracy`     | Aggregated accuracy stats per user per word            |
 | `practice_sessions` | Session-level summaries (attempts, passes, best score) |
 
-Row Level Security is enabled — users can only read/write their own practice data. All authenticated users can read the `words` table. Full schema in `supabase/migrations/`, seed data in `supabase/seed.sql`.
+Row Level Security is enabled — users can only read/write their own practice data. All authenticated users can read the `words` table. Full schema and seed data in `supabase/migrations/`.
 
 ## Documentation
 

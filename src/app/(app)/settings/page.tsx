@@ -49,6 +49,11 @@ export default function SettingsPage() {
   const [testing, setTesting] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
+  // Bumped by every stop (explicit or on unmount). getUserMedia resolves
+  // asynchronously, so a stream can arrive after the user has already
+  // stopped the test or left the page; comparing against this generation
+  // tells us the stream is unwanted and must be released immediately.
+  const testGenRef = useRef(0);
 
   useEffect(() => {
     try {
@@ -85,6 +90,7 @@ export default function SettingsPage() {
   }, []);
 
   const stopTest = useCallback(() => {
+    testGenRef.current += 1;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -101,6 +107,7 @@ export default function SettingsPage() {
       return;
     }
     try {
+      const gen = testGenRef.current;
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           deviceId: settings.deviceId
@@ -109,6 +116,15 @@ export default function SettingsPage() {
           echoCancellation: false,
         },
       });
+
+      // Stopped or unmounted while permission/acquisition was pending. The
+      // stream is live and nothing else holds a reference to it, so release
+      // it here or the mic stays on with the recording indicator lit.
+      if (gen !== testGenRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+
       streamRef.current = stream;
       setTesting(true);
       const AudioCtx =
