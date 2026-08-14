@@ -53,6 +53,7 @@ export function PracticeWord({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const demoCameraCleanupRef = useRef<(() => void) | null>(null);
   const mouthOpenRef = useRef(0);
+  const mouthSamplesRef = useRef<number[]>([]);
   const cameraActiveRef = useRef(false);
   const noFaceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -82,6 +83,7 @@ export function PracticeWord({
   const [practicing, setPracticing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<ScoreResult | null>(null);
+  const [avgMouthOpen, setAvgMouthOpen] = useState(0);
   const [, setError] = useState<string | null>(null);
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
   // Only ever written, never read: the audio element owns its own play state
@@ -172,6 +174,7 @@ export function PracticeWord({
       // Throttle state updates to one per animation frame — prevents
       // "Maximum update depth exceeded" from ~30fps camera callbacks.
       mouthOpenRef.current = res.mouthOpen;
+      if (res.mouthOpen > 0) mouthSamplesRef.current.push(res.mouthOpen);
       if (!rafPending) {
         rafPending = true;
         requestAnimationFrame(() => {
@@ -187,7 +190,9 @@ export function PracticeWord({
       if (mouthOpenRef.current <= 0) {
         instance.stop();
         const interval = setInterval(() => {
-          setMouthOpen(Math.floor(Math.random() * 60) + 20);
+          const v = Math.floor(Math.random() * 60) + 20;
+          setMouthOpen(v);
+          mouthSamplesRef.current.push(v);
         }, 500);
         demoCameraCleanupRef.current = () => clearInterval(interval);
       }
@@ -198,7 +203,9 @@ export function PracticeWord({
     } catch {
       instance.stop();
       const interval = setInterval(() => {
-        setMouthOpen(Math.floor(Math.random() * 60) + 20);
+        const v = Math.floor(Math.random() * 60) + 20;
+        setMouthOpen(v);
+        mouthSamplesRef.current.push(v);
       }, 500);
       demoCameraCleanupRef.current = () => clearInterval(interval);
       setError(null);
@@ -318,6 +325,7 @@ export function PracticeWord({
   }
 
   function handleStartPractice() {
+    mouthSamplesRef.current = [];
     handleStartCamera();
     setPracticing(true);
     setAudioPlayed(false);
@@ -341,6 +349,13 @@ export function PracticeWord({
     if (listening) await handleStopListening();
     else stopAudioLevel();
 
+    const samples = mouthSamplesRef.current;
+    const avgMouth =
+      samples.length > 0
+        ? Math.round(samples.reduce((a, b) => a + b, 0) / samples.length)
+        : mouthOpen;
+    setAvgMouthOpen(avgMouth);
+
     try {
       const {
         data: { session },
@@ -354,7 +369,7 @@ export function PracticeWord({
       const payload = {
         wordId: word.id,
         transcript,
-        mouthOpen,
+        mouthOpen: avgMouth,
         sessionId,
         targetText: word.word,
         visemeGroup: word.viseme_group,
@@ -383,8 +398,10 @@ export function PracticeWord({
 
   function handleTryAgain() {
     setResult(null);
+    setAvgMouthOpen(0);
     setTranscript("");
     setMouthOpen(0);
+    mouthSamplesRef.current = [];
     setPracticing(false);
     setAudioPlayed(false);
     listeningStartedRef.current = false;
@@ -465,6 +482,11 @@ export function PracticeWord({
             data-testid="practice-mouth-open"
           >
             การเปิดปาก: {mouthOpen}%
+            {mouthSamplesRef.current.length > 1 && (
+              <span className="ml-2 text-neutral-400">
+                (เฉลี่ย: {avgMouthOpen || "..."}%)
+              </span>
+            )}
           </p>
         </div>
 
