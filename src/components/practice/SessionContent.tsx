@@ -394,7 +394,7 @@ export default function SessionContent({ words, group }: SessionContentProps) {
                 width={128}
                 height={128}
                 priority
-                className="mx-auto mt-8 h-32 w-32 rounded-full"
+                className="mx-auto mt-8 h-32 w-32 object-bottom"
               />
             </div>
           </aside>

@@ -192,8 +192,8 @@ function LessonCard({
           priority={priority}
           className={
             item.highlighted
-              ? "absolute bottom-4 right-8 h-28 w-28 rounded-full"
-              : "absolute bottom-4 right-8 h-28 w-28 rounded-full opacity-60"
+              ? "absolute bottom-0 right-8 h-28 w-28 object-bottom"
+              : "absolute bottom-0 right-8 h-28 w-28 object-bottom opacity-60"
           }
         />
       </CardContent>

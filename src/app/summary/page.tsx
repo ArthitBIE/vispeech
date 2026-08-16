@@ -203,7 +203,7 @@ function SummaryContent() {
               width={176}
               height={176}
               priority
-              className="mb-8 h-44 w-44 rounded-full"
+              className="mb-8 h-44 w-44 object-bottom"
             />
 
             <h1 className="text-lg font-bold leading-6 text-foreground">

@@ -69,13 +69,13 @@ export function StreakSection({ streakInfo }: { streakInfo: StreakInfo }) {
           </div>
         </div>
 
-        <div className="hidden items-center justify-center md:flex">
+        <div className="hidden items-end justify-center md:flex">
           <Image
             src="/mascot/image 6.webp"
             alt="Banner mascot"
             width={160}
             height={160}
-            className="h-40 w-40 rounded-xl"
+            className="h-40 w-40 object-bottom"
             priority
             fetchPriority="high"
           />
