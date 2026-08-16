@@ -99,13 +99,15 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               </p>
             </div>
 
-            <Image
-              src="/mascot/image 6.webp"
-              alt="Streak mascot"
-              width={56}
-              height={56}
-              className="ml-auto h-14 w-14 object-bottom"
-            />
+            <div className="-mx-3 -mb-3 overflow-hidden">
+              <Image
+                src="/mascot/image 6.webp"
+                alt="Streak mascot"
+                width={56}
+                height={56}
+                className="ml-auto h-14 w-14 object-bottom"
+              />
+            </div>
           </CardContent>
         </Card>
       </div>

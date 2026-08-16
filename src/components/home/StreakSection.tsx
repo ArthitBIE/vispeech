@@ -69,7 +69,7 @@ export function StreakSection({ streakInfo }: { streakInfo: StreakInfo }) {
           </div>
         </div>
 
-        <div className="hidden items-end justify-center md:flex">
+        <div className="-mr-6 -mb-6 hidden overflow-hidden items-end justify-center md:flex">
           <Image
             src="/mascot/image 6.webp"
             alt="Banner mascot"
