@@ -99,7 +99,7 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               </p>
             </div>
 
-            <div className="flex justify-end">
+            <div className="-mb-3 flex justify-end pr-1">
               <Image
                 src="/mascot/image 6.webp"
                 alt="Streak mascot"
