@@ -104,7 +104,7 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               alt="Streak mascot"
               width={56}
               height={56}
-              className="mt-2 ml-auto h-14 w-14 rounded-md"
+              className="mt-2 ml-auto h-14 w-14 object-bottom"
             />
           </CardContent>
         </Card>
@@ -119,7 +119,7 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           alt="Pakky mascot"
           width={128}
           height={128}
-          className="mx-auto mt-6 h-32 w-32 rounded-full"
+          className="mx-auto mt-6 h-32 w-32 object-bottom"
         />
       </div>
     </aside>
