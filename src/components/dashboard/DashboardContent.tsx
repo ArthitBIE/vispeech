@@ -254,20 +254,15 @@ export default function DashboardContent({
       }));
   }
 
-  // Auto-open sidebar with latest practice results on mount.
-  //
-  // Both this effect and handleSummaryClick open the sidebar *after* an await,
-  // so either can land after the user has already closed it and reopen it on
-  // its own. A boolean "user touched it" flag is not enough: the summary fetch
-  // is itself user-initiated, so it would set the flag and still reopen.
-  //
-  // Instead every user action bumps a sequence number, and an async open only
-  // applies if no newer action happened while it was in flight.
   const sidebarSeq = useRef(0);
 
+  // Open sidebar when `?sessionId=xxx` is in the URL (e.g. returning from /summary).
   useEffect(() => {
-    const token = sidebarSeq.current;
-    async function loadLatest() {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("sessionId");
+    if (!sessionId) return;
+
+    async function loadSession() {
       try {
         if (!isSupabaseConfigured || !supabase?.auth) return;
         const {
@@ -275,19 +270,17 @@ export default function DashboardContent({
         } = await supabase.auth.getSession();
         if (!session) return;
 
-        const res = await fetch("/api/practice-sessions", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
+        const res = await fetch(
+          `/api/practice-sessions?sessionId=${encodeURIComponent(sessionId!)}`,
+          {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          }
+        );
         if (!res.ok) return;
 
         const { results } = await res.json();
-        if (!results?.length) return;
-
         const mapped = mapResultsToWordResults(results);
         if (!mapped.length) return;
-
-        // A user action superseded this background load.
-        if (sidebarSeq.current !== token) return;
 
         setSidebarResults(mapped);
         setSidebarAccuracy(
@@ -295,11 +288,14 @@ export default function DashboardContent({
         );
         setSidebarGroup("");
         setSidebarOpen(true);
+
+        window.history.replaceState({}, "", "/dashboard");
       } catch {}
     }
-    loadLatest();
+    loadSession();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Open sidebar only when user clicks "สรุปผล" button.
   async function handleSummaryClick(lessonWords: Word[], group: string) {
     // Claim the sidebar at click time, so a later close can invalidate this
     // in-flight open rather than being undone by it.

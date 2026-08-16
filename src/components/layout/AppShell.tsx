@@ -11,7 +11,7 @@ function HeaderFallback() {
 
 function SidebarFallback() {
   return (
-    <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-[266px] shrink-0 animate-pulse border-r border-border bg-background lg:block">
+    <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-[265.9px] shrink-0 animate-pulse border-r border-border bg-background lg:block">
       <div className="space-y-3 p-4">
         <div className="h-4 w-24 rounded bg-muted" />
         <div className="h-4 w-20 rounded bg-muted" />

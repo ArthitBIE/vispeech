@@ -3,12 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  Search,
-  Play,
-  Volume2,
-  Home as HomeIcon,
-} from "lucide-react";
+import { Search, Play, Volume2, Home as HomeIcon } from "lucide-react";
 import { PASS_THRESHOLD } from "@/lib/constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -194,7 +189,7 @@ export default function HomeContent({
                         alt="Lesson mascot"
                         width={64}
                         height={64}
-                        className="absolute bottom-0 right-4 h-16 w-16 object-bottom"
+                        className="absolute bottom-0 right-4 h-auto max-w-[96px] object-bottom"
                       />
                     </div>
 

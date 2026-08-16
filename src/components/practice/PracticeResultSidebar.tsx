@@ -78,7 +78,7 @@ export default function PracticeResultSidebar({
   return (
     <>
       {/* Blurred background overlay */}
-      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-md" />
+      <div className="fixed top-0 left-0 right-0 -bottom-[100px] z-40 bg-black/40 backdrop-blur-md" />
 
       {/* Right sidebar */}
       <aside className="fixed bottom-2 right-2 top-2 z-50 flex w-full max-w-lg flex-col rounded-3xl bg-white shadow-xl">

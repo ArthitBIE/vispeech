@@ -145,7 +145,7 @@ export default function SessionContent({ words, group }: SessionContentProps) {
 
   async function handleFinish() {
     if (!sessionId) {
-      router.push("/summary");
+      router.push("/dashboard");
       return;
     }
     try {

@@ -186,7 +186,13 @@ function SummaryContent() {
           asChild
           className="h-9 rounded-md bg-foreground px-4 text-sm font-bold text-background hover:bg-foreground/90"
         >
-          <Link href="/home">
+          <Link
+            href={
+              sessionIdParam
+                ? `/dashboard?sessionId=${encodeURIComponent(sessionIdParam)}`
+                : "/dashboard"
+            }
+          >
             กลับหน้าหลัก
             <ChevronRight className="ml-1 h-4 w-4" />
           </Link>
