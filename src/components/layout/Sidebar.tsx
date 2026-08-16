@@ -36,7 +36,7 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const days = lastNDays(5);
 
   return (
-    <aside className="sticky top-14 flex h-[calc(100vh-3.5rem)] w-[265.9px] shrink-0 flex-col overflow-y-auto border-r border-border bg-background">
+    <aside className="sticky top-14 flex h-[calc(100vh-3.5rem)] w-[295px] shrink-0 flex-col overflow-y-auto border-r border-border bg-background">
       <SidebarNav onNavigate={onNavigate} />
 
       <div className="mt-3 border-t border-border px-4 pt-4">
@@ -47,8 +47,8 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               "linear-gradient(90deg, #FF7700 0%, #FFC987 51%, #FFF9C4 100%)",
           }}
         >
-          <Card className="overflow-hidden rounded-[calc(0.375rem-2px)] border-none shadow-none">
-            <CardContent className="p-1.5">
+          <Card className="overflow-hidden rounded-[calc(0.375rem-2px)] border-none shadow-none p-4">
+            <CardContent className="p-0">
               <div className="flex items-start gap-2">
                 <Image
                   src="/fire.png"
@@ -56,6 +56,7 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                   width={24}
                   height={24}
                   className="h-6 w-6 shrink-0 object-contain"
+                  style={{ width: 24, height: 24 }}
                 />
                 <div>
                   <p className="text-xs font-bold text-foreground">
@@ -97,7 +98,7 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
               <div className="mt-1 flex items-center gap-2">
                 <div className="flex flex-col items-start">
-                  <span className="text-[10px] font-semibold text-foreground">
+                  <span className="text-xs font-semibold text-foreground">
                     เป้าหมาย {STREAK_GOAL} วัน
                   </span>
                   <div className="w-full max-w-[120px] h-1 rounded-full bg-muted mt-1">
@@ -108,7 +109,7 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                       }}
                     />
                   </div>
-                  <span className="text-[10px] font-medium text-muted-foreground">
+                  <span className="text-xs font-medium text-muted-foreground">
                     อีกแค่ {Math.max(0, STREAK_GOAL - streak)} วัน ก็ครบ{" "}
                     {STREAK_GOAL} วันแล้วนะ!
                   </span>
@@ -118,7 +119,8 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                   alt="Streak mascot"
                   width={651}
                   height={609}
-                  className="h-[32px] object-contain"
+                  className="ml-auto object-contain"
+                  style={{ width: 60, height: 60 }}
                 />
               </div>
             </CardContent>
@@ -130,13 +132,18 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <div className="rounded-md border border-border px-4 py-3 text-center text-sm font-semibold text-foreground">
           แพ็คที่รออยู่นะ~ ฝึกกันเถอะ!
         </div>
-        <Image
-          src="/mascot/image 5.webp"
-          alt="Pakky mascot"
-          width={128}
-          height={128}
-          className="mx-auto mt-6 h-32 w-32 object-bottom"
-        />
+        <div
+          className="mx-auto mt-6 relative h-[160px] w-[160px] overflow-hidden rounded-full"
+          style={{ backgroundColor: "#F7F7F7" }}
+        >
+          <Image
+            src="/mascot/image 5.webp"
+            alt="Pakky mascot"
+            width={651}
+            height={609}
+            className="absolute bottom-[-10px] h-[160px] w-[160px] object-contain"
+          />
+        </div>
       </div>
     </aside>
   );
