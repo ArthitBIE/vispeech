@@ -15,7 +15,7 @@ interface StreakInfo {
 // Contains the LCP heading for the home page
 export function StreakSection({ streakInfo }: { streakInfo: StreakInfo }) {
   return (
-    <section className="mb-7 max-w-3xl rounded-xl border border-orange-300 bg-card p-6">
+    <section className="mb-7 max-w-3xl overflow-hidden rounded-xl border border-orange-300 bg-card p-6">
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2">
           <div className="flex items-start gap-4">
@@ -69,13 +69,13 @@ export function StreakSection({ streakInfo }: { streakInfo: StreakInfo }) {
           </div>
         </div>
 
-        <div className="-mr-6 -mb-6 hidden overflow-hidden items-end justify-center md:flex">
+        <div className="hidden items-end justify-center md:flex">
           <Image
             src="/mascot/image 6.webp"
             alt="Banner mascot"
             width={160}
             height={160}
-            className="h-40 w-40 object-bottom"
+            className="-mr-6 -mb-6 h-40 w-40 object-bottom"
             priority
             fetchPriority="high"
           />

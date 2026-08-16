@@ -41,7 +41,7 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <SidebarNav onNavigate={onNavigate} />
 
       <div className="mt-5 border-t border-border px-4 pt-5">
-        <Card className="rounded-md border border-orange-300 shadow-none">
+        <Card className="overflow-hidden rounded-md border border-orange-300 shadow-none">
           <CardContent className="p-3">
             <div className="flex items-start gap-2">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-500">
@@ -99,15 +99,13 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               </p>
             </div>
 
-            <div className="-mx-3 -mb-3 overflow-hidden">
-              <Image
-                src="/mascot/image 6.webp"
-                alt="Streak mascot"
-                width={56}
-                height={56}
-                className="ml-auto h-14 w-14 object-bottom"
-              />
-            </div>
+            <Image
+              src="/mascot/image 6.webp"
+              alt="Streak mascot"
+              width={56}
+              height={56}
+              className="-mx-3 -mb-3 ml-auto h-14 w-14 object-bottom"
+            />
           </CardContent>
         </Card>
       </div>
