@@ -145,7 +145,7 @@ export default function SessionContent({ words, group }: SessionContentProps) {
 
   async function handleFinish() {
     if (!sessionId) {
-      router.push("/summary");
+      router.push("/dashboard");
       return;
     }
     try {
@@ -267,7 +267,9 @@ export default function SessionContent({ words, group }: SessionContentProps) {
                   const completed = results.find((r) => r.word === word.word);
                   const scoreDisplay = completed ? `${completed.score}%` : "-";
                   const statusIcon = !completed
-                    ? "/practice-session/not-practice-yet.svg"
+                    ? i === currentIndex
+                      ? "/practice-session/current-word.svg"
+                      : "/practice-session/not-practice-yet.svg"
                     : completed.score >= 100
                       ? "/practice-session/full-score-word.svg"
                       : "/practice-session/score-above-0.svg";
@@ -319,8 +321,8 @@ export default function SessionContent({ words, group }: SessionContentProps) {
                 <h2 className="text-base font-bold">Tips จาก Pakky</h2>
               </div>
 
-              <Card className="rounded-lg border border-neutral-200 shadow-none">
-                <CardContent className="p-4">
+              <Card className="rounded-lg border border-neutral-200 p-4 shadow-none">
+                <CardContent className="p-0">
                   <div className="mb-3 flex items-center gap-2 text-sm font-bold">
                     <Info className="h-4 w-4" />
                     <span>Tips การออกเสียง</span>
@@ -394,7 +396,7 @@ export default function SessionContent({ words, group }: SessionContentProps) {
                 width={128}
                 height={128}
                 priority
-                className="mx-auto mt-8 h-32 w-32 rounded-full"
+                className="mx-auto mt-8 h-32 w-32 object-bottom"
               />
             </div>
           </aside>

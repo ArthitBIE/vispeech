@@ -22,7 +22,7 @@ export function MobileNav() {
           <span className="sr-only">เปิดเมนู</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[266px] p-0">
+      <SheetContent side="left" className="w-[265.9px] p-0">
         <SheetTitle className="sr-only">เมนูนำทาง</SheetTitle>
         <SidebarNav onNavigate={() => setOpen(false)} />
       </SheetContent>

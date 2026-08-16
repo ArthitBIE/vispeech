@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Flame, Sparkles, Play } from "lucide-react";
+import { Sparkles, Play } from "lucide-react";
 import { STREAK_GOAL } from "@/lib/constants";
 import { thaiFullDate } from "@/lib/streak";
 import { Button } from "@/components/ui/button";
@@ -15,12 +15,24 @@ interface StreakInfo {
 // Contains the LCP heading for the home page
 export function StreakSection({ streakInfo }: { streakInfo: StreakInfo }) {
   return (
-    <section className="mb-7 max-w-3xl rounded-xl border border-orange-300 bg-card p-6">
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2">
+    <div
+      className="mb-7 max-w-3xl overflow-hidden rounded-xl p-[2px] relative"
+      style={{
+        background:
+          "linear-gradient(90deg, #FF7700 0%, #FFC987 51%, #FFF9C4 100%)",
+      }}
+    >
+      <section className="h-[240px] overflow-hidden rounded-[calc(1rem-2px)] bg-card p-6">
+        <div className="pr-[280px]">
           <div className="flex items-start gap-4">
             <div className="text-orange-500">
-              <Flame className="h-9 w-9 fill-orange-500" />
+              <Image
+                src="/fire.png"
+                alt="Fire"
+                width={36}
+                height={36}
+                className="h-9 w-9 object-contain"
+              />
             </div>
             <div>
               <h2 className="text-2xl font-bold text-foreground">
@@ -68,19 +80,19 @@ export function StreakSection({ streakInfo }: { streakInfo: StreakInfo }) {
             </Button>
           </div>
         </div>
+      </section>
 
-        <div className="hidden items-center justify-center md:flex">
-          <Image
-            src="/mascot/image 6.webp"
-            alt="Banner mascot"
-            width={160}
-            height={160}
-            className="h-40 w-40 rounded-xl"
-            priority
-            fetchPriority="high"
-          />
-        </div>
+      <div className="absolute bottom-0 right-0 w-[250px] h-full">
+        <Image
+          src="/mascot/image 6.webp"
+          alt="Banner mascot"
+          width={651}
+          height={609}
+          className="w-full h-full object-contain object-bottom"
+          priority
+          fetchPriority="high"
+        />
       </div>
-    </section>
+    </div>
   );
 }
