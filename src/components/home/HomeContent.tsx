@@ -189,7 +189,7 @@ export default function HomeContent({
                         alt="Lesson mascot"
                         width={64}
                         height={64}
-                        className="absolute bottom-0 right-4 h-auto max-w-[96px] object-bottom"
+                        className="absolute bottom-0 right-4 h-auto w-auto max-w-[96px] object-bottom"
                       />
                     </div>
 
