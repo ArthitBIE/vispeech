@@ -133,17 +133,14 @@ export async function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           แพ็คที่รออยู่นะ~ ฝึกกันเถอะ!
         </div>
         <div
-          className="mx-auto mt-6 relative h-[160px] w-[160px] overflow-hidden rounded-full"
-          style={{ backgroundColor: "#F7F7F7" }}
-        >
-          <Image
-            src="/mascot/image 5.webp"
-            alt="Pakky mascot"
-            width={651}
-            height={609}
-            className="absolute bottom-[-10px] h-[160px] w-[160px] object-contain"
-          />
-        </div>
+          className="mx-auto mt-6 h-[160px] w-[160px] rounded-full bg-contain bg-center bg-no-repeat"
+          style={{
+            backgroundColor: "#F7F7F7",
+            backgroundImage: "url(/mascot/image%205.webp)",
+          }}
+          role="img"
+          aria-label="Pakky mascot"
+        />
       </div>
     </aside>
   );
