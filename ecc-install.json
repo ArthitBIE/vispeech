@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "target": "claude-project",
+  "modules": [
+    "rules-core",
+    "agents-core",
+    "commands-core",
+    "hooks-runtime",
+    "platform-configs",
+    "skill-unified-memory",
+    "workflow-quality",
+    "framework-language",
+    "database",
+    "security",
+    "orchestration",
+    "agentic-patterns"
+  ]
+}
