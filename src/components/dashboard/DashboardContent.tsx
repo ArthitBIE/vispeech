@@ -71,14 +71,21 @@ function LessonCard({
     <Card
       padded={false}
       className={
-        item.highlighted
-          ? "relative overflow-visible rounded-2xl border border-foreground shadow-none"
-          : "relative overflow-hidden rounded-2xl border border-border shadow-none"
+        item.completed
+          ? "relative overflow-visible rounded-2xl border-2 shadow-none"
+          : "relative overflow-visible rounded-2xl border border-border shadow-none"
       }
+      style={item.completed ? { borderColor: "#000000" } : undefined}
     >
       {item.highlighted && (
-        <div className="absolute -right-1 -top-3 text-orange-500">
-          <AlertTriangle className="h-5 w-5 fill-orange-500 text-orange-500" />
+        <div className="absolute right-px -top-3 bg-white p-1.25 pl-1">
+          <Image
+            src="/warning.svg"
+            alt="Warning"
+            width={20}
+            height={20}
+            className="h-5 w-5"
+          />
         </div>
       )}
 
@@ -192,8 +199,8 @@ function LessonCard({
           priority={priority}
           className={
             item.highlighted
-              ? "absolute bottom-0 right-8 h-28 w-28 object-bottom"
-              : "absolute bottom-0 right-8 h-28 w-28 object-bottom opacity-60"
+              ? "absolute bottom-0 right-8 h-28 w-28 object-contain"
+              : "absolute bottom-0 right-8 h-28 w-28 object-contain opacity-60"
           }
         />
       </CardContent>
