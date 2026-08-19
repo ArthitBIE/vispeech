@@ -1,46 +1,9 @@
-import { describe, it, expect, vi } from "vitest";
-import { createFallbackRecognizer, createSpeechRecognizer } from "../index";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createSpeechRecognizer } from "../index";
 
-describe("createFallbackRecognizer", () => {
-  it("start() resolves without error", async () => {
-    const recognizer = createFallbackRecognizer();
-    await expect(recognizer.start()).resolves.toBeUndefined();
-  }, 10000);
-
-  it("stop() returns a transcript string", async () => {
-    const recognizer = createFallbackRecognizer();
-    await recognizer.start();
-    const result = await recognizer.stop();
-    expect(typeof result).toBe("string");
-    expect(result.length).toBeGreaterThan(0);
-  }, 10000);
-
-  it("isAvailable() returns false", () => {
-    const recognizer = createFallbackRecognizer();
-    expect(recognizer.isAvailable()).toBe(false);
-  });
-
-  it("onError callback fires with error message", async () => {
-    const recognizer = createFallbackRecognizer();
-    const callback = vi.fn();
-    recognizer.onError(callback);
-    // onError uses setTimeout(100ms) internally
-    await new Promise((r) => setTimeout(r, 200));
-    expect(callback).toHaveBeenCalledTimes(1);
-    expect(callback).toHaveBeenCalledWith(expect.any(String));
-  });
-
-  it("multiple onError callbacks all fire", async () => {
-    const recognizer = createFallbackRecognizer();
-    const cb1 = vi.fn();
-    const cb2 = vi.fn();
-    recognizer.onError(cb1);
-    recognizer.onError(cb2);
-    await new Promise((r) => setTimeout(r, 200));
-    expect(cb1).toHaveBeenCalledTimes(1);
-    expect(cb2).toHaveBeenCalledTimes(1);
-  });
-});
+// In the test environment, window.SpeechRecognition is typically undefined,
+// so createSpeechRecognizer returns the dead recognizer. Tests verify it
+// surfaces errors instead of producing fake transcripts.
 
 describe("createSpeechRecognizer", () => {
   it("returns a SpeechRecognizer object", () => {
@@ -51,5 +14,35 @@ describe("createSpeechRecognizer", () => {
     expect(typeof recognizer.isAvailable).toBe("function");
     expect(typeof recognizer.onResult).toBe("function");
     expect(typeof recognizer.onError).toBe("function");
+  });
+
+  it("isAvailable returns false when no Web Speech API", () => {
+    const recognizer = createSpeechRecognizer("th-TH");
+    expect(recognizer.isAvailable()).toBe(false);
+  });
+
+  it("stop returns empty string when no Web Speech API", async () => {
+    const recognizer = createSpeechRecognizer("th-TH");
+    const result = await recognizer.stop();
+    expect(result).toBe("");
+  });
+
+  it("onError fires with Thai error message when no Web Speech API", async () => {
+    const recognizer = createSpeechRecognizer("th-TH");
+    const callback = vi.fn();
+    recognizer.onError(callback);
+    await recognizer.start();
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(callback).toHaveBeenCalledWith(
+      expect.stringContaining("เบราว์เซอร์")
+    );
+  });
+
+  it("onResult never fires when no Web Speech API", async () => {
+    const recognizer = createSpeechRecognizer("th-TH");
+    const callback = vi.fn();
+    recognizer.onResult(callback);
+    await recognizer.start();
+    expect(callback).not.toHaveBeenCalled();
   });
 });

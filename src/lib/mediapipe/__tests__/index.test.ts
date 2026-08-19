@@ -95,12 +95,12 @@ describe("createFallbackInstance", () => {
     expect(callback).toHaveBeenCalled();
     const result = callback.mock.calls[0][0];
     expect(result).toHaveProperty("mouthOpen");
-    expect(result).toHaveProperty("hasFace", true);
+    expect(result).toHaveProperty("hasFace", false);
     expect(result).toHaveProperty("landmarks", null);
     instance.stop();
   });
 
-  it("mouthOpen values are in 20-80 range", async () => {
+  it("mouthOpen is always 0 in fallback", async () => {
     const instance = createFallbackInstance();
     const callback = vi.fn();
     instance.onResult(callback);
@@ -109,9 +109,7 @@ describe("createFallbackInstance", () => {
     instance.stop();
     expect(callback).toHaveBeenCalled();
     for (const call of callback.mock.calls) {
-      const mouthOpen = call[0].mouthOpen;
-      expect(mouthOpen).toBeGreaterThanOrEqual(20);
-      expect(mouthOpen).toBeLessThanOrEqual(80);
+      expect(call[0].mouthOpen).toBe(0);
     }
   });
 });

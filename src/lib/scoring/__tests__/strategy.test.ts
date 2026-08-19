@@ -17,7 +17,7 @@ const WIDE = { visemeGroup: "ปากเปิดกว้าง" };
 
 describe("DeterministicHeuristicStrategy", () => {
   describe("computeAudioScore (via score().audioScore)", () => {
-    it("empty transcript returns 45", () => {
+    it("empty transcript returns 0", () => {
       const result = strategy.score({
         wordId: "1",
         targetWord: "แม่",
@@ -25,18 +25,7 @@ describe("DeterministicHeuristicStrategy", () => {
         mouthOpen: 50,
         ...CLOSED,
       });
-      expect(result.audioScore).toBe(45);
-    });
-
-    it("fallback 'demo-transcript' returns 45", () => {
-      const result = strategy.score({
-        wordId: "1",
-        targetWord: "แม่",
-        transcript: "demo-transcript",
-        mouthOpen: 50,
-        ...CLOSED,
-      });
-      expect(result.audioScore).toBe(45);
+      expect(result.audioScore).toBe(0);
     });
 
     it("exact match returns 95", () => {
@@ -117,7 +106,7 @@ describe("DeterministicHeuristicStrategy", () => {
   });
 
   describe("computeVisualScore (via score().visualScore)", () => {
-    it("mouthOpen ≤ 0 returns 40", () => {
+    it("mouthOpen ≤ 0 returns 0", () => {
       const result = strategy.score({
         wordId: "1",
         targetWord: "แม่",
@@ -125,7 +114,7 @@ describe("DeterministicHeuristicStrategy", () => {
         mouthOpen: 0,
         ...CLOSED,
       });
-      expect(result.visualScore).toBe(40);
+      expect(result.visualScore).toBe(0);
     });
 
     it("near ideal (diff ≤ 10) returns 90", () => {

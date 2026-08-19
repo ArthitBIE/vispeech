@@ -57,7 +57,8 @@ export class DeterministicHeuristicStrategy implements ScoringStrategy {
     const norm = target.trim(); // No toLowerCase — Thai has no case
     const transcriptNorm = transcript.trim();
 
-    if (!transcriptNorm || transcriptNorm === "demo-transcript") return 45;
+    // No transcript or demo fallback — score is 0 (no real speech detected)
+    if (!transcriptNorm) return 0;
 
     // Exact match
     if (transcriptNorm === norm) return 95;
@@ -87,7 +88,8 @@ export class DeterministicHeuristicStrategy implements ScoringStrategy {
   }
 
   private computeVisualScore(mouthOpen: number, visemeGroup?: string): number {
-    if (mouthOpen <= 0) return 40;
+    // No face detected — score is 0 (no real visual data)
+    if (mouthOpen <= 0) return 0;
     const ideal = this.idealMouthOpen(visemeGroup);
     const diff = Math.abs(mouthOpen - ideal);
     if (diff <= 10) return 90;
@@ -116,6 +118,10 @@ export class DeterministicHeuristicStrategy implements ScoringStrategy {
     visual: number,
     mouthOpen: number
   ): string {
+    if (audio === 0 && visual === 0)
+      return "ไม่พบข้อมูลการพูด กรุณาตรวจสอบไมโครโฟนและกล้อง";
+    if (audio === 0) return "ไม่พบเสียงพูด กรุณาตรวจสอบไมโครโฟน";
+    if (visual === 0) return "ไม่พบรูปปาก กรุณาตรวจสอบกล้อง";
     if (total >= 90) return "ยอดเยี่ยม! การออกเสียงและรูปปากของคุณดีมาก";
     if (audio < 50 && visual >= 60)
       return "ลองออกเสียงให้ชัดเจนขึ้น เน้นที่เสียงพูด";

@@ -209,15 +209,11 @@ export function createFallbackInstance(): FaceMeshInstance {
 
   return {
     start: async () => {
-      // MediaPipe not available — running in demo mode
+      // MediaPipe not available — report no face detected
       await new Promise((r) => setTimeout(r, 500));
       intervalId = setInterval(() => {
         resultCallbacks.forEach((cb) =>
-          cb({
-            landmarks: null,
-            mouthOpen: Math.floor(Math.random() * 60) + 20,
-            hasFace: true,
-          })
+          cb({ landmarks: null, mouthOpen: 0, hasFace: false })
         );
       }, 500);
     },

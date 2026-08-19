@@ -51,11 +51,7 @@ export function PracticeWord({
 }: PracticeWordProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const demoCameraCleanupRef = useRef<(() => void) | null>(null);
-  const mouthOpenRef = useRef(0);
   const mouthSamplesRef = useRef<number[]>([]);
-  const cameraActiveRef = useRef(false);
-  const noFaceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -92,21 +88,7 @@ export function PracticeWord({
   const [audioPlayed, setAudioPlayed] = useState(false);
 
   useEffect(() => {
-    mouthOpenRef.current = mouthOpen;
-    if (mouthOpen > 0 && noFaceTimeoutRef.current) {
-      clearTimeout(noFaceTimeoutRef.current);
-      noFaceTimeoutRef.current = null;
-    }
-  }, [mouthOpen]);
-
-  useEffect(() => {
-    cameraActiveRef.current = cameraActive;
-  }, [cameraActive]);
-
-  useEffect(() => {
     return () => {
-      if (noFaceTimeoutRef.current) clearTimeout(noFaceTimeoutRef.current);
-      demoCameraCleanupRef.current?.();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       audioCtxRef.current?.close();
       audioRef.current?.pause();
@@ -166,61 +148,32 @@ export function PracticeWord({
     }
 
     faceMesh?.stop();
-    demoCameraCleanupRef.current?.();
 
     const instance = await initFaceMesh(videoRef.current, canvasRef.current);
     let rafPending = false;
     instance.onResult((res) => {
       // Throttle state updates to one per animation frame — prevents
       // "Maximum update depth exceeded" from ~30fps camera callbacks.
-      mouthOpenRef.current = res.mouthOpen;
       if (res.mouthOpen > 0) mouthSamplesRef.current.push(res.mouthOpen);
       if (!rafPending) {
         rafPending = true;
         requestAnimationFrame(() => {
-          setMouthOpen(mouthOpenRef.current);
+          setMouthOpen(res.mouthOpen);
           rafPending = false;
         });
       }
     });
-    // Arm the demo fallback immediately — if no face data within 5s (e.g.
-    // headless/no camera/models still loading), feed a simulated value so
-    // the user can still submit.
-    noFaceTimeoutRef.current = setTimeout(() => {
-      if (mouthOpenRef.current <= 0) {
-        instance.stop();
-        const interval = setInterval(() => {
-          const v = Math.floor(Math.random() * 60) + 20;
-          setMouthOpen(v);
-          mouthSamplesRef.current.push(v);
-        }, 500);
-        demoCameraCleanupRef.current = () => clearInterval(interval);
-      }
-    }, 5000);
     try {
       await instance.start();
       setFaceMesh(instance);
+      setCameraActive(true);
     } catch {
       instance.stop();
-      const interval = setInterval(() => {
-        const v = Math.floor(Math.random() * 60) + 20;
-        setMouthOpen(v);
-        mouthSamplesRef.current.push(v);
-      }, 500);
-      demoCameraCleanupRef.current = () => clearInterval(interval);
-      setError(null);
     }
-    setCameraActive(true);
   }
 
   function handleStopCamera() {
-    if (noFaceTimeoutRef.current) {
-      clearTimeout(noFaceTimeoutRef.current);
-      noFaceTimeoutRef.current = null;
-    }
     faceMesh?.stop();
-    demoCameraCleanupRef.current?.();
-    demoCameraCleanupRef.current = null;
     setCameraActive(false);
     setFaceMesh(null);
   }
@@ -330,15 +283,6 @@ export function PracticeWord({
     setPracticing(true);
     setAudioPlayed(false);
     listeningStartedRef.current = false;
-    // ponytail: no autoplay — user must press play on the audio element.
-    // Safety fallback: if camera/face-mesh never produces a value (headless,
-    // no device, slow model load), ensure a non-zero mouth-open so the user
-    // can still submit.
-    setTimeout(() => {
-      if (mouthOpenRef.current <= 0) {
-        setMouthOpen(Math.floor(Math.random() * 60) + 20);
-      }
-    }, 5000);
   }
 
   async function handleSubmit() {
@@ -414,7 +358,7 @@ export function PracticeWord({
     handleStopListening();
   }
 
-  const readyToSubmit = Boolean(transcript) || mouthOpen > 0;
+  const readyToSubmit = Boolean(transcript) && mouthOpen > 0;
 
   return (
     <div>
@@ -521,14 +465,25 @@ export function PracticeWord({
               เริ่มการฝึกออกเสียง
             </Button>
           ) : (
-            <Button
-              onClick={handleSubmit}
-              disabled={submitting || !readyToSubmit}
-              data-testid="practice-submit"
-              className="h-10 rounded-lg bg-green-600 px-5 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50"
-            >
-              {submitting ? "กำลังส่งผล..." : "ส่งผล"}
-            </Button>
+            <>
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting || !readyToSubmit}
+                data-testid="practice-submit"
+                className="h-10 rounded-lg bg-green-600 px-5 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50"
+              >
+                {submitting ? "กำลังส่งผล..." : "ส่งผล"}
+              </Button>
+              {practicing && !readyToSubmit && !speechError && (
+                <p className="mt-2 text-xs text-amber-600">
+                  {!transcript && mouthOpen <= 0
+                    ? "กรุณาเปิดกล้องและพูดเพื่อบันทึกผล"
+                    : !transcript
+                      ? "กรุณาพูดเพื่อบันทึกเสียง"
+                      : "กรุณาเปิดกล้องให้เห็นรูปปาก"}
+                </p>
+              )}
+            </>
           )}
 
           <Button
