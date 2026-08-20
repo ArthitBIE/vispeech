@@ -474,9 +474,8 @@ export function PracticeWord({
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
-                      onClick={handleToggleMute}
                       className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-600 hover:bg-neutral-100"
-                      aria-label={volume > 0 ? "Mute" : "Unmute"}
+                      aria-label="Volume"
                     >
                       {volume > 0 ? (
                         <Volume2 className="h-4 w-4" />
@@ -485,17 +484,30 @@ export function PracticeWord({
                       )}
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent side="top" align="center" sideOffset={8} className="w-auto p-2">
-                    <Slider
-                      orientation="vertical"
-                      min={0}
-                      max={100}
-                      step={5}
-                      value={[volume * 100]}
-                      onValueChange={([v]) => setVolume(v / 100)}
-                      className="h-24"
-                      aria-label="Volume"
-                    />
+                  <PopoverContent side="top" align="start" sideOffset={8} className="w-auto p-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleToggleMute}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
+                        aria-label={volume > 0 ? "Mute" : "Unmute"}
+                      >
+                        {volume > 0 ? (
+                          <Volume2 className="h-4 w-4" />
+                        ) : (
+                          <VolumeX className="h-4 w-4" />
+                        )}
+                      </button>
+                      <Slider
+                        orientation="vertical"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={[volume * 100]}
+                        onValueChange={([v]) => setVolume(v / 100)}
+                        className="h-24"
+                        aria-label="Volume"
+                      />
+                    </div>
                   </PopoverContent>
                 </Popover>
               </div>
