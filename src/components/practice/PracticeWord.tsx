@@ -9,7 +9,11 @@ import type { SpeechRecognizer } from "@/lib/viseme";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { LipExample } from "@/components/practice/LipExample";
 import {
   Camera,
@@ -460,7 +464,7 @@ export function PracticeWord({
                   setAudioPlayed(true);
                 }}
               />
-              <div className="mx-auto mt-4 flex items-center gap-3">
+              <div className="mx-auto mt-4 flex items-right justify-center gap-3">
                 <button
                   onClick={() => {
                     if (isPlaying) audioRef.current?.pause();
@@ -495,19 +499,13 @@ export function PracticeWord({
                       )}
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent side="top" align="start" sideOffset={8} className="w-auto p-2">
+                  <PopoverContent
+                    side="top"
+                    align="start"
+                    sideOffset={8}
+                    className="w-auto p-2"
+                  >
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleToggleMute}
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
-                        aria-label={volume > 0 ? "Mute" : "Unmute"}
-                      >
-                        {volume > 0 ? (
-                          <Volume2 className="h-4 w-4" />
-                        ) : (
-                          <VolumeX className="h-4 w-4" />
-                        )}
-                      </button>
                       <Slider
                         orientation="vertical"
                         min={0}
