@@ -88,6 +88,30 @@ export function PracticeWord({
   // and we just mirror the transitions we care about into audioPlayed.
   const [, setIsPlaying] = useState(false);
   const [audioPlayed, setAudioPlayed] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  // Auto-reset after scoring: 3-second countdown then redo the word
+  useEffect(() => {
+    if (!result) {
+      setCountdown(null);
+      return;
+    }
+    setCountdown(3);
+  }, [result]);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) {
+      setCountdown(null);
+      handleTryAgain();
+      return;
+    }
+    const timer = setTimeout(
+      () => setCountdown((c) => (c != null ? c - 1 : null)),
+      1000
+    );
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   useEffect(() => {
     return () => {
@@ -109,8 +133,12 @@ export function PracticeWord({
   }, []);
 
   // Keep refs in sync for the onResult rAF callback (avoids stale closures).
-  useEffect(() => { audioLevelRef.current = audioLevel; }, [audioLevel]);
-  useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
+  useEffect(() => {
+    audioLevelRef.current = audioLevel;
+  }, [audioLevel]);
+  useEffect(() => {
+    transcriptRef.current = transcript;
+  }, [transcript]);
   // onLive is called inside the onResult rAF to avoid render cascades.
 
   // Fetch TTS audio when word changes
@@ -162,7 +190,11 @@ export function PracticeWord({
         rafPending = true;
         requestAnimationFrame(() => {
           setMouthOpen(res.mouthOpen);
-          onLive?.({ mouthOpen: res.mouthOpen, audioLevel: audioLevelRef.current, transcript: transcriptRef.current });
+          onLive?.({
+            mouthOpen: res.mouthOpen,
+            audioLevel: audioLevelRef.current,
+            transcript: transcriptRef.current,
+          });
           rafPending = false;
         });
       }
@@ -343,6 +375,7 @@ export function PracticeWord({
   }
 
   function handleTryAgain() {
+    setCountdown(null);
     setResult(null);
     setAvgMouthOpen(0);
     setTranscript("");
@@ -547,12 +580,21 @@ export function PracticeWord({
             </Button>
             <Button
               variant="outline"
-              onClick={onSkip}
+              onClick={() => {
+                setCountdown(null);
+                onSkip();
+              }}
               className="flex-1 h-12 px-4 text-sm font-semibold"
             >
               {isLast ? "จบบทเรียน" : "คำถัดไป"}
             </Button>
           </div>
+
+          {countdown != null && (
+            <p className="mt-3 text-center text-xs text-neutral-400">
+              รีเซ็ตใน {countdown} วินาที...
+            </p>
+          )}
         </div>
       )}
     </div>
