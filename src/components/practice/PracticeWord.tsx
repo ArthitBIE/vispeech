@@ -57,6 +57,8 @@ export function PracticeWord({
   const rafRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const listeningStartedRef = useRef(false);
+  const audioLevelRef = useRef(0);
+  const transcriptRef = useRef("");
   // The live capture stream, held so it can be stopped. The AudioContext and
   // analyser are not enough: closing them leaves the device open.
   const micStreamRef = useRef<MediaStream | null>(null);
@@ -106,9 +108,10 @@ export function PracticeWord({
     };
   }, []);
 
-  useEffect(() => {
-    onLive?.({ mouthOpen, audioLevel, transcript });
-  }, [mouthOpen, audioLevel, transcript, onLive]);
+  // Keep refs in sync for the onResult rAF callback (avoids stale closures).
+  useEffect(() => { audioLevelRef.current = audioLevel; }, [audioLevel]);
+  useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
+  // onLive is called inside the onResult rAF to avoid render cascades.
 
   // Fetch TTS audio when word changes
   useEffect(() => {
@@ -159,6 +162,7 @@ export function PracticeWord({
         rafPending = true;
         requestAnimationFrame(() => {
           setMouthOpen(res.mouthOpen);
+          onLive?.({ mouthOpen: res.mouthOpen, audioLevel: audioLevelRef.current, transcript: transcriptRef.current });
           rafPending = false;
         });
       }
@@ -250,17 +254,13 @@ export function PracticeWord({
     setListening(true);
   }
 
-  // Start STT once the prompt audio has finished playing during practice.
+  // Start STT immediately when practice starts — don't gate on audio playback
+  // because auto-play can fail (browser policy, audio not yet loaded, etc.).
   // listeningStartedRef guards against re-entry: `listening` only flips true
   // after handleStartListening awaits getUserMedia, so this effect can re-run
   // before the flag it checks has been set.
   useEffect(() => {
-    if (
-      practicing &&
-      audioPlayed &&
-      !listening &&
-      !listeningStartedRef.current
-    ) {
+    if (practicing && !listening && !listeningStartedRef.current) {
       listeningStartedRef.current = true;
       handleStartListening();
     }
@@ -283,6 +283,8 @@ export function PracticeWord({
     setPracticing(true);
     setAudioPlayed(false);
     listeningStartedRef.current = false;
+    // Auto-play TTS so mic activates after audio ends (via useEffect)
+    audioRef.current?.play().catch(() => {});
   }
 
   async function handleSubmit() {
@@ -379,7 +381,6 @@ export function PracticeWord({
             <audio
               ref={audioRef}
               controls
-              muted
               src={audioSrc}
               className="mx-auto mt-4 h-9 w-56"
               onPlay={() => setIsPlaying(true)}
