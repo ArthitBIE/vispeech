@@ -88,33 +88,11 @@ export function PracticeWord({
   // and we just mirror the transitions we care about into audioPlayed.
   const [, setIsPlaying] = useState(false);
   const [audioPlayed, setAudioPlayed] = useState(false);
-  const [countdown, setCountdown] = useState<number | null>(null);
-
-  // Auto-reset after scoring: 3-second countdown then redo the word
-  useEffect(() => {
-    if (!result) {
-      setCountdown(null);
-      return;
-    }
-    setCountdown(3);
-  }, [result]);
-
-  useEffect(() => {
-    if (countdown === null) return;
-    if (countdown <= 0) {
-      setCountdown(null);
-      handleTryAgain();
-      return;
-    }
-    const timer = setTimeout(
-      () => setCountdown((c) => (c != null ? c - 1 : null)),
-      1000
-    );
-    return () => clearTimeout(timer);
-  }, [countdown]);
+  const transcriptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
+      if (transcriptTimerRef.current) clearTimeout(transcriptTimerRef.current);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       audioCtxRef.current?.close();
       audioRef.current?.pause();
@@ -274,6 +252,11 @@ export function PracticeWord({
     sr.onResult((res) => {
       setTranscript(res.transcript);
       setConfidence(res.confidence ?? 0.8);
+      // Clear transcript after 3s of no new speech
+      if (transcriptTimerRef.current) clearTimeout(transcriptTimerRef.current);
+      if (res.transcript) {
+        transcriptTimerRef.current = setTimeout(() => setTranscript(""), 3000);
+      }
     });
     sr.onError((msg) => {
       setSpeechError(msg);
@@ -303,6 +286,7 @@ export function PracticeWord({
 
   async function handleStopListening() {
     if (!recognizer) return;
+    if (transcriptTimerRef.current) clearTimeout(transcriptTimerRef.current);
     const final = await recognizer.stop();
     setTranscript((prev) => prev || final);
     setListening(false);
@@ -375,7 +359,7 @@ export function PracticeWord({
   }
 
   function handleTryAgain() {
-    setCountdown(null);
+    if (transcriptTimerRef.current) clearTimeout(transcriptTimerRef.current);
     setResult(null);
     setAvgMouthOpen(0);
     setTranscript("");
@@ -580,21 +564,12 @@ export function PracticeWord({
             </Button>
             <Button
               variant="outline"
-              onClick={() => {
-                setCountdown(null);
-                onSkip();
-              }}
+              onClick={onSkip}
               className="flex-1 h-12 px-4 text-sm font-semibold"
             >
               {isLast ? "จบบทเรียน" : "คำถัดไป"}
             </Button>
           </div>
-
-          {countdown != null && (
-            <p className="mt-3 text-center text-xs text-neutral-400">
-              รีเซ็ตใน {countdown} วินาที...
-            </p>
-          )}
         </div>
       )}
     </div>
