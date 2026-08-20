@@ -9,7 +9,16 @@ import type { SpeechRecognizer } from "@/lib/viseme";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LipExample } from "@/components/practice/LipExample";
-import { Camera, ChevronRight, Play, Smile } from "lucide-react";
+import {
+  Camera,
+  ChevronRight,
+  Pause,
+  Play,
+  RotateCcw,
+  Smile,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 
 export interface WordRow {
   id: string;
@@ -58,6 +67,7 @@ export function PracticeWord({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const listeningStartedRef = useRef(false);
   const audioLevelRef = useRef(0);
+  const maxMouthOpenRef = useRef(0);
   const transcriptRef = useRef("");
   // The live capture stream, held so it can be stopped. The AudioContext and
   // analyser are not enough: closing them leaves the device open.
@@ -84,15 +94,13 @@ export function PracticeWord({
   const [avgMouthOpen, setAvgMouthOpen] = useState(0);
   const [, setError] = useState<string | null>(null);
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
-  // Only ever written, never read: the audio element owns its own play state
-  // and we just mirror the transitions we care about into audioPlayed.
-  const [, setIsPlaying] = useState(false);
+
   const [audioPlayed, setAudioPlayed] = useState(false);
-  const transcriptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [volume, setVolume] = useState(1);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     return () => {
-      if (transcriptTimerRef.current) clearTimeout(transcriptTimerRef.current);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       audioCtxRef.current?.close();
       audioRef.current?.pause();
@@ -117,6 +125,10 @@ export function PracticeWord({
   useEffect(() => {
     transcriptRef.current = transcript;
   }, [transcript]);
+  // Sync volume to audio element
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [volume]);
   // onLive is called inside the onResult rAF to avoid render cascades.
 
   // Fetch TTS audio when word changes
@@ -163,7 +175,11 @@ export function PracticeWord({
     instance.onResult((res) => {
       // Throttle state updates to one per animation frame — prevents
       // "Maximum update depth exceeded" from ~30fps camera callbacks.
-      if (res.mouthOpen > 0) mouthSamplesRef.current.push(res.mouthOpen);
+      if (res.mouthOpen > 0) {
+        mouthSamplesRef.current.push(res.mouthOpen);
+        if (res.mouthOpen > maxMouthOpenRef.current)
+          maxMouthOpenRef.current = res.mouthOpen;
+      }
       if (!rafPending) {
         rafPending = true;
         requestAnimationFrame(() => {
@@ -252,11 +268,6 @@ export function PracticeWord({
     sr.onResult((res) => {
       setTranscript(res.transcript);
       setConfidence(res.confidence ?? 0.8);
-      // Clear transcript after 3s of no new speech
-      if (transcriptTimerRef.current) clearTimeout(transcriptTimerRef.current);
-      if (res.transcript) {
-        transcriptTimerRef.current = setTimeout(() => setTranscript(""), 3000);
-      }
     });
     sr.onError((msg) => {
       setSpeechError(msg);
@@ -286,7 +297,6 @@ export function PracticeWord({
 
   async function handleStopListening() {
     if (!recognizer) return;
-    if (transcriptTimerRef.current) clearTimeout(transcriptTimerRef.current);
     const final = await recognizer.stop();
     setTranscript((prev) => prev || final);
     setListening(false);
@@ -295,6 +305,7 @@ export function PracticeWord({
 
   function handleStartPractice() {
     mouthSamplesRef.current = [];
+    maxMouthOpenRef.current = 0;
     handleStartCamera();
     setPracticing(true);
     setAudioPlayed(false);
@@ -359,25 +370,45 @@ export function PracticeWord({
   }
 
   function handleTryAgain() {
-    if (transcriptTimerRef.current) clearTimeout(transcriptTimerRef.current);
+    // Stop recognizer first to prevent onResult firing after clear
+    recognizerRef.current?.stop();
+    handleStopCamera();
+    stopAudioLevel();
     setResult(null);
     setAvgMouthOpen(0);
     setTranscript("");
     setMouthOpen(0);
     mouthSamplesRef.current = [];
+    maxMouthOpenRef.current = 0;
+    setListening(false);
     setPracticing(false);
     setAudioPlayed(false);
     listeningStartedRef.current = false;
-    // Replay audio — STT starts after audio ends via useEffect
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play();
     }
-    handleStopCamera();
-    handleStopListening();
   }
 
-  const readyToSubmit = Boolean(transcript) && mouthOpen > 0;
+  function handleRestart() {
+    // Stop recognizer first to prevent onResult firing after clear
+    recognizerRef.current?.stop();
+    handleStopCamera();
+    stopAudioLevel();
+    setTranscript("");
+    setMouthOpen(0);
+    mouthSamplesRef.current = [];
+    maxMouthOpenRef.current = 0;
+    setListening(false);
+    setAudioPlayed(false);
+    listeningStartedRef.current = false;
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
+    }
+  }
+
+  const readyToSubmit = Boolean(transcript) && maxMouthOpenRef.current > 0;
 
   return (
     <div>
@@ -395,18 +426,58 @@ export function PracticeWord({
           </p>
 
           {audioSrc && (
-            <audio
-              ref={audioRef}
-              controls
-              src={audioSrc}
-              className="mx-auto mt-4 h-9 w-56"
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              onEnded={() => {
-                setIsPlaying(false);
-                setAudioPlayed(true);
-              }}
-            />
+            <>
+              <audio
+                ref={audioRef}
+                src={audioSrc}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => {
+                  setIsPlaying(false);
+                  setAudioPlayed(true);
+                }}
+              />
+              <div className="mx-auto mt-4 flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    if (isPlaying) audioRef.current?.pause();
+                    else audioRef.current?.play().catch(() => {});
+                  }}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900 text-white hover:bg-neutral-700"
+                  aria-label={isPlaying ? "Pause" : "Play"}
+                >
+                  {isPlaying ? (
+                    <Pause className="h-4 w-4 fill-white" />
+                  ) : (
+                    <Play className="h-4 w-4 fill-white" />
+                  )}
+                </button>
+                <button
+                  onClick={handleRestart}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-600 hover:bg-neutral-100"
+                  aria-label="Restart audio"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
+                <div className="flex items-center gap-1.5">
+                  {volume > 0 ? (
+                    <Volume2 className="h-4 w-4 text-neutral-500" />
+                  ) : (
+                    <VolumeX className="h-4 w-4 text-neutral-500" />
+                  )}
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={volume}
+                    onChange={(e) => setVolume(Number(e.target.value))}
+                    className="h-20 w-5 [writing-mode:vertical-lr] [appearance:slider-vertical] accent-neutral-900"
+                    aria-label="Volume"
+                  />
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
