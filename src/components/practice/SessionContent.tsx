@@ -301,7 +301,7 @@ export default function SessionContent({ words, group }: SessionContentProps) {
           </aside>
 
           {/* --- Practice card --- */}
-          <section className="bg-white p-5 lg:p-7">
+          <section className="flex flex-col items-center bg-white p-5 lg:p-7">
             <PracticeWord
               key={filteredWords[currentIndex]?.id}
               word={filteredWords[currentIndex]}
