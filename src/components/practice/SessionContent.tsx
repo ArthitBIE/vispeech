@@ -19,7 +19,7 @@ const PracticeWord = dynamic(
     import("@/components/practice/PracticeWord").then((m) => m.PracticeWord),
   { ssr: false }
 );
-import { Bot, ChevronLeft, Info, Smile, Volume2 } from "lucide-react";
+import { Bot, ChevronLeft, Info, Smile, Volume2, X } from "lucide-react";
 import { AppBreadcrumb } from "@/components/layout/AppBreadcrumb";
 import { LESSONS, findLesson } from "@/lib/lesson";
 
@@ -369,13 +369,26 @@ export default function SessionContent({ words, group }: SessionContentProps) {
 
             <div className="my-8 border-t border-neutral-200" />
 
-            <p
-              aria-live="polite"
-              data-testid="practice-transcript"
-              className="min-h-10 rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-700"
-            >
-              {live.transcript || "กำลังรอเสียง ..."}
-            </p>
+            <div className="min-h-10 flex items-start gap-2 rounded-lg border border-neutral-200 px-3 py-2">
+              <p
+                aria-live="polite"
+                data-testid="practice-transcript"
+                className="flex-1 text-sm text-neutral-700"
+              >
+                {live.transcript || "กำลังรอเสียง ..."}
+              </p>
+              {live.transcript && (
+                <button
+                  onClick={() =>
+                    setLive((prev) => ({ ...prev, transcript: "" }))
+                  }
+                  className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
+                  aria-label="ล้างข้อความ"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
 
             <div className="mt-16">
               <div className="rounded-lg border border-neutral-200 bg-white px-4 py-4 text-center text-sm font-semibold leading-5 shadow-sm">

@@ -8,6 +8,7 @@ import type { FaceMeshInstance } from "@/lib/mediapipe";
 import type { SpeechRecognizer } from "@/lib/viseme";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
 import { LipExample } from "@/components/practice/LipExample";
 import {
   Camera,
@@ -76,6 +77,7 @@ export function PracticeWord({
   // Latest handleStopCamera, so the unmount cleanup stops the current
   // face-mesh instance (state would be stale inside the [] effect).
   const stopCameraRef = useRef<() => void>(() => {});
+  const prevVolumeRef = useRef(1);
 
   const [cameraActive, setCameraActive] = useState(false);
   const [faceMesh, setFaceMesh] = useState<FaceMeshInstance | null>(null);
@@ -390,6 +392,15 @@ export function PracticeWord({
     }
   }
 
+  function handleToggleMute() {
+    if (volume > 0) {
+      prevVolumeRef.current = volume;
+      setVolume(0);
+    } else {
+      setVolume(prevVolumeRef.current);
+    }
+  }
+
   function handleRestart() {
     // Stop recognizer first to prevent onResult firing after clear
     recognizerRef.current?.stop();
@@ -459,22 +470,32 @@ export function PracticeWord({
                 >
                   <RotateCcw className="h-4 w-4" />
                 </button>
-                <div className="flex items-center gap-1.5">
-                  {volume > 0 ? (
-                    <Volume2 className="h-4 w-4 text-neutral-500" />
-                  ) : (
-                    <VolumeX className="h-4 w-4 text-neutral-500" />
-                  )}
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={volume}
-                    onChange={(e) => setVolume(Number(e.target.value))}
-                    className="h-20 w-5 [writing-mode:vertical-lr] [appearance:slider-vertical] accent-neutral-900"
-                    aria-label="Volume"
-                  />
+                <div className="group relative flex items-center">
+                  <button
+                    onClick={handleToggleMute}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-600 hover:bg-neutral-100"
+                    aria-label={volume > 0 ? "Mute" : "Unmute"}
+                  >
+                    {volume > 0 ? (
+                      <Volume2 className="h-4 w-4" />
+                    ) : (
+                      <VolumeX className="h-4 w-4" />
+                    )}
+                  </button>
+                  <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-2 shadow-lg">
+                      <Slider
+                        orientation="vertical"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={[volume * 100]}
+                        onValueChange={([v]) => setVolume(v / 100)}
+                        className="h-24"
+                        aria-label="Volume"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </>
