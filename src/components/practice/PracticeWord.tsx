@@ -9,6 +9,7 @@ import type { SpeechRecognizer } from "@/lib/viseme";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { LipExample } from "@/components/practice/LipExample";
 import {
   Camera,
@@ -470,33 +471,33 @@ export function PracticeWord({
                 >
                   <RotateCcw className="h-4 w-4" />
                 </button>
-                <div className="group relative flex items-center">
-                  <button
-                    onClick={handleToggleMute}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-600 hover:bg-neutral-100"
-                    aria-label={volume > 0 ? "Mute" : "Unmute"}
-                  >
-                    {volume > 0 ? (
-                      <Volume2 className="h-4 w-4" />
-                    ) : (
-                      <VolumeX className="h-4 w-4" />
-                    )}
-                  </button>
-                  <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
-                    <div className="rounded-lg border border-neutral-200 bg-white p-2 shadow-lg">
-                      <Slider
-                        orientation="vertical"
-                        min={0}
-                        max={100}
-                        step={5}
-                        value={[volume * 100]}
-                        onValueChange={([v]) => setVolume(v / 100)}
-                        className="h-24"
-                        aria-label="Volume"
-                      />
-                    </div>
-                  </div>
-                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      onClick={handleToggleMute}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-300 text-neutral-600 hover:bg-neutral-100"
+                      aria-label={volume > 0 ? "Mute" : "Unmute"}
+                    >
+                      {volume > 0 ? (
+                        <Volume2 className="h-4 w-4" />
+                      ) : (
+                        <VolumeX className="h-4 w-4" />
+                      )}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent side="top" align="center" sideOffset={8} className="w-auto p-2">
+                    <Slider
+                      orientation="vertical"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={[volume * 100]}
+                      onValueChange={([v]) => setVolume(v / 100)}
+                      className="h-24"
+                      aria-label="Volume"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </>
           )}
