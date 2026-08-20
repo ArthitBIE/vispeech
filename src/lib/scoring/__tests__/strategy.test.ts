@@ -36,7 +36,7 @@ describe("DeterministicHeuristicStrategy", () => {
         mouthOpen: 50,
         ...CLOSED,
       });
-      expect(result.audioScore).toBe(95);
+      expect(result.audioScore).toBe(100);
     });
 
     it("target contained in transcript returns 75", () => {
@@ -126,7 +126,7 @@ describe("DeterministicHeuristicStrategy", () => {
         mouthOpen: 35,
         ...CLOSED,
       });
-      expect(result.visualScore).toBe(90);
+      expect(result.visualScore).toBe(100);
     });
 
     it("within 25 of ideal returns 75", () => {
@@ -162,7 +162,7 @@ describe("DeterministicHeuristicStrategy", () => {
         mouthOpen: 75,
         ...WIDE,
       });
-      expect(result.visualScore).toBe(90);
+      expect(result.visualScore).toBe(100);
     });
 
     it("unknown group falls back to default ideal 55", () => {
@@ -173,7 +173,7 @@ describe("DeterministicHeuristicStrategy", () => {
         mouthOpen: 55,
         visemeGroup: undefined,
       });
-      expect(result.visualScore).toBe(90);
+      expect(result.visualScore).toBe(100);
     });
   });
 

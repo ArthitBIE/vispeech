@@ -61,7 +61,7 @@ export class DeterministicHeuristicStrategy implements ScoringStrategy {
     if (!transcriptNorm) return 0;
 
     // Exact match
-    if (transcriptNorm === norm) return 95;
+    if (transcriptNorm === norm) return 100;
 
     // Thai prefix match — e.g. user says "รัก" when target is "รักสด" → decent
     // partial. Must precede containment: a prefix is always contained, so
@@ -92,7 +92,7 @@ export class DeterministicHeuristicStrategy implements ScoringStrategy {
     if (mouthOpen <= 0) return 0;
     const ideal = this.idealMouthOpen(visemeGroup);
     const diff = Math.abs(mouthOpen - ideal);
-    if (diff <= 10) return 90;
+    if (diff <= 10) return 100;
     if (diff <= 25) return 75;
     if (diff <= 40) return 55;
     return 40;
