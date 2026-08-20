@@ -83,6 +83,16 @@ export async function initFaceMesh(
   videoElement: HTMLVideoElement,
   canvasElement: HTMLCanvasElement
 ): Promise<FaceMeshInstance> {
+  // Demo mode (Playwright webServer sets NEXT_PUBLIC_E2E_DEMO_MODE): skip
+  // MediaPipe and the camera entirely so e2e can exercise the practice flow
+  // without a real camera.
+  if (
+    typeof process !== "undefined" &&
+    process.env.NEXT_PUBLIC_E2E_DEMO_MODE === "1"
+  ) {
+    return createFallbackInstance();
+  }
+
   try {
     const { FaceMesh, FACEMESH_LIPS } = await import("@mediapipe/face_mesh");
     const { Camera } = await import("@mediapipe/camera_utils");
@@ -206,14 +216,20 @@ export function estimateMouthOpen(
 export function createFallbackInstance(): FaceMeshInstance {
   const resultCallbacks: ((result: FaceMeshResult) => void)[] = [];
   let intervalId: ReturnType<typeof setInterval> | null = null;
+  // Demo mode: only active when NEXT_PUBLIC_E2E_DEMO_MODE is set (by the
+  // Playwright webServer). Feeds synthetic mouthOpen so e2e tests can
+  // exercise the practice flow without a real camera.
+  const demoMode =
+    typeof process !== "undefined" &&
+    process.env.NEXT_PUBLIC_E2E_DEMO_MODE === "1";
 
   return {
     start: async () => {
-      // MediaPipe not available — report no face detected
       await new Promise((r) => setTimeout(r, 500));
       intervalId = setInterval(() => {
+        const mouthOpen = demoMode ? Math.floor(Math.random() * 60) + 20 : 0;
         resultCallbacks.forEach((cb) =>
-          cb({ landmarks: null, mouthOpen: 0, hasFace: false })
+          cb({ landmarks: null, mouthOpen, hasFace: demoMode })
         );
       }, 500);
     },

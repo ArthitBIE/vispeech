@@ -13,6 +13,33 @@ export interface SpeechRecognizer {
   onError: (callback: (error: string) => void) => void;
 }
 
+function createDemoRecognizer(): SpeechRecognizer {
+  // Only used when NEXT_PUBLIC_E2E_DEMO_MODE=1 (Playwright webServer).
+  // Emits a fixed transcript after a short delay so e2e tests can submit.
+  const resultCallbacks: ((result: SpeechResult) => void)[] = [];
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  return {
+    start: async () => {
+      await new Promise((r) => setTimeout(r, 300));
+      timeoutId = setTimeout(() => {
+        resultCallbacks.forEach((cb) =>
+          cb({ transcript: "demo-transcript", confidence: 0.9, isFinal: true })
+        );
+      }, 500);
+    },
+    stop: async () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      return "demo-transcript";
+    },
+    clear: () => {},
+    isAvailable: () => false,
+    onResult: (cb) => {
+      resultCallbacks.push(cb);
+    },
+    onError: () => {},
+  };
+}
+
 function createDeadRecognizer(): SpeechRecognizer {
   // Returned when Web Speech API is unavailable. Never produces results;
   // errors fire immediately so the UI can display them.
@@ -43,6 +70,17 @@ function createDeadRecognizer(): SpeechRecognizer {
 }
 
 export function createSpeechRecognizer(lang = "th-TH"): SpeechRecognizer {
+  // Demo mode (Playwright webServer sets NEXT_PUBLIC_E2E_DEMO_MODE): produce
+  // a synthetic transcript so e2e tests can submit scores. Checked first
+  // because headless Chromium defines window.SpeechRecognition but never
+  // produces results.
+  if (
+    typeof process !== "undefined" &&
+    process.env.NEXT_PUBLIC_E2E_DEMO_MODE === "1"
+  ) {
+    return createDemoRecognizer();
+  }
+
   const SpeechRecognition =
     (typeof window !== "undefined" &&
       (window.SpeechRecognition || window.webkitSpeechRecognition)) ||

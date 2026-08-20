@@ -313,12 +313,13 @@ test.describe("Practice session page", () => {
     expect(dotCount).toBe(wordCount);
   });
 
-  test("audio player exists with controls", async ({ page }) => {
+  test("audio player exists with play controls", async ({ page }) => {
     await startPracticeSession(page);
 
-    // Native <audio controls> replaces the old custom play button
-    const audio = page.locator("audio[controls]").first();
+    // Custom play/pause button replaces the native <audio controls>
+    const audio = page.locator("audio").first();
     await expect(audio).toBeAttached({ timeout: 5000 });
+    await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
   });
 
   test("no auto-play on start; audio only plays on user interaction", async ({
@@ -326,8 +327,8 @@ test.describe("Practice session page", () => {
   }) => {
     await startPracticeSession(page);
 
-    // <audio controls> exists but should not have played yet (autoplay=false)
-    const audio = page.locator("audio[controls]").first();
+    // <audio> exists but should not have played yet (autoplay=false)
+    const audio = page.locator("audio").first();
     await expect(audio).toBeAttached({ timeout: 5000 });
     const currentTime = await audio.evaluate(
       (el) => (el as HTMLAudioElement).currentTime
