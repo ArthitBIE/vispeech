@@ -50,6 +50,7 @@ export interface PracticeWordProps {
   onLive?: (live: LiveState) => void;
   sessionId?: string | null;
   isLast?: boolean;
+  clearToken?: number;
 }
 
 export function PracticeWord({
@@ -59,6 +60,7 @@ export function PracticeWord({
   onLive,
   sessionId,
   isLast = false,
+  clearToken,
 }: PracticeWordProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -288,6 +290,15 @@ export function PracticeWord({
   // listeningStartedRef guards against re-entry: `listening` only flips true
   // after handleStartListening awaits getUserMedia, so this effect can re-run
   // before the flag it checks has been set.
+  useEffect(() => {
+    setTranscript("");
+    transcriptRef.current = "";
+    setConfidence(0.8);
+    // clear?.() — the ref may hold a recognizer built by an older module
+    // version (HMR) that predates clear().
+    recognizerRef.current?.clear?.();
+  }, [clearToken]);
+
   useEffect(() => {
     if (practicing && !listening && !listeningStartedRef.current) {
       listeningStartedRef.current = true;

@@ -51,6 +51,7 @@ export default function SessionContent({ words, group }: SessionContentProps) {
   });
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [totalAttempts, setTotalAttempts] = useState(0);
+  const [clearToken, setClearToken] = useState(0);
   const mascotImage = "/mascot/image 2.webp";
   // ponytail: swap to "/mascot/image 4.png" when trigger decided
 
@@ -309,6 +310,7 @@ export default function SessionContent({ words, group }: SessionContentProps) {
               onScored={handleScored}
               onSkip={handleSkip}
               onLive={setLive}
+              clearToken={clearToken}
               isLast={currentIndex === filteredWords.length - 1}
             />
           </section>
@@ -379,9 +381,10 @@ export default function SessionContent({ words, group }: SessionContentProps) {
               </p>
               {live.transcript && (
                 <button
-                  onClick={() =>
-                    setLive((prev) => ({ ...prev, transcript: "" }))
-                  }
+                  onClick={() => {
+                    setLive((prev) => ({ ...prev, transcript: "" }));
+                    setClearToken((t) => t + 1);
+                  }}
                   className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
                   aria-label="ล้างข้อความ"
                 >

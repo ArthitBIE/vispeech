@@ -7,6 +7,7 @@ export interface SpeechResult {
 export interface SpeechRecognizer {
   start: () => Promise<void>;
   stop: () => Promise<string>;
+  clear: () => void;
   isAvailable: () => boolean;
   onResult: (callback: (result: SpeechResult) => void) => void;
   onError: (callback: (error: string) => void) => void;
@@ -27,6 +28,7 @@ function createDeadRecognizer(): SpeechRecognizer {
       }
     },
     stop: async () => "",
+    clear: () => {},
     isAvailable: () => false,
     onResult: () => {},
     onError: (cb) => {
@@ -131,6 +133,13 @@ export function createSpeechRecognizer(lang = "th-TH"): SpeechRecognizer {
       running = false;
       recognition.stop();
       return finalTranscript;
+    },
+    clear: () => {
+      finalTranscript = "";
+      try {
+        // abort() flushes the pending result queue; older TS lib.dom omits it.
+        (recognition as unknown as { abort?: () => void }).abort?.();
+      } catch {}
     },
     isAvailable: () => true,
     onResult: (cb) => {

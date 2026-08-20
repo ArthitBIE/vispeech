@@ -113,4 +113,29 @@ describe("createSpeechRecognizer (real Web Speech API path)", () => {
       isFinal: false,
     });
   });
+
+  it("clear() resets the accumulated transcript and aborts recognition", async () => {
+    const recognizer = createSpeechRecognizer("th-TH");
+    await recognizer.start();
+    const instance = MockSpeechRecognition
+      .instances[0] as (typeof MockSpeechRecognition.instances)[number] & {
+      abort?: ReturnType<typeof vi.fn>;
+    };
+    instance.abort = vi.fn();
+
+    instance.onresult?.({
+      resultIndex: 0,
+      results: [
+        {
+          0: { transcript: "สวัสดี", confidence: 0.9 },
+          isFinal: true,
+          length: 1,
+        },
+      ],
+    });
+
+    recognizer.clear();
+    expect(instance.abort).toHaveBeenCalledTimes(1);
+    expect(await recognizer.stop()).toBe("");
+  });
 });

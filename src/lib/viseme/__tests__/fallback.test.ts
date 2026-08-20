@@ -16,6 +16,12 @@ describe("createSpeechRecognizer", () => {
     expect(typeof recognizer.onError).toBe("function");
   });
 
+  it("exposes clear() so callers can reset mid-session", () => {
+    const recognizer = createSpeechRecognizer("th-TH");
+    expect(typeof recognizer.clear).toBe("function");
+    expect(() => recognizer.clear()).not.toThrow();
+  });
+
   it("isAvailable returns false when no Web Speech API", () => {
     const recognizer = createSpeechRecognizer("th-TH");
     expect(recognizer.isAvailable()).toBe(false);
