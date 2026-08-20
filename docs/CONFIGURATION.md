@@ -96,6 +96,7 @@ survive recreating the project from scratch.
 
 ```
 https://vispeech-pi.vercel.app/auth/callback
+https://vispeech-pi.vercel.app
 http://localhost:3000/auth/callback
 https://vispeech-git-develop-arthitbies-projects.vercel.app/auth/callback
 ```
